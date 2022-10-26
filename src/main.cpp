@@ -44,6 +44,9 @@ class NeuralNetwork
 		Node	  *inputNode[INPUT_NODES];
 		Connection connection[TOTAL_CONNECTIONS];
 
+		int	   connectedNodes = 0;
+		Node **nodeCalculationOrder;
+
 	public:
 		NeuralNetwork(Connection connection[]);
 
@@ -99,26 +102,16 @@ NeuralNetwork::NeuralNetwork(Connection connection[])
 		}
 	}
 
-	return;
-}
+	for (int i = 0; i < TOTAL_NODES; i++)
+	{
+		if (node[i].parents)
+		{
+			connectedNodes++;
+		}
+	}
 
-void NeuralNetwork::setConnection(int connectionNumber, Connection connection)
-{
-	this->connection[connectionNumber] = connection;
+	nodeCalculationOrder = (Node **)malloc(connectedNodes * sizeof(Node *));
 
-	return;
-}
-
-void NeuralNetwork::setInputNode(int nodeNumber, float value)
-{
-	inputNode[nodeNumber]->value = value;
-
-	return;
-}
-
-// this is shit and can definately be improved
-void NeuralNetwork::update()
-{
 	for (int i = INPUT_NODES; i < TOTAL_NODES; i++)
 	{
 		node[i].base  = false;
@@ -126,6 +119,8 @@ void NeuralNetwork::update()
 	}
 
 	bool loop = true;
+
+	int nodeOrder = 0;
 
 	while (loop)
 	{
@@ -146,10 +141,10 @@ void NeuralNetwork::update()
 				if (allBase)
 				{
 					node[i].base = true;
-					for (int x = 0; x < node[i].parents; x++)
-					{
-						node[i].value += node[i].parent[x]->value;
-					}
+
+					nodeCalculationOrder[nodeOrder] = &node[i];
+
+					nodeOrder++;
 
 					node[i].value = tanh(node[i].value);
 				}
@@ -166,6 +161,38 @@ void NeuralNetwork::update()
 			}
 		}
 	}
+
+	return;
+}
+
+void NeuralNetwork::setConnection(int connectionNumber, Connection connection)
+{
+	this->connection[connectionNumber] = connection;
+
+	return;
+}
+
+void NeuralNetwork::setInputNode(int nodeNumber, float value)
+{
+	inputNode[nodeNumber]->value = value;
+
+	return;
+}
+
+// this is shit and can definately be improved
+void NeuralNetwork::update()
+{
+	for (int i = 0; i < connectedNodes; i++)
+	{
+		for (int x = 0; x < nodeCalculationOrder[i]->parents; x++)
+		{
+			nodeCalculationOrder[i]->value += nodeCalculationOrder[i]->parent[x]->value;
+		}
+
+		nodeCalculationOrder[i]->value = tanh(nodeCalculationOrder[i]->value);
+	}
+
+	printf("\n");
 
 	return;
 }
