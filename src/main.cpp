@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#define INPUT_NODES	 1
+#define INPUT_NODES	 2
 #define OUTPUT_NODES 3
 #define HIDDEN_NODES 0
 #define TOTAL_NODES	 (INPUT_NODES + HIDDEN_NODES + OUTPUT_NODES)
@@ -21,8 +21,12 @@ enum NodeType
 class Node
 {
 	public:
-		float	 value = 0;
-		NodeType type  = hidden;
+		bool   base	   = false;
+		int	   id	   = -1;
+		float  value   = 0;
+		int	   parents = 0;
+		Node **parent  = nullptr;
+		float *weight  = 0;
 };
 
 class Connection
@@ -37,10 +41,11 @@ class NeuralNetwork
 {
 	private:
 		Node	   node[TOTAL_NODES];
+		Node	  *inputNode[INPUT_NODES];
 		Connection connection[TOTAL_CONNECTIONS];
 
 	public:
-		NeuralNetwork();
+		NeuralNetwork(Connection connection[]);
 
 		void setConnection(int connectionNumber, Connection connection);
 		void setInputNode(int nodeNumber, float value);
@@ -51,8 +56,49 @@ class NeuralNetwork
 		Node	   getNode(int nodeNumber);
 };
 
-NeuralNetwork::NeuralNetwork()
+NeuralNetwork::NeuralNetwork(Connection connection[])
 {
+	// link input node pointers to actual nodes
+	for (int i = 0; i < INPUT_NODES; i++)
+	{
+		inputNode[i] = &node[i];
+		node[i].base = true;
+	}
+
+	// give every node an ID
+	for (int i = 0; i < TOTAL_NODES; i++)
+	{
+		node[i].id = i;
+	}
+
+	// set the amount of parents every node has according to connection
+	for (int y = 0; y < TOTAL_CONNECTIONS; y++)
+	{
+		this->connection[y] = connection[y];
+		node[connection[y].endNode].parents++;
+	}
+
+	// allocate memory for every node to store a pointer to its parents
+	for (int i = 0; i < TOTAL_NODES; i++)
+	{
+		if (node[i].parents)
+		{
+			node[i].parent = (Node **)malloc(node[i].parents * sizeof(Node *));
+
+			int setParents = 0;
+
+			for (int x = 0; x < TOTAL_CONNECTIONS; x++)
+			{
+				if (connection[x].endNode == i)
+				{
+					node[i].parent[setParents] = &node[connection[x].startNode];
+
+					setParents++;
+				}
+			}
+		}
+	}
+
 	return;
 }
 
@@ -65,16 +111,60 @@ void NeuralNetwork::setConnection(int connectionNumber, Connection connection)
 
 void NeuralNetwork::setInputNode(int nodeNumber, float value)
 {
-	node[nodeNumber].value = value;
+	inputNode[nodeNumber]->value = value;
 
 	return;
 }
 
+// this is shit and can definately be improved
 void NeuralNetwork::update()
 {
-	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
+	for (int i = INPUT_NODES; i < TOTAL_NODES; i++)
 	{
-		node[connection[i].endNode].value = node[connection[i].startNode].value * connection[i].weight;
+		node[i].base  = false;
+		node[i].value = 0;
+	}
+
+	bool loop = true;
+
+	while (loop)
+	{
+		for (int i = 0; i < TOTAL_NODES; i++)
+		{
+			if (node[i].parents)
+			{
+				bool allBase = true;
+
+				for (int x = 0; x < node[i].parents; x++)
+				{
+					if (node[i].parent[x]->base == false)
+					{
+						allBase = false;
+					}
+				}
+
+				if (allBase)
+				{
+					node[i].base = true;
+					for (int x = 0; x < node[i].parents; x++)
+					{
+						node[i].value += node[i].parent[x]->value;
+					}
+
+					node[i].value = tanh(node[i].value);
+				}
+			}
+		}
+
+		loop = false;
+
+		for (int i = 0; i < TOTAL_NODES; i++)
+		{
+			if (node[i].parents && node[i].base == false)
+			{
+				loop = true;
+			}
+		}
 	}
 
 	return;
@@ -89,6 +179,16 @@ Node NeuralNetwork::getNode(int nodeNumber)
 {
 	return node[nodeNumber];
 }
+
+class test
+{
+	public:
+		test(int i)
+		{
+			num = i;
+		}
+		int num = 0;
+};
 
 int main()
 {
@@ -112,31 +212,38 @@ int main()
 	agl::Texture blank;
 	blank.setBlank();
 
-	NeuralNetwork network;
+	Connection connection[TOTAL_CONNECTIONS];
 
-	Connection connection;
+	connection[0].startNode = 0;
+	connection[0].endNode	= 2;
+	connection[0].weight	= 1;
 
-	connection.startNode = 0;
-	connection.endNode	 = 1;
-	connection.weight	 = 1;
+	connection[1].startNode = 0;
+	connection[1].endNode	= 3;
+	connection[1].weight	= 0.5;
 
-	network.setConnection(0, connection);
+	connection[2].startNode = 1;
+	connection[2].endNode	= 2;
+	connection[2].weight	= -0.75;
 
-	connection.startNode = 0;
-	connection.endNode	 = 2;
-	connection.weight	 = 0;
+	NeuralNetwork network(connection);
 
-	network.setConnection(1, connection);
+	for (int i = 0; i < TOTAL_NODES; i++)
+	{
+		int parents = network.getNode(i).parents;
+		printf("%d %d\n", i, parents);
 
-	connection.startNode = 0;
-	connection.endNode	 = 3;
-	connection.weight	 = -1;
+		if (parents)
+		{
+			for (int x = 0; x < parents; x++)
+			{
+				printf("\t%d\n", network.getNode(i).parent[x]->id);
+			}
+		}
+	}
 
-	network.setConnection(2, connection);
-
-	network.setInputNode(0, 1);
-
-	network.update();
+	float node1 = 1;
+	float node2 = -0.25;
 
 	agl::Circle nodeShape(10);
 	nodeShape.setTexture(&blank);
@@ -148,12 +255,61 @@ int main()
 	connectionShape.setColor(agl::Color::Red);
 	connectionShape.setSize({10, 50, 0});
 
+	for (int i = 0; i < TOTAL_NODES; i++)
+	{
+		printf("%d %f\n", i, network.getNode(i).value);
+	}
+
+	float addAmount = 0.01;
+
 	while (!event.windowClose())
 	{
 		window.updateMvp(camera);
 
 		event.pollWindow();
 		event.pollKeyboard();
+
+		network.setInputNode(0, node1);
+		network.setInputNode(1, node2);
+
+		network.update();
+
+		if (event.isKeyPressed(XK_q))
+		{
+			node1 += addAmount;
+
+			if (node1 >= 1)
+			{
+				node1 = 1;
+			}
+		}
+		if (event.isKeyPressed(XK_a))
+		{
+			node1 -= addAmount;
+
+			if (node1 <= -1)
+			{
+				node1 = -1;
+			}
+		}
+		if (event.isKeyPressed(XK_w))
+		{
+			node2 += addAmount;
+
+			if (node2 >= 1)
+			{
+				node2 = 1;
+			}
+		}
+		if (event.isKeyPressed(XK_s))
+		{
+			node2 -= addAmount;
+
+			if (node2 <= -1)
+			{
+				node2 = -1;
+			}
+		}
 
 		window.clear();
 
@@ -204,10 +360,7 @@ int main()
 
 			connectionShape.setPosition(start);
 			window.drawShape(connectionShape);
-
-			std::cout << angle << std::endl;
 		}
-		printf("\n");
 
 		for (int i = 0; i < TOTAL_NODES; i++)
 		{
@@ -237,10 +390,7 @@ int main()
 			}
 
 			window.drawShape(nodeShape);
-
-			printf("%d %f\n", i, nodeValue);
 		}
-		printf("\n");
 
 		window.display();
 	}
