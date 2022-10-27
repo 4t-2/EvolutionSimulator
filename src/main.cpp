@@ -7,7 +7,7 @@
 #define HIDDEN_NODES 0
 #define TOTAL_NODES	 (INPUT_NODES + HIDDEN_NODES + OUTPUT_NODES)
 
-#define TOTAL_CONNECTIONS 3
+#define TOTAL_CONNECTIONS 4
 
 #define BASE_B_VALUE 63
 
@@ -21,7 +21,6 @@ enum NodeType
 class Node
 {
 	public:
-		bool   base	   = false;
 		int	   id	   = -1;
 		float  value   = 0;
 		int	   parents = 0;
@@ -65,7 +64,6 @@ NeuralNetwork::NeuralNetwork(Connection connection[])
 	for (int i = 0; i < INPUT_NODES; i++)
 	{
 		inputNode[i] = &node[i];
-		node[i].base = true;
 	}
 
 	// give every node an ID
@@ -114,8 +112,7 @@ NeuralNetwork::NeuralNetwork(Connection connection[])
 
 	for (int i = INPUT_NODES; i < TOTAL_NODES; i++)
 	{
-		node[i].base  = false;
-		node[i].value = 0;
+		node[i].value = 2;
 	}
 
 	bool loop = true;
@@ -132,7 +129,7 @@ NeuralNetwork::NeuralNetwork(Connection connection[])
 
 				for (int x = 0; x < node[i].parents; x++)
 				{
-					if (node[i].parent[x]->base == false)
+					if (node[i].parent[x]->value == 2)
 					{
 						allBase = false;
 					}
@@ -140,13 +137,26 @@ NeuralNetwork::NeuralNetwork(Connection connection[])
 
 				if (allBase)
 				{
-					node[i].base = true;
+					bool inList = false;
 
-					nodeCalculationOrder[nodeOrder] = &node[i];
+					for (int x = 0; x < nodeOrder; x++)
+					{
+						if (node[i].id == nodeCalculationOrder[x]->id)
+						{
+							inList = true;
+						}
+					}
 
-					nodeOrder++;
+					if (!inList)
+					{
+						node[i].value = 0;
 
-					node[i].value = tanh(node[i].value);
+						nodeCalculationOrder[nodeOrder] = &node[i];
+
+						nodeOrder++;
+
+						node[i].value = tanh(node[i].value);
+					}
 				}
 			}
 		}
@@ -155,7 +165,7 @@ NeuralNetwork::NeuralNetwork(Connection connection[])
 
 		for (int i = 0; i < TOTAL_NODES; i++)
 		{
-			if (node[i].parents && node[i].base == false)
+			if (node[i].parents && node[i].value == 2)
 			{
 				loop = true;
 			}
@@ -190,9 +200,9 @@ void NeuralNetwork::update()
 		}
 
 		nodeCalculationOrder[i]->value = tanh(nodeCalculationOrder[i]->value);
-	}
 
-	printf("\n");
+		printf("order %d\n", nodeCalculationOrder[i]->id);
+	}
 
 	return;
 }
@@ -246,12 +256,16 @@ int main()
 	connection[0].weight	= 1;
 
 	connection[1].startNode = 0;
-	connection[1].endNode	= 3;
+	connection[1].endNode	= 4;
 	connection[1].weight	= 0.5;
 
 	connection[2].startNode = 1;
 	connection[2].endNode	= 2;
 	connection[2].weight	= -0.75;
+
+	connection[3].startNode = 4;
+	connection[3].endNode	= 3;
+	connection[3].weight	= -1;
 
 	NeuralNetwork network(connection);
 
@@ -282,13 +296,9 @@ int main()
 	connectionShape.setColor(agl::Color::Red);
 	connectionShape.setSize({10, 50, 0});
 
-	for (int i = 0; i < TOTAL_NODES; i++)
-	{
-		printf("%d %f\n", i, network.getNode(i).value);
-	}
-
 	float addAmount = 0.01;
 
+	network.update();
 	while (!event.windowClose())
 	{
 		window.updateMvp(camera);
@@ -298,8 +308,6 @@ int main()
 
 		network.setInputNode(0, node1);
 		network.setInputNode(1, node2);
-
-		network.update();
 
 		if (event.isKeyPressed(XK_q))
 		{
