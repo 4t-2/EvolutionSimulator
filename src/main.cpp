@@ -1,231 +1,10 @@
 #include "../lib/AGL/agl.hpp"
 
+#include "../inc/NeuralNetwork.hpp"
+
 #include <math.h>
 
-#define INPUT_NODES	 2
-#define OUTPUT_NODES 3
-#define HIDDEN_NODES 0
-#define TOTAL_NODES	 (INPUT_NODES + HIDDEN_NODES + OUTPUT_NODES)
-
-#define TOTAL_CONNECTIONS 4
-
 #define BASE_B_VALUE 63
-
-enum NodeType
-{
-	input  = 0,
-	hidden = 1,
-	output = 2
-};
-
-class Node
-{
-	public:
-		int	   id	   = -1;
-		float  value   = 0;
-		int	   parents = 0;
-		Node **parent  = nullptr;
-		float *weight  = 0;
-};
-
-class Connection
-{
-	public:
-		int	  startNode;
-		int	  endNode;
-		float weight;
-};
-
-class NeuralNetwork
-{
-	private:
-		Node	   node[TOTAL_NODES];
-		Node	  *inputNode[INPUT_NODES];
-		Connection connection[TOTAL_CONNECTIONS];
-
-		int	   connectedNodes = 0;
-		Node **nodeCalculationOrder;
-
-	public:
-		NeuralNetwork(Connection connection[]);
-
-		void setConnection(int connectionNumber, Connection connection);
-		void setInputNode(int nodeNumber, float value);
-
-		void update();
-
-		Connection getConnection(int connectionNumber);
-		Node	   getNode(int nodeNumber);
-};
-
-NeuralNetwork::NeuralNetwork(Connection connection[])
-{
-	// link input node pointers to actual nodes
-	for (int i = 0; i < INPUT_NODES; i++)
-	{
-		inputNode[i] = &node[i];
-	}
-
-	// give every node an ID
-	for (int i = 0; i < TOTAL_NODES; i++)
-	{
-		node[i].id = i;
-	}
-
-	// set the amount of parents every node has according to connection
-	for (int y = 0; y < TOTAL_CONNECTIONS; y++)
-	{
-		this->connection[y] = connection[y];
-		node[connection[y].endNode].parents++;
-	}
-
-	// allocate memory for every node to store a pointer to its parents
-	for (int i = 0; i < TOTAL_NODES; i++)
-	{
-		if (node[i].parents)
-		{
-			node[i].parent = (Node **)malloc(node[i].parents * sizeof(Node *));
-
-			int setParents = 0;
-
-			for (int x = 0; x < TOTAL_CONNECTIONS; x++)
-			{
-				if (connection[x].endNode == i)
-				{
-					node[i].parent[setParents] = &node[connection[x].startNode];
-
-					setParents++;
-				}
-			}
-		}
-	}
-
-	for (int i = 0; i < TOTAL_NODES; i++)
-	{
-		if (node[i].parents)
-		{
-			connectedNodes++;
-		}
-	}
-
-	nodeCalculationOrder = (Node **)malloc(connectedNodes * sizeof(Node *));
-
-	for (int i = INPUT_NODES; i < TOTAL_NODES; i++)
-	{
-		node[i].value = 2;
-	}
-
-	bool loop = true;
-
-	int nodeOrder = 0;
-
-	while (loop)
-	{
-		for (int i = 0; i < TOTAL_NODES; i++)
-		{
-			if (node[i].parents)
-			{
-				bool allBase = true;
-
-				for (int x = 0; x < node[i].parents; x++)
-				{
-					if (node[i].parent[x]->value == 2)
-					{
-						allBase = false;
-					}
-				}
-
-				if (allBase)
-				{
-					bool inList = false;
-
-					for (int x = 0; x < nodeOrder; x++)
-					{
-						if (node[i].id == nodeCalculationOrder[x]->id)
-						{
-							inList = true;
-						}
-					}
-
-					if (!inList)
-					{
-						node[i].value = 0;
-
-						nodeCalculationOrder[nodeOrder] = &node[i];
-
-						nodeOrder++;
-
-						node[i].value = tanh(node[i].value);
-					}
-				}
-			}
-		}
-
-		loop = false;
-
-		for (int i = 0; i < TOTAL_NODES; i++)
-		{
-			if (node[i].parents && node[i].value == 2)
-			{
-				loop = true;
-			}
-		}
-	}
-
-	return;
-}
-
-void NeuralNetwork::setConnection(int connectionNumber, Connection connection)
-{
-	this->connection[connectionNumber] = connection;
-
-	return;
-}
-
-void NeuralNetwork::setInputNode(int nodeNumber, float value)
-{
-	inputNode[nodeNumber]->value = value;
-
-	return;
-}
-
-// this is shit and can definately be improved
-void NeuralNetwork::update()
-{
-	for (int i = 0; i < connectedNodes; i++)
-	{
-		for (int x = 0; x < nodeCalculationOrder[i]->parents; x++)
-		{
-			nodeCalculationOrder[i]->value += nodeCalculationOrder[i]->parent[x]->value;
-		}
-
-		nodeCalculationOrder[i]->value = tanh(nodeCalculationOrder[i]->value);
-
-		printf("order %d\n", nodeCalculationOrder[i]->id);
-	}
-
-	return;
-}
-
-Connection NeuralNetwork::getConnection(int connectionNumber)
-{
-	return connection[connectionNumber];
-}
-
-Node NeuralNetwork::getNode(int nodeNumber)
-{
-	return node[nodeNumber];
-}
-
-class test
-{
-	public:
-		test(int i)
-		{
-			num = i;
-		}
-		int num = 0;
-};
 
 int main()
 {
@@ -249,7 +28,7 @@ int main()
 	agl::Texture blank;
 	blank.setBlank();
 
-	Connection connection[TOTAL_CONNECTIONS];
+	Connection connection[4];
 
 	connection[0].startNode = 0;
 	connection[0].endNode	= 2;
@@ -261,15 +40,15 @@ int main()
 
 	connection[2].startNode = 1;
 	connection[2].endNode	= 2;
-	connection[2].weight	= -0.75;
+	connection[2].weight	= -1;
 
 	connection[3].startNode = 4;
 	connection[3].endNode	= 3;
 	connection[3].weight	= -1;
 
-	NeuralNetwork network(connection);
+	NeuralNetwork network(5, 2, connection, 4);
 
-	for (int i = 0; i < TOTAL_NODES; i++)
+	for (int i = 0; i < network.getTotalNodes(); i++)
 	{
 		int parents = network.getNode(i).parents;
 		printf("%d %d\n", i, parents);
@@ -346,16 +125,18 @@ int main()
 			}
 		}
 
+		network.update();
+
 		window.clear();
 
-		for (int i = 0; i < TOTAL_CONNECTIONS; i++)
+		for (int i = 0; i < network.getTotalConnections(); i++)
 		{
 			agl::Vec3f start;
 			agl::Vec3f end;
 			agl::Vec3f offset;
 
 			{
-				float angle = (360. / TOTAL_NODES) * (network.getConnection(i).startNode + 1);
+				float angle = (360. / network.getTotalNodes()) * (network.getConnection(i).startNode + 1);
 
 				float x = cos(angle * (3.14159 / 180));
 				float y = sin(angle * (3.14159 / 180));
@@ -365,7 +146,7 @@ int main()
 			}
 
 			{
-				float angle = (360. / TOTAL_NODES) * (network.getConnection(i).endNode + 1);
+				float angle = (360. / network.getTotalNodes()) * (network.getConnection(i).endNode + 1);
 
 				float x = cos(angle * (3.14159 / 180));
 				float y = sin(angle * (3.14159 / 180));
@@ -397,9 +178,9 @@ int main()
 			window.drawShape(connectionShape);
 		}
 
-		for (int i = 0; i < TOTAL_NODES; i++)
+		for (int i = 0; i < network.getTotalNodes(); i++)
 		{
-			float angle = (360. / TOTAL_NODES) * (i + 1);
+			float angle = (360. / network.getTotalNodes()) * (i + 1);
 
 			float x = cos(angle * (3.14159 / 180));
 			float y = sin(angle * (3.14159 / 180));
