@@ -6,10 +6,110 @@
 
 #define BASE_B_VALUE 63
 
+#define WIDTH  1920
+#define HEIGHT 1080
+
+class Creature
+{
+	private:
+		agl::Vec2f position = {(float)WIDTH / 2, (float)HEIGHT / 2};
+		agl::Vec2f velocity = {0, 0};
+		float	   rotation = 0;
+
+		// first 2 neurons are input
+		// next 3 are output
+		// rest are hidden
+		NeuralNetwork *network;
+
+	public:
+		Creature();
+
+		void update();
+
+
+
+		NeuralNetwork getNeuralNetwork();
+		agl::Vec2f	  getPosition();
+		float		  getRotation();
+};
+
+Creature::Creature()
+{
+	Connection connection[2];
+
+	connection[0].startNode = 0;
+	connection[0].endNode	= 3;
+	connection[0].weight	= 0.1;
+
+	connection[1].startNode = 0;
+	connection[1].endNode	= 4;
+	connection[1].weight	= -0.1;
+
+
+	network = new NeuralNetwork(5, 2, connection, 2);
+
+	return;
+}
+
+void Creature::update()
+{
+	network->setInputNode(0, (position.x / WIDTH * 2)-1);
+
+	network->update();
+
+	velocity = {0, 0};
+
+	float speed = 2.5;
+
+	// if (network->getNode(2).value > 0.5)
+	// {
+	// 	speed = 2.5;
+	// }
+
+	if (network->getNode(3).value > 0.5)
+	{
+		rotation += 0.05;
+	}
+
+	if (network->getNode(4).value > 0.5)
+	{
+		rotation -= 0.05;
+	}
+
+	velocity.x = cos(rotation) * speed;
+	velocity.y = sin(rotation) * speed;
+
+	position.x += velocity.x;
+	position.y += velocity.y;
+
+	printf("spd %f\n", speed);
+	printf("rot %f\n", rotation);
+	printf("vel %f %f\n", velocity.x, velocity.y);
+	printf("pos %f %f\n", position.x, position.y);
+	printf("\n");
+
+	return;
+}
+
+NeuralNetwork Creature::getNeuralNetwork()
+{
+	return *network;
+}
+
+agl::Vec2f Creature::getPosition()
+{
+	return position;
+}
+
+float Creature::getRotation()
+{
+	return rotation;
+}
+
 int main()
 {
 	agl::RenderWindow window;
-	window.setup({1000, 1000}, "EvolutionSimulator");
+	window.setup({WIDTH, HEIGHT}, "EvolutionSimulator");
 	window.setClearColor(agl::Color::Black);
 	window.setFPS(60);
 
@@ -22,62 +122,37 @@ int main()
 	shader.use();
 
 	agl::Camera camera;
-	camera.setOrthographicProjection(0, 1000, 1000, 0, 0.1, 100);
-	camera.setView({0, 0, 1}, {0, 0, 0}, {0, 1, 0});
+	camera.setOrthographicProjection(0, WIDTH, HEIGHT, 0, 0.1, 100);
+	camera.setView({0, 0, 50}, {0, 0, 0}, {0, 1, 0});
 
 	agl::Texture blank;
 	blank.setBlank();
 
-	Connection connection[4];
-
-	connection[0].startNode = 0;
-	connection[0].endNode	= 2;
-	connection[0].weight	= 1;
-
-	connection[1].startNode = 0;
-	connection[1].endNode	= 4;
-	connection[1].weight	= 0.5;
-
-	connection[2].startNode = 1;
-	connection[2].endNode	= 2;
-	connection[2].weight	= -1;
-
-	connection[3].startNode = 4;
-	connection[3].endNode	= 3;
-	connection[3].weight	= -1;
-
-	NeuralNetwork network(5, 2, connection, 4);
-
-	for (int i = 0; i < network.getTotalNodes(); i++)
-	{
-		int parents = network.getNode(i).parents;
-		printf("%d %d\n", i, parents);
-
-		if (parents)
-		{
-			for (int x = 0; x < parents; x++)
-			{
-				printf("\t%d\n", network.getNode(i).parent[x]->id);
-			}
-		}
-	}
-
-	float node1 = 1;
-	float node2 = -0.25;
-
 	agl::Circle nodeShape(10);
 	nodeShape.setTexture(&blank);
-	nodeShape.setSize({25, 25, 0});
-	nodeShape.setPosition({500, 500, 0});
+	nodeShape.setSize({10, 10, 0});
+	nodeShape.setPosition({500, 500, 3});
 
 	agl::Rectangle connectionShape;
 	connectionShape.setTexture(&blank);
 	connectionShape.setColor(agl::Color::Red);
-	connectionShape.setSize({10, 50, 0});
+	connectionShape.setSize({1, 50, 2});
+	
+	agl::Circle background(6);
+	background.setTexture(&blank);
+	background.setColor({15, 15, 15});
+	background.setPosition({150, 150, -1});
+	background.setSize({150, 150, 1});
 
 	float addAmount = 0.01;
 
-	network.update();
+	Creature creature;
+
+	agl::Circle creatureShape(10);
+	creatureShape.setTexture(&blank);
+	creatureShape.setColor(agl::Color::White);
+	creatureShape.setSize({25, 25, 0});
+
 	while (!event.windowClose())
 	{
 		window.updateMvp(camera);
@@ -85,85 +160,52 @@ int main()
 		event.pollWindow();
 		event.pollKeyboard();
 
-		network.setInputNode(0, node1);
-		network.setInputNode(1, node2);
-
-		if (event.isKeyPressed(XK_q))
-		{
-			node1 += addAmount;
-
-			if (node1 >= 1)
-			{
-				node1 = 1;
-			}
-		}
-		if (event.isKeyPressed(XK_a))
-		{
-			node1 -= addAmount;
-
-			if (node1 <= -1)
-			{
-				node1 = -1;
-			}
-		}
-		if (event.isKeyPressed(XK_w))
-		{
-			node2 += addAmount;
-
-			if (node2 >= 1)
-			{
-				node2 = 1;
-			}
-		}
-		if (event.isKeyPressed(XK_s))
-		{
-			node2 -= addAmount;
-
-			if (node2 <= -1)
-			{
-				node2 = -1;
-			}
-		}
-
-		network.update();
+		creature.update();
 
 		window.clear();
 
-		for (int i = 0; i < network.getTotalConnections(); i++)
+		creatureShape.setPosition(creature.getPosition());
+		window.drawShape(creatureShape);
+
+		window.drawShape(background);
+
+		for (int i = 0; i < creature.getNeuralNetwork().getTotalConnections(); i++)
 		{
-			agl::Vec3f start;
+			agl::Vec3f start = {0, 0, 2};
 			agl::Vec3f end;
 			agl::Vec3f offset;
 
 			{
-				float angle = (360. / network.getTotalNodes()) * (network.getConnection(i).startNode + 1);
+				float angle = (360. / creature.getNeuralNetwork().getTotalNodes()) *
+							  (creature.getNeuralNetwork().getConnection(i).startNode + 1);
 
 				float x = cos(angle * (3.14159 / 180));
 				float y = sin(angle * (3.14159 / 180));
 
-				start.x = (x * 300) + 500;
-				start.y = (y * 300) + 500;
+				start.x = (x * 100) + 150;
+				start.y = (y * 100) + 150;
 			}
 
 			{
-				float angle = (360. / network.getTotalNodes()) * (network.getConnection(i).endNode + 1);
+				float angle = (360. / creature.getNeuralNetwork().getTotalNodes()) *
+							  (creature.getNeuralNetwork().getConnection(i).endNode + 1);
 
 				float x = cos(angle * (3.14159 / 180));
 				float y = sin(angle * (3.14159 / 180));
 
-				end.x = (x * 300) + 500;
-				end.y = (y * 300) + 500;
+				end.x = (x * 100) + 150;
+				end.y = (y * 100) + 150;
 			}
 
 			offset = end - start;
 
 			float length = sqrt((offset.x * offset.x) + (offset.y * offset.y));
-			connectionShape.setSize({10, length, 0});
+			connectionShape.setSize({2, length, 0});
 
 			float angle = acos(offset.x / length) * (180 / 3.14159);
 			connectionShape.setRotation({0, 0, angle + 90});
 
-			float weight = network.getConnection(i).weight;
+			float weight = creature.getNeuralNetwork().getConnection(i).weight;
 
 			if (weight > 0)
 			{
@@ -178,23 +220,25 @@ int main()
 			window.drawShape(connectionShape);
 		}
 
-		for (int i = 0; i < network.getTotalNodes(); i++)
+		for (int i = 0; i < creature.getNeuralNetwork().getTotalNodes(); i++)
 		{
-			float angle = (360. / network.getTotalNodes()) * (i + 1);
+			float angle = (360. / creature.getNeuralNetwork().getTotalNodes()) * (i + 1);
 
 			float x = cos(angle * (3.14159 / 180));
 			float y = sin(angle * (3.14159 / 180));
 
 			agl::Vec3f pos;
-			pos.x = x * 300;
-			pos.y = y * 300;
+			pos.x = x * 100;
+			pos.y = y * 100;
 
-			pos.x += 500;
-			pos.y += 500;
+			pos.x += 150;
+			pos.y += 150;
+
+			pos.z = 3;
 
 			nodeShape.setPosition(pos);
 
-			float nodeValue = network.getNode(i).value;
+			float nodeValue = creature.getNeuralNetwork().getNode(i).value;
 
 			if (nodeValue > 0)
 			{

@@ -7,7 +7,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	this->totalConnections = totalConnections;
 
 	node			 = new Node[totalNodes];
-	inputNode		 = new Node*[totalInputNodes];
+	inputNode		 = new Node *[totalInputNodes];
 	this->connection = new Connection[totalConnections];
 
 	// link input node pointers to actual nodes
@@ -34,7 +34,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	{
 		if (node[i].parents)
 		{
-			node[i].parent = new Node*[node[i].parents];
+			node[i].parent = new Node *[node[i].parents];
 			node[i].weight = new float[node[i].parents];
 
 			int setParents = 0;
@@ -60,7 +60,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		}
 	}
 
-	nodeCalculationOrder = new Node*[connectedNodes];
+	nodeCalculationOrder = new Node *[connectedNodes];
 
 	for (int i = totalInputNodes; i < totalNodes; i++)
 	{
@@ -122,6 +122,11 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		}
 	}
 
+	for (int i = 0; i < totalNodes; i++)
+	{
+		node[i].value = 0;
+	}
+
 	return;
 }
 
@@ -146,7 +151,8 @@ void NeuralNetwork::update()
 	{
 		for (int x = 0; x < nodeCalculationOrder[i]->parents; x++)
 		{
-			nodeCalculationOrder[i]->value += nodeCalculationOrder[i]->parent[x]->value * nodeCalculationOrder[i]->weight[x];
+			nodeCalculationOrder[i]->value +=
+				nodeCalculationOrder[i]->parent[x]->value * nodeCalculationOrder[i]->weight[x];
 		}
 
 		nodeCalculationOrder[i]->value = tanh(nodeCalculationOrder[i]->value);
@@ -158,7 +164,7 @@ void NeuralNetwork::update()
 void NeuralNetwork::destroy()
 {
 	// free memory in nodes
-	for(int i = 0; i < totalNodes; i++)
+	for (int i = 0; i < totalNodes; i++)
 	{
 		delete[] node[i].weight;
 		delete[] node[i].parent;
