@@ -82,13 +82,7 @@ void Creature::update()
 	position.x += velocity.x;
 	position.y += velocity.y;
 
-	printf("spd %f\n", speed);
-	printf("rot %f\n", rotation);
-	printf("vel %f %f\n", velocity.x, velocity.y);
-	printf("pos %f %f\n", position.x, position.y);
-	printf("\n");
-
-	return;
+return;
 }
 
 NeuralNetwork Creature::getNeuralNetwork()
@@ -103,7 +97,7 @@ agl::Vec2f Creature::getPosition()
 
 float Creature::getRotation()
 {
-	return rotation;
+	return -rotation * 180 / 3.14159;
 }
 
 int main()
@@ -148,10 +142,11 @@ int main()
 
 	Creature creature;
 
-	agl::Circle creatureShape(10);
+	agl::Rectangle creatureShape;
 	creatureShape.setTexture(&blank);
 	creatureShape.setColor(agl::Color::White);
 	creatureShape.setSize({25, 25, 0});
+	creatureShape.setOffset({-12.5, -12.5, 0});
 
 	while (!event.windowClose())
 	{
@@ -164,7 +159,10 @@ int main()
 
 		window.clear();
 
+		printf("%f\n", creature.getRotation());
+
 		creatureShape.setPosition(creature.getPosition());
+		creatureShape.setRotation({0, 0, creature.getRotation()});
 		window.drawShape(creatureShape);
 
 		window.drawShape(background);
@@ -219,6 +217,8 @@ int main()
 			connectionShape.setPosition(start);
 			window.drawShape(connectionShape);
 		}
+		
+
 
 		for (int i = 0; i < creature.getNeuralNetwork().getTotalNodes(); i++)
 		{
