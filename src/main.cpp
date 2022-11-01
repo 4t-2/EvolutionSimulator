@@ -2,18 +2,23 @@
 
 #include "../inc/NeuralNetwork.hpp"
 #include "../inc/Creature.hpp"
+#include "../inc/Food.hpp"
 
+#include <cstdlib>
+#include <ctime>
 #include <math.h>
+
+#define TOTAL_FOOD 10
 
 #define BASE_B_VALUE 63
 
 #define WIDTH  1920
 #define HEIGHT 1080
 
-
-
 int main()
 {
+	srand(time(NULL));
+
 	agl::RenderWindow window;
 	window.setup({WIDTH, HEIGHT}, "EvolutionSimulator");
 	window.setClearColor(agl::Color::Black);
@@ -52,6 +57,17 @@ int main()
 
 	float addAmount = 0.01;
 
+	Food food[TOTAL_FOOD];	
+	for(int i = 0; i < TOTAL_FOOD; i++)
+	{
+		food[i].position = {(float)rand() / (float)RAND_MAX * WIDTH, (float)rand() / (float)RAND_MAX * HEIGHT};
+	}
+
+	agl::Circle foodShape(10);
+	foodShape.setTexture(&blank);
+	foodShape.setColor(agl::Color::Green);
+	foodShape.setSize({10, 10, 0});
+
 	Creature creature;
 	creature.setPosition({(float)WIDTH / 2, (float)HEIGHT / 2});
 	creature.setWorldSize({WIDTH, HEIGHT});
@@ -69,15 +85,19 @@ int main()
 		event.pollWindow();
 		event.pollKeyboard();
 
-		creature.update();
+		creature.update(food, TOTAL_FOOD);
 
 		window.clear();
-
-		printf("%f\n", creature.getRotation());
 
 		creatureShape.setPosition(creature.getPosition());
 		creatureShape.setRotation({0, 0, creature.getRotation()});
 		window.drawShape(creatureShape);
+
+		for(int i = 0; i < TOTAL_FOOD; i++)
+		{
+			foodShape.setPosition({food[i].position.x, food[i].position.y, -1});
+			window.drawShape(foodShape);
+		}
 
 		window.drawShape(background);
 

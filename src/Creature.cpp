@@ -32,7 +32,7 @@ void Creature::setWorldSize(agl::Vec2f worldSize)
 	return;
 }
 
-void Creature::update()
+void Creature::update(Food *food, int totalFood)
 {
 	network->setInputNode(0, (position.x / worldSize.x * 2)-1);
 

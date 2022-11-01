@@ -2,6 +2,7 @@
 
 #include "NeuralNetwork.hpp"
 #include "../lib/AGL/agl.hpp"
+#include "Food.hpp"
 
 class Creature
 {
@@ -23,7 +24,7 @@ class Creature
 		void setPosition(agl::Vec2f position);
 		void setWorldSize(agl::Vec2f worldSize);
 
-		void update();
+		void update(Food *food, int totalFood);
 
 		NeuralNetwork getNeuralNetwork();
 		agl::Vec2f	  getPosition();
