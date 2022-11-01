@@ -1,6 +1,7 @@
 #include "../lib/AGL/agl.hpp"
 
 #include "../inc/NeuralNetwork.hpp"
+#include "../inc/Creature.hpp"
 
 #include <math.h>
 
@@ -9,96 +10,7 @@
 #define WIDTH  1920
 #define HEIGHT 1080
 
-class Creature
-{
-	private:
-		agl::Vec2f position = {(float)WIDTH / 2, (float)HEIGHT / 2};
-		agl::Vec2f velocity = {0, 0};
-		float	   rotation = 0;
 
-		// first 2 neurons are input
-		// next 3 are output
-		// rest are hidden
-		NeuralNetwork *network;
-
-	public:
-		Creature();
-
-		void update();
-
-
-
-		NeuralNetwork getNeuralNetwork();
-		agl::Vec2f	  getPosition();
-		float		  getRotation();
-};
-
-Creature::Creature()
-{
-	Connection connection[2];
-
-	connection[0].startNode = 0;
-	connection[0].endNode	= 3;
-	connection[0].weight	= 0.1;
-
-	connection[1].startNode = 0;
-	connection[1].endNode	= 4;
-	connection[1].weight	= -0.1;
-
-
-	network = new NeuralNetwork(5, 2, connection, 2);
-
-	return;
-}
-
-void Creature::update()
-{
-	network->setInputNode(0, (position.x / WIDTH * 2)-1);
-
-	network->update();
-
-	velocity = {0, 0};
-
-	float speed = 2.5;
-
-	// if (network->getNode(2).value > 0.5)
-	// {
-	// 	speed = 2.5;
-	// }
-
-	if (network->getNode(3).value > 0.5)
-	{
-		rotation += 0.05;
-	}
-
-	if (network->getNode(4).value > 0.5)
-	{
-		rotation -= 0.05;
-	}
-
-	velocity.x = cos(rotation) * speed;
-	velocity.y = sin(rotation) * speed;
-
-	position.x += velocity.x;
-	position.y += velocity.y;
-
-return;
-}
-
-NeuralNetwork Creature::getNeuralNetwork()
-{
-	return *network;
-}
-
-agl::Vec2f Creature::getPosition()
-{
-	return position;
-}
-
-float Creature::getRotation()
-{
-	return -rotation * 180 / 3.14159;
-}
 
 int main()
 {
@@ -141,6 +53,8 @@ int main()
 	float addAmount = 0.01;
 
 	Creature creature;
+	creature.setPosition({(float)WIDTH / 2, (float)HEIGHT / 2});
+	creature.setWorldSize({WIDTH, HEIGHT});
 
 	agl::Rectangle creatureShape;
 	creatureShape.setTexture(&blank);
