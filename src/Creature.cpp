@@ -6,12 +6,11 @@ Creature::Creature()
 
 	connection[0].startNode = 0;
 	connection[0].endNode	= 3;
-	connection[0].weight	= 0.1;
+	connection[0].weight	= 1;
 
 	connection[1].startNode = 0;
 	connection[1].endNode	= 4;
 	connection[1].weight	= -0.1;
-
 
 	network = new NeuralNetwork(5, 2, connection, 2);
 
@@ -34,7 +33,37 @@ void Creature::setWorldSize(agl::Vec2f worldSize)
 
 void Creature::update(Food *food, int totalFood)
 {
-	network->setInputNode(0, (position.x / worldSize.x * 2)-1);
+	Food *closestFood = &food[0];
+
+	agl::Vec2f foodOffset	= {position.x - closestFood->position.x, position.y - closestFood->position.y};
+	float	   foodDistance = sqrt((foodOffset.x * foodOffset.x) + (foodOffset.y * foodOffset.y));
+
+	for (int i = 1; i < totalFood; i++)
+	{
+		agl::Vec2f newOffset   = {position.x - food[i].position.x, position.y - food[i].position.y};
+		float	   newDistance = sqrt((newOffset.x * newOffset.x) + (newOffset.y * newOffset.y));
+
+		if (newDistance < foodDistance)
+		{
+			foodDistance = newDistance;
+			foodOffset	 = newOffset;
+			closestFood	 = &food[i];
+		}
+	}
+
+	float foodAngle = atan(foodOffset.y / foodOffset.x);
+
+	if (foodOffset.y < 0 && foodOffset.x > 0)
+	{
+		foodAngle += 3.14159;
+	}
+
+	if (foodOffset.y > 0 && foodOffset.x > 0)
+	{
+		foodAngle -= 3.14159;
+	}
+
+	network->setInputNode(0, foodAngle / 3.14159);
 
 	network->update();
 
@@ -42,20 +71,7 @@ void Creature::update(Food *food, int totalFood)
 
 	float speed = 2.5;
 
-	// if (network->getNode(2).value > 0.5)
-	// {
-	// 	speed = 2.5;
-	// }
-
-	if (network->getNode(3).value > 0.5)
-	{
-		rotation += 0.05;
-	}
-
-	if (network->getNode(4).value > 0.5)
-	{
-		rotation -= 0.05;
-	}
+	rotation += 0.05 * network->getNode(3).value;
 
 	velocity.x = cos(rotation) * speed;
 	velocity.y = sin(rotation) * speed;
@@ -63,7 +79,7 @@ void Creature::update(Food *food, int totalFood)
 	position.x += velocity.x;
 	position.y += velocity.y;
 
-return;
+	return;
 }
 
 NeuralNetwork Creature::getNeuralNetwork()
