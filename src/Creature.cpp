@@ -33,13 +33,16 @@ void Creature::setWorldSize(agl::Vec2f worldSize)
 
 void Creature::update(Food *food, int totalFood)
 {
-	Food *closestFood = &food[0];
+	agl::Vec2f foodOffset;
+	float	   foodDistance = 9999999;
 
-	agl::Vec2f foodOffset	= {position.x - closestFood->position.x, position.y - closestFood->position.y};
-	float	   foodDistance = sqrt((foodOffset.x * foodOffset.x) + (foodOffset.y * foodOffset.y));
-
-	for (int i = 1; i < totalFood; i++)
+	for (int i = 0; i < totalFood; i++)
 	{
+		if (!food[i].exists)
+		{
+			continue;
+		}
+
 		agl::Vec2f newOffset   = {position.x - food[i].position.x, position.y - food[i].position.y};
 		float	   newDistance = sqrt((newOffset.x * newOffset.x) + (newOffset.y * newOffset.y));
 
@@ -51,16 +54,16 @@ void Creature::update(Food *food, int totalFood)
 		}
 	}
 
-	float foodAngle = atan(foodOffset.y / foodOffset.x);
+	float foodAngle = atan(foodOffset.y / foodOffset.x) - rotation;
 
 	if (foodOffset.y < 0 && foodOffset.x > 0)
 	{
-		foodAngle += 3.14159;
+		foodAngle -= 3.14159;
 	}
 
 	if (foodOffset.y > 0 && foodOffset.x > 0)
 	{
-		foodAngle -= 3.14159;
+		foodAngle += 3.14159;
 	}
 
 	network->setInputNode(0, foodAngle / 3.14159);
@@ -79,6 +82,12 @@ void Creature::update(Food *food, int totalFood)
 	position.x += velocity.x;
 	position.y += velocity.y;
 
+	if (foodDistance < 25)
+	{
+		closestFood->exists = false;
+		closestFood			= &food[0];
+	}
+
 	return;
 }
 
@@ -95,4 +104,9 @@ agl::Vec2f Creature::getPosition()
 float Creature::getRotation()
 {
 	return -rotation * 180 / 3.14159;
+}
+
+Food *Creature::getClosestFood()
+{
+	return closestFood;
 }

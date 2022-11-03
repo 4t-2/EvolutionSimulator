@@ -1,8 +1,8 @@
 #pragma once
 
-#include "NeuralNetwork.hpp"
 #include "../lib/AGL/agl.hpp"
 #include "Food.hpp"
+#include "NeuralNetwork.hpp"
 
 class Creature
 {
@@ -18,9 +18,11 @@ class Creature
 		// rest are hidden
 		NeuralNetwork *network;
 
+		Food *closestFood;
+
 	public:
 		Creature();
-		
+
 		void setPosition(agl::Vec2f position);
 		void setWorldSize(agl::Vec2f worldSize);
 
@@ -29,4 +31,5 @@ class Creature
 		NeuralNetwork getNeuralNetwork();
 		agl::Vec2f	  getPosition();
 		float		  getRotation();
+		Food		 *getClosestFood();
 };

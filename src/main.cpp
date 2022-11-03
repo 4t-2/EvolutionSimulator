@@ -96,6 +96,17 @@ int main()
 
 		for(int i = 0; i < TOTAL_FOOD; i++)
 		{
+			if(!food[i].exists)
+			{
+				continue;
+			}
+
+			if(creature.getClosestFood() == &food[i])
+			{
+				foodShape.setColor(agl::Color::Magenta);
+			} else {
+				foodShape.setColor(agl::Color::Green);
+			}
 			foodShape.setPosition({food[i].position.x, food[i].position.y, -1});
 			window.drawShape(foodShape);
 		}
