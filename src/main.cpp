@@ -86,7 +86,7 @@ int main()
 		event.pollKeyboard();
 		event.pollPointer();
 
-		creature.update(food, TOTAL_FOOD);
+		creature.updateActions(food, TOTAL_FOOD);
 
 		window.clear();
 
