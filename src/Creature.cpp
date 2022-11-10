@@ -43,14 +43,14 @@ Creature::Creature()
 	return;
 }
 
-void Creature::setPosition(agl::Vec2f position)
+void Creature::setPosition(agl::Vec<float, 2> position)
 {
 	this->position = position;
 
 	return;
 }
 
-void Creature::setWorldSize(agl::Vec2f worldSize)
+void Creature::setWorldSize(agl::Vec<float, 2> worldSize)
 {
 	this->worldSize = worldSize;
 
@@ -59,7 +59,7 @@ void Creature::setWorldSize(agl::Vec2f worldSize)
 
 void Creature::updateActions(Food *food, int totalFood)
 {
-	agl::Vec2f foodOffset;
+	agl::Vec<float, 2> foodOffset;
 	float	   foodDistance = 9999999;
 
 	for (int i = 0; i < totalFood; i++)
@@ -69,7 +69,7 @@ void Creature::updateActions(Food *food, int totalFood)
 			continue;
 		}
 
-		agl::Vec2f newOffset   = {position.x - food[i].position.x, position.y - food[i].position.y};
+		agl::Vec<float, 2> newOffset   = {position.x - food[i].position.x, position.y - food[i].position.y};
 		float	   newDistance = sqrt((newOffset.x * newOffset.x) + (newOffset.y * newOffset.y));
 
 		if (newDistance < foodDistance)
@@ -151,7 +151,7 @@ NeuralNetwork Creature::getNeuralNetwork()
 	return *network;
 }
 
-agl::Vec2f Creature::getPosition()
+agl::Vec<float, 2> Creature::getPosition()
 {
 	return position;
 }

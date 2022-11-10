@@ -7,11 +7,11 @@
 class Creature
 {
 	private:
-		agl::Vec2f position = {0, 0};
-		agl::Vec2f velocity = {0, 0};
+		agl::Vec<float, 2> position = {0, 0};
+		agl::Vec<float, 2> velocity = {0, 0};
 		float	   rotation = 0;
 
-		agl::Vec2f worldSize = {0, 0};
+		agl::Vec<float, 2> worldSize = {0, 0};
 
 		// first 2 neurons are input
 		// next 3 are output
@@ -23,13 +23,13 @@ class Creature
 	public:
 		Creature();
 
-		void setPosition(agl::Vec2f position);
-		void setWorldSize(agl::Vec2f worldSize);
+		void setPosition(agl::Vec<float, 2> position);
+		void setWorldSize(agl::Vec<float, 2> worldSize);
 
 		void updateActions(Food *food, int totalFood);
 
 		NeuralNetwork getNeuralNetwork();
-		agl::Vec2f	  getPosition();
+		agl::Vec<float, 2>	  getPosition();
 		float		  getRotation();
 		Food		 *getClosestFood();
 };

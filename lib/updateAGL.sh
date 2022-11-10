@@ -1,4 +1,4 @@
-rm AGL
+rm -vrf AGL
 
 git clone https://github.com/Synteng/AGL
 
