@@ -1,7 +1,5 @@
 #include "../inc/Creature.hpp"
 
-#define TOTAL_CONNECTIONS 3
-
 Creature::Creature()
 {
 	Connection connection[TOTAL_CONNECTIONS];
@@ -24,17 +22,13 @@ Creature::Creature()
 	// y pos
 	// rotation
 	// speed
-	// nearest food rotation offset
-	// nearest food distance
-	// is there any food
-	// nearest creature rotation offset
-	// nearest creature distance
-	// is there any creature
+	// Ray[i] distance to object
+	// Ray[i] object type (-1 = creature, 0 = nothing, 1 = food)
 	//
 	// OUTPUT
 	// Move foward
 	// Move backward
-	// Turn right 
+	// Turn right
 	// Turn left
 	// Eat
 	// Lay egg
@@ -57,10 +51,10 @@ void Creature::setWorldSize(agl::Vec<float, 2> worldSize)
 	return;
 }
 
-void Creature::updateActions(Food *food, int totalFood)
+void Creature::updateNetwork(Food *food, int totalFood)
 {
 	agl::Vec<float, 2> foodOffset;
-	float	   foodDistance = 9999999;
+	foodDistance = 9999999;
 
 	for (int i = 0; i < totalFood; i++)
 	{
@@ -70,7 +64,7 @@ void Creature::updateActions(Food *food, int totalFood)
 		}
 
 		agl::Vec<float, 2> newOffset   = {position.x - food[i].position.x, position.y - food[i].position.y};
-		float	   newDistance = sqrt((newOffset.x * newOffset.x) + (newOffset.y * newOffset.y));
+		float			   newDistance = sqrt((newOffset.x * newOffset.x) + (newOffset.y * newOffset.y));
 
 		if (newDistance < foodDistance)
 		{
@@ -97,36 +91,41 @@ void Creature::updateActions(Food *food, int totalFood)
 
 	network->update();
 
+	return;
+}
+
+void Creature::updateActions(Food *food)
+{
 	velocity = {0, 0};
 
 	float speed = 0;
 
-	if(network->getNode(11).value > 0)
+	if (network->getNode(11).value > 0)
 	{
 		speed += network->getNode(0).value * 2.5;
 	}
 
-	if(network->getNode(12).value > 0)
+	if (network->getNode(12).value > 0)
 	{
 		speed -= network->getNode(0).value * 2.5;
 	}
 
-	if(network->getNode(13).value > 0)
+	if (network->getNode(13).value > 0)
 	{
 		rotation += 0.05 * network->getNode(13).value;
 	}
 
-	if(network->getNode(14).value > 0)
+	if (network->getNode(14).value > 0)
 	{
 		rotation -= 0.05 * network->getNode(14).value;
 	}
 
-	if(network->getNode(15).value > 0)
+	if (network->getNode(15).value > 0)
 	{
 		// not done yet
 	}
 
-	if(network->getNode(16).value > 0)
+	if (network->getNode(16).value > 0)
 	{
 		// not done yet
 	}
@@ -142,7 +141,6 @@ void Creature::updateActions(Food *food, int totalFood)
 		closestFood->exists = false;
 		closestFood			= &food[0];
 	}
-
 	return;
 }
 

@@ -4,6 +4,13 @@
 #include "Food.hpp"
 #include "NeuralNetwork.hpp"
 
+#define RAY_TOTAL 10
+#define RAY_LENGTH 500
+
+#define TOTAL_NODES 17
+#define TOTAL_INPUT 11
+#define TOTAL_CONNECTIONS 3
+
 class Creature
 {
 	private:
@@ -19,6 +26,7 @@ class Creature
 		NeuralNetwork *network;
 
 		Food *closestFood;
+		float foodDistance;
 
 	public:
 		Creature();
@@ -26,7 +34,8 @@ class Creature
 		void setPosition(agl::Vec<float, 2> position);
 		void setWorldSize(agl::Vec<float, 2> worldSize);
 
-		void updateActions(Food *food, int totalFood);
+		void updateNetwork(Food *food, int totalFood);
+		void updateActions(Food *food);
 
 		NeuralNetwork getNeuralNetwork();
 		agl::Vec<float, 2>	  getPosition();
