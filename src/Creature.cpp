@@ -1,5 +1,10 @@
 #include "../inc/Creature.hpp"
 
+float hypotenuse(agl::Vec<float, 2>xy)
+{
+	return sqrt((xy.x * xy.x) + (xy.y * xy.y));
+}
+
 Creature::Creature()
 {
 	Connection connection[TOTAL_CONNECTIONS];
@@ -63,8 +68,8 @@ void Creature::updateNetwork(Food *food, int totalFood)
 			continue;
 		}
 
-		agl::Vec<float, 2> newOffset   = {position.x - food[i].position.x, position.y - food[i].position.y};
-		float			   newDistance = sqrt((newOffset.x * newOffset.x) + (newOffset.y * newOffset.y));
+		agl::Vec<float, 2> newOffset   = position - food[i].position;
+		float			   newDistance = hypotenuse(newOffset);
 
 		if (newDistance < foodDistance)
 		{
@@ -100,34 +105,34 @@ void Creature::updateActions(Food *food)
 
 	float speed = 0;
 
-	if (network->getNode(11).value > 0)
+	if (network->getNode(TOTAL_INPUT + 0).value > 0)
 	{
 		speed += network->getNode(0).value * 2.5;
 	}
 
-	if (network->getNode(12).value > 0)
+	if (network->getNode(TOTAL_INPUT + 1).value > 0)
 	{
 		speed -= network->getNode(0).value * 2.5;
 	}
 
-	if (network->getNode(13).value > 0)
+	if (network->getNode(TOTAL_INPUT + 2).value > 0)
 	{
 		rotation += 0.05 * network->getNode(13).value;
 	}
 
-	if (network->getNode(14).value > 0)
+	if (network->getNode(TOTAL_INPUT + 3).value > 0)
 	{
 		rotation -= 0.05 * network->getNode(14).value;
 	}
 
-	if (network->getNode(15).value > 0)
+	if (network->getNode(TOTAL_INPUT + 4).value > 0)
 	{
-		// not done yet
+		eating = true;
 	}
 
-	if (network->getNode(16).value > 0)
+	if (network->getNode(TOTAL_INPUT + 5).value > 0)
 	{
-		// not done yet
+		layingEgg = true;
 	}
 
 	velocity.x = cos(rotation) * speed;
@@ -162,4 +167,14 @@ float Creature::getRotation()
 Food *Creature::getClosestFood()
 {
 	return closestFood;
+}
+
+bool Creature::getEating()
+{
+	return eating;
+}
+
+bool Creature::getLayingEgg()
+{
+	return layingEgg;
 }

@@ -1,8 +1,6 @@
 #include "../lib/AGL/agl.hpp"
 
-#include "../inc/NeuralNetwork.hpp"
-#include "../inc/Creature.hpp"
-#include "../inc/Food.hpp"
+#include "../inc/Simulation.hpp"
 
 #include <cstdlib>
 #include <ctime>
@@ -17,8 +15,6 @@
 
 int main()
 {
-	srand(time(NULL));
-
 	agl::RenderWindow window;
 	window.setup({WIDTH, HEIGHT}, "EvolutionSimulator");
 	window.setClearColor(agl::Color::Black);
@@ -48,35 +44,28 @@ int main()
 	connectionShape.setTexture(&blank);
 	connectionShape.setColor(agl::Color::Red);
 	connectionShape.setSize(agl::Vec<float, 3>{1, 50, 2});
-	
+
 	agl::Circle background(6);
 	background.setTexture(&blank);
 	background.setColor({15, 15, 15});
 	background.setPosition(agl::Vec<float, 3>{150, 150, -1});
 	background.setSize(agl::Vec<float, 3>{150, 150, 1});
 
-	float addAmount = 0.01;
-
-	Food food[TOTAL_FOOD];	
-	for(int i = 0; i < TOTAL_FOOD; i++)
-	{
-		food[i].position = {(float)rand() / (float)RAND_MAX * WIDTH, (float)rand() / (float)RAND_MAX * HEIGHT};
-	}
-
 	agl::Circle foodShape(10);
 	foodShape.setTexture(&blank);
 	foodShape.setColor(agl::Color::Green);
 	foodShape.setSize(agl::Vec<float, 3>{10, 10, 0});
-
-	Creature creature;
-	creature.setPosition({(float)WIDTH / 2, (float)HEIGHT / 2});
-	creature.setWorldSize({WIDTH, HEIGHT});
 
 	agl::Rectangle creatureShape;
 	creatureShape.setTexture(&blank);
 	creatureShape.setColor(agl::Color::White);
 	creatureShape.setSize(agl::Vec<float, 3>{25, 25, 0});
 	creatureShape.setOffset(agl::Vec<float, 3>{-12.5, -12.5, 0});
+
+	Simulation simulation({WIDTH, HEIGHT}, 1, 10);
+
+	Creature *creature = simulation.getCreature();
+	Food	 *food	   = simulation.getFood();
 
 	while (!event.windowClose())
 	{
@@ -86,43 +75,50 @@ int main()
 		event.pollKeyboard();
 		event.pollPointer();
 
-		creature.updateNetwork(food, TOTAL_FOOD);
-		creature.updateActions(food);
+		simulation.updateCreatures();
+		simulation.updateFood();
 
 		window.clear();
 
-		creatureShape.setPosition(creature.getPosition());
-		creatureShape.setRotation(agl::Vec<float, 3>{0, 0, creature.getRotation()});
+		creatureShape.setPosition(creature->getPosition());
+		creatureShape.setRotation(agl::Vec<float, 3>{0, 0, creature->getRotation()});
 		window.drawShape(creatureShape);
 
-		for(int i = 0; i < TOTAL_FOOD; i++)
+		// AGL rendering
+
+		// Draw food
+		for (int i = 0; i < TOTAL_FOOD; i++)
 		{
-			if(!food[i].exists)
+			if (!food[i].exists)
 			{
 				continue;
 			}
 
-			if(creature.getClosestFood() == &food[i])
+			if (creature->getClosestFood() == &food[i])
 			{
 				foodShape.setColor(agl::Color::Magenta);
-			} else {
+			}
+			else
+			{
 				foodShape.setColor(agl::Color::Green);
 			}
 			foodShape.setPosition(agl::Vec<float, 3>{food[i].position.x, food[i].position.y, -1});
 			window.drawShape(foodShape);
 		}
 
+		// draw background
 		window.drawShape(background);
 
-		for (int i = 0; i < creature.getNeuralNetwork().getTotalConnections(); i++)
+		// draw node connections
+		for (int i = 0; i < creature->getNeuralNetwork().getTotalConnections(); i++)
 		{
 			agl::Vec<float, 3> start = {0, 0, 2};
 			agl::Vec<float, 3> end;
 			agl::Vec<float, 3> offset;
 
 			{
-				float angle = (360. / creature.getNeuralNetwork().getTotalNodes()) *
-							  (creature.getNeuralNetwork().getConnection(i).startNode + 1);
+				float angle = (360. / creature->getNeuralNetwork().getTotalNodes()) *
+							  (creature->getNeuralNetwork().getConnection(i).startNode + 1);
 
 				float x = cos(angle * (3.14159 / 180));
 				float y = sin(angle * (3.14159 / 180));
@@ -132,8 +128,8 @@ int main()
 			}
 
 			{
-				float angle = (360. / creature.getNeuralNetwork().getTotalNodes()) *
-							  (creature.getNeuralNetwork().getConnection(i).endNode + 1);
+				float angle = (360. / creature->getNeuralNetwork().getTotalNodes()) *
+							  (creature->getNeuralNetwork().getConnection(i).endNode + 1);
 
 				float x = cos(angle * (3.14159 / 180));
 				float y = sin(angle * (3.14159 / 180));
@@ -150,7 +146,7 @@ int main()
 			float angle = acos(offset.x / length) * (180 / 3.14159);
 			connectionShape.setRotation(agl::Vec<float, 3>{0, 0, angle + 90});
 
-			float weight = creature.getNeuralNetwork().getConnection(i).weight;
+			float weight = creature->getNeuralNetwork().getConnection(i).weight;
 
 			if (weight > 0)
 			{
@@ -164,12 +160,11 @@ int main()
 			connectionShape.setPosition(start);
 			window.drawShape(connectionShape);
 		}
-		
 
-
-		for (int i = 0; i < creature.getNeuralNetwork().getTotalNodes(); i++)
+		// draw nodes
+		for (int i = 0; i < creature->getNeuralNetwork().getTotalNodes(); i++)
 		{
-			float angle = (360. / creature.getNeuralNetwork().getTotalNodes()) * (i + 1);
+			float angle = (360. / creature->getNeuralNetwork().getTotalNodes()) * (i + 1);
 
 			float x = cos(angle * (3.14159 / 180));
 			float y = sin(angle * (3.14159 / 180));
@@ -185,7 +180,7 @@ int main()
 
 			nodeShape.setPosition(pos);
 
-			float nodeValue = creature.getNeuralNetwork().getNode(i).value;
+			float nodeValue = creature->getNeuralNetwork().getNode(i).value;
 
 			if (nodeValue > 0)
 			{
