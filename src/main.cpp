@@ -13,6 +13,16 @@
 #define WIDTH  1920
 #define HEIGHT 1080
 
+agl::Vec<float, 3> Vec2fVec3f(agl::Vec<float, 2> vec)
+{
+	agl::Vec<float, 3> newVec;
+
+	newVec.x = vec.x;
+	newVec.y = vec.y;
+
+	return newVec;
+}
+
 int main()
 {
 	agl::RenderWindow window;
@@ -62,6 +72,12 @@ int main()
 	creatureShape.setSize(agl::Vec<float, 3>{25, 25, 0});
 	creatureShape.setOffset(agl::Vec<float, 3>{-12.5, -12.5, 0});
 
+	agl::Rectangle rayShape;
+	rayShape.setTexture(&blank);
+	rayShape.setColor(agl::Color::White);
+	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH, -1});
+	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, 0});
+
 	Simulation simulation({WIDTH, HEIGHT}, 1, 10);
 
 	Creature *creature = simulation.getCreature();
@@ -75,16 +91,34 @@ int main()
 		event.pollKeyboard();
 		event.pollPointer();
 
-		simulation.updateCreatures();
-		simulation.updateFood();
+		if (!event.isKeyPressed(XK_space))
+		{
+			simulation.updateCreatures();
+			simulation.updateFood();
+		}
 
 		window.clear();
 
+		// AGL rendering
+
+		// draw creature
 		creatureShape.setPosition(creature->getPosition());
 		creatureShape.setRotation(agl::Vec<float, 3>{0, 0, creature->getRotation()});
 		window.drawShape(creatureShape);
 
-		// AGL rendering
+		// draw rays
+		for (int i = 0; i < RAY_TOTAL; i++)
+		{
+			float angleOffset = (i / ((float)RAY_TOTAL - 1)) * 180;
+
+			float weight = creature->getNeuralNetwork().getNode(i + 5).value;
+
+			rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
+
+			rayShape.setPosition(creature->getPosition());
+			rayShape.setRotation(agl::Vec<float, 3>{0, 0, creature->getRotation() + angleOffset});
+			window.drawShape(rayShape);
+		}
 
 		// Draw food
 		for (int i = 0; i < TOTAL_FOOD; i++)
@@ -94,7 +128,7 @@ int main()
 				continue;
 			}
 
-			if (creature->getClosestFood() == &food[i])
+			if (creature->closest == i)
 			{
 				foodShape.setColor(agl::Color::Magenta);
 			}
@@ -112,35 +146,21 @@ int main()
 		// draw node connections
 		for (int i = 0; i < creature->getNeuralNetwork().getTotalConnections(); i++)
 		{
-			agl::Vec<float, 3> start = {0, 0, 2};
-			agl::Vec<float, 3> end;
-			agl::Vec<float, 3> offset;
+			float startAngle = (360. / creature->getNeuralNetwork().getTotalNodes()) *
+							   (creature->getNeuralNetwork().getConnection(i).startNode + 1);
+			agl::Vec<float, 3> start = Vec2fVec3f(agl::pointOnCircle(agl::degreeToRadian(startAngle)));
+			start.x					 = (start.x * 100) + 150;
+			start.y					 = (start.y * 100) + 150;
 
-			{
-				float angle = (360. / creature->getNeuralNetwork().getTotalNodes()) *
-							  (creature->getNeuralNetwork().getConnection(i).startNode + 1);
+			float endAngle = (360. / creature->getNeuralNetwork().getTotalNodes()) *
+							 (creature->getNeuralNetwork().getConnection(i).endNode + 1);
+			agl::Vec<float, 3> end = Vec2fVec3f(agl::pointOnCircle(agl::degreeToRadian(endAngle)));
+			end.x				   = (end.x * 100) + 150;
+			end.y				   = (end.y * 100) + 150;
 
-				float x = cos(angle * (3.14159 / 180));
-				float y = sin(angle * (3.14159 / 180));
+			agl::Vec<float, 3> offset = end - start;
 
-				start.x = (x * 100) + 150;
-				start.y = (y * 100) + 150;
-			}
-
-			{
-				float angle = (360. / creature->getNeuralNetwork().getTotalNodes()) *
-							  (creature->getNeuralNetwork().getConnection(i).endNode + 1);
-
-				float x = cos(angle * (3.14159 / 180));
-				float y = sin(angle * (3.14159 / 180));
-
-				end.x = (x * 100) + 150;
-				end.y = (y * 100) + 150;
-			}
-
-			offset = end - start;
-
-			float length = sqrt((offset.x * offset.x) + (offset.y * offset.y));
+			float length = offset.length();
 			connectionShape.setSize(agl::Vec<float, 3>{2, length, 0});
 
 			float angle = acos(offset.x / length) * (180 / 3.14159);

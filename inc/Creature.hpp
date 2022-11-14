@@ -7,9 +7,11 @@
 #define RAY_TOTAL  10
 #define RAY_LENGTH 500
 
-#define TOTAL_NODES		  17
-#define TOTAL_INPUT		  11
-#define TOTAL_CONNECTIONS 3
+#define TOTAL_INPUT	 (5 + (RAY_TOTAL * 2))
+#define TOTAL_HIDDEN 6
+#define TOTAL_NODES	 (TOTAL_INPUT + TOTAL_HIDDEN)
+
+#define TOTAL_CONNECTIONS 1
 
 class Creature
 {
@@ -24,13 +26,13 @@ class Creature
 
 		NeuralNetwork *network;
 
-		Food *closestFood;
-		float foodDistance;
-
-		bool eating	 = false;
+		bool eating	   = false;
 		bool layingEgg = false;
 
 	public:
+		float closest;
+		float closestAngle;
+
 		Creature();
 
 		void setPosition(agl::Vec<float, 2> position);
@@ -42,7 +44,6 @@ class Creature
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();
 		float			   getRotation();
-		Food			  *getClosestFood();
 		bool			   getEating();
 		bool			   getLayingEgg();
 };

@@ -1,6 +1,6 @@
 #include "../inc/Creature.hpp"
 
-float hypotenuse(agl::Vec<float, 2>xy)
+float hypotenuse(agl::Vec<float, 2> xy)
 {
 	return sqrt((xy.x * xy.x) + (xy.y * xy.y));
 }
@@ -10,16 +10,8 @@ Creature::Creature()
 	Connection connection[TOTAL_CONNECTIONS];
 
 	connection[0].startNode = 0;
-	connection[0].endNode	= 11;
+	connection[0].endNode	= TOTAL_INPUT + 0;
 	connection[0].weight	= 1;
-
-	connection[1].startNode = 5;
-	connection[1].endNode	= 13;
-	connection[1].weight	= 1;
-
-	connection[2].startNode = 5;
-	connection[2].endNode	= 14;
-	connection[2].weight	= -1;
 
 	// INPUT
 	// constant
@@ -37,7 +29,7 @@ Creature::Creature()
 	// Turn left
 	// Eat
 	// Lay egg
-	network = new NeuralNetwork(17, 11, connection, TOTAL_CONNECTIONS);
+	network = new NeuralNetwork(TOTAL_NODES, 5 + (RAY_TOTAL * 2), connection, TOTAL_CONNECTIONS);
 
 	return;
 }
@@ -58,41 +50,46 @@ void Creature::setWorldSize(agl::Vec<float, 2> worldSize)
 
 void Creature::updateNetwork(Food *food, int totalFood)
 {
-	agl::Vec<float, 2> foodOffset;
-	foodDistance = 9999999;
-
-	for (int i = 0; i < totalFood; i++)
+	for (int x = 0; x < RAY_TOTAL; x++)
 	{
-		if (!food[i].exists)
+		float nearestDistance = RAY_LENGTH;
+
+		for (int i = 0; i < totalFood; i++)
 		{
-			continue;
+			agl::Vec<float, 2> offset	= position - food[i].position;
+			float			   distance = offset.length();
+
+			if (distance > nearestDistance)
+			{
+				continue;
+			}
+
+			float rayOffset		 = ((float)x / (RAY_TOTAL - 1) * 180);
+			float creatureOffset = agl::radianToDegree(rotation);
+
+			agl::Vec<float, 2> normalOffset = offset.normalize();
+			float			   foodAngle	= agl::radianToDegree(sin(normalOffset.x));
+
+			if (offset.y > 0)
+			{
+				foodAngle = (-foodAngle) - 90;
+			}
+			else
+			{
+				foodAngle = foodAngle + 90;
+			}
+
+			if ((-creatureOffset + foodAngle) > ((-creatureOffset + rayOffset) - 10) &&
+				(-creatureOffset + foodAngle) < ((-creatureOffset + rayOffset) + 10))
+			{
+				nearestDistance = distance;
+			}
 		}
 
-		agl::Vec<float, 2> newOffset   = position - food[i].position;
-		float			   newDistance = hypotenuse(newOffset);
-
-		if (newDistance < foodDistance)
-		{
-			foodDistance = newDistance;
-			foodOffset	 = newOffset;
-			closestFood	 = &food[i];
-		}
-	}
-
-	float foodAngle = atan(foodOffset.y / foodOffset.x) - rotation;
-
-	if (foodOffset.y < 0 && foodOffset.x > 0)
-	{
-		foodAngle += 3.14159;
-	}
-
-	if (foodOffset.y > 0 && foodOffset.x > 0)
-	{
-		foodAngle -= 3.14159;
+		network->setInputNode((x + 5), (RAY_LENGTH - nearestDistance) / RAY_LENGTH);
 	}
 
 	network->setInputNode(0, 1);
-	network->setInputNode(5, foodAngle / 3.14159);
 
 	network->update();
 
@@ -140,12 +137,6 @@ void Creature::updateActions(Food *food)
 
 	position.x += velocity.x;
 	position.y += velocity.y;
-
-	if (foodDistance < 25)
-	{
-		closestFood->exists = false;
-		closestFood			= &food[0];
-	}
 	return;
 }
 
@@ -162,11 +153,6 @@ agl::Vec<float, 2> Creature::getPosition()
 float Creature::getRotation()
 {
 	return -rotation * 180 / 3.14159;
-}
-
-Food *Creature::getClosestFood()
-{
-	return closestFood;
 }
 
 bool Creature::getEating()
