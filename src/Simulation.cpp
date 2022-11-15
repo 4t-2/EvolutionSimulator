@@ -57,3 +57,13 @@ Food *Simulation::getFood()
 {
 	return food;
 }
+
+int Simulation::getTotalFood()
+{
+	return totalFood;
+}
+
+int Simulation::getTotalCreatures()
+{
+	return totalCreatures;
+}

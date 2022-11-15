@@ -23,4 +23,7 @@ class Simulation
 
 		Creature *getCreature();
 		Food *getFood();
+
+		int getTotalFood();
+		int getTotalCreatures();
 };

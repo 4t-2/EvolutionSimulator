@@ -78,7 +78,7 @@ int main()
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH, -1});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, 0});
 
-	Simulation simulation({WIDTH, HEIGHT}, 1, 10);
+	Simulation simulation({WIDTH, HEIGHT}, 1, 1);
 
 	Creature *creature = simulation.getCreature();
 	Food	 *food	   = simulation.getFood();
@@ -96,6 +96,9 @@ int main()
 			simulation.updateCreatures();
 			simulation.updateFood();
 		}
+
+		agl::Vec<int, 2> pos = event.getPointerWindowPosition();
+		food[0].position = {(float)pos.x, (float)pos.y};
 
 		window.clear();
 
@@ -121,21 +124,14 @@ int main()
 		}
 
 		// Draw food
-		for (int i = 0; i < TOTAL_FOOD; i++)
+		for (int i = 0; i < simulation.getTotalFood(); i++)
 		{
 			if (!food[i].exists)
 			{
 				continue;
 			}
 
-			if (creature->closest == i)
-			{
-				foodShape.setColor(agl::Color::Magenta);
-			}
-			else
-			{
-				foodShape.setColor(agl::Color::Green);
-			}
+			foodShape.setColor(agl::Color::Green);
 			foodShape.setPosition(agl::Vec<float, 3>{food[i].position.x, food[i].position.y, -1});
 			window.drawShape(foodShape);
 		}

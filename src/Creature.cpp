@@ -11,7 +11,7 @@ Creature::Creature()
 
 	connection[0].startNode = 0;
 	connection[0].endNode	= TOTAL_INPUT + 0;
-	connection[0].weight	= 1;
+	connection[0].weight	= 0;
 
 	// INPUT
 	// constant
@@ -48,6 +48,27 @@ void Creature::setWorldSize(agl::Vec<float, 2> worldSize)
 	return;
 }
 
+float vectorAngle(agl::Vec<float, 2> vec)
+{
+	float angle = atan(vec.x / vec.y);
+
+	if (vec.y < 0)
+	{
+		angle *= -1;
+
+		if (vec.x > 0)
+		{
+			angle = PI - angle;
+		}
+		else
+		{
+			angle = -(PI + angle);
+		}
+	}
+
+	return angle;
+}
+
 void Creature::updateNetwork(Food *food, int totalFood)
 {
 	for (int x = 0; x < RAY_TOTAL; x++)
@@ -64,23 +85,17 @@ void Creature::updateNetwork(Food *food, int totalFood)
 				continue;
 			}
 
-			float rayOffset		 = ((float)x / (RAY_TOTAL - 1) * 180);
-			float creatureOffset = agl::radianToDegree(rotation);
+			float foodRotation = vectorAngle(offset);
+			float creatureAngle = rotation + (PI / 2);
+			float rayAngle = (((float)x / RAY_TOTAL) * PI);
 
-			agl::Vec<float, 2> normalOffset = offset.normalize();
-			float			   foodAngle	= agl::radianToDegree(sin(normalOffset.x));
+			foodRotation += creatureAngle;
+			rayAngle += creatureAngle;
 
-			if (offset.y > 0)
-			{
-				foodAngle = (-foodAngle) - 90;
-			}
-			else
-			{
-				foodAngle = foodAngle + 90;
-			}
+			float angleDifference = foodRotation - rayAngle;
+			float maxAngleDifference = (PI / RAY_TOTAL) / 2;
 
-			if ((-creatureOffset + foodAngle) > ((-creatureOffset + rayOffset) - 10) &&
-				(-creatureOffset + foodAngle) < ((-creatureOffset + rayOffset) + 10))
+			if(angleDifference < maxAngleDifference && angleDifference > -maxAngleDifference)
 			{
 				nearestDistance = distance;
 			}
