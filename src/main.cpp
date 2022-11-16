@@ -78,7 +78,7 @@ int main()
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH, -1});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, 0});
 
-	Simulation simulation({WIDTH, HEIGHT}, 1, 1);
+	Simulation simulation({WIDTH, HEIGHT}, 1, 10);
 
 	Creature *creature = simulation.getCreature();
 	Food	 *food	   = simulation.getFood();
@@ -97,9 +97,6 @@ int main()
 			simulation.updateFood();
 		}
 
-		agl::Vec<int, 2> pos = event.getPointerWindowPosition();
-		food[0].position = {(float)pos.x, (float)pos.y};
-
 		window.clear();
 
 		// AGL rendering
@@ -112,7 +109,7 @@ int main()
 		// draw rays
 		for (int i = 0; i < RAY_TOTAL; i++)
 		{
-			float angleOffset = (i / ((float)RAY_TOTAL - 1)) * 180;
+			float angleOffset = ((i / ((float)RAY_TOTAL - 1)) * 180) + 90;
 
 			float weight = creature->getNeuralNetwork().getNode(i + 5).value;
 
