@@ -34,12 +34,15 @@ class Creature
 		float closestAngle;
 
 		Creature();
+		Creature(char data[TOTAL_CONNECTIONS * 3]);
 
 		void setPosition(agl::Vec<float, 2> position);
 		void setWorldSize(agl::Vec<float, 2> worldSize);
 
 		void updateNetwork(Food *food, int totalFood);
 		void updateActions(Food *food);
+
+		void saveData(char buffer[TOTAL_CONNECTIONS * 3]);
 
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();

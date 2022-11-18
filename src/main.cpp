@@ -83,6 +83,24 @@ int main()
 	Creature *creature = simulation.getCreature();
 	Food	 *food	   = simulation.getFood();
 
+	char buffer[TOTAL_CONNECTIONS * 3];
+	creature->saveData(buffer);
+
+	delete creature;
+	creature = new Creature(buffer);
+
+	creature->setPosition({500, 500});
+	creature->setWorldSize({1920, 1080});
+
+	creature->saveData(buffer);
+
+	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
+	{
+		printf("%d ", buffer[(i * 3) + 0]);
+		printf("%d ", buffer[(i * 3) + 1]);
+		printf("%d\n", buffer[(i * 3) + 2]);
+	}
+
 	while (!event.windowClose())
 	{
 		window.updateMvp(camera);

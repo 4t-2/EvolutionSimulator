@@ -73,6 +73,38 @@ Creature::Creature()
 	return;
 }
 
+Creature::Creature(char data[TOTAL_CONNECTIONS * 3])
+{
+	Connection connection[TOTAL_CONNECTIONS];
+
+	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
+	{
+		connection[i].startNode = data[(i * 3) + 0];
+		connection[i].endNode	= data[(i * 3) + 1];
+		connection[i].weight	= (float)data[(i * 3) + 2] / 127;
+	}
+
+	// INPUT
+	// constant
+	// x pos
+	// y pos
+	// rotation
+	// speed
+	// Ray[i] distance to object
+	// Ray[i] object type (-1 = creature, 0 = nothing, 1 = food)
+	//
+	// OUTPUT
+	// Move foward
+	// Move backward
+	// Turn right
+	// Turn left
+	// Eat
+	// Lay egg
+	network = new NeuralNetwork(TOTAL_NODES, 5 + RAY_TOTAL, connection, TOTAL_CONNECTIONS);
+
+	return;
+}
+
 void Creature::setPosition(agl::Vec<float, 2> position)
 {
 	this->position = position;
@@ -173,6 +205,16 @@ void Creature::updateActions(Food *food)
 	position.y += velocity.y;
 
 	return;
+}
+
+void Creature::saveData(char buffer[TOTAL_CONNECTIONS * 3])
+{
+	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
+	{
+		buffer[(i * 3) + 0] = network->getConnection(i).startNode;
+		buffer[(i * 3) + 1] = network->getConnection(i).endNode;
+		buffer[(i * 3) + 2] = 127 * network->getConnection(i).weight;
+	}
 }
 
 NeuralNetwork Creature::getNeuralNetwork()
