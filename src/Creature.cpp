@@ -217,6 +217,17 @@ void Creature::saveData(char buffer[TOTAL_CONNECTIONS * 3])
 	}
 }
 
+void Creature::mutateData(char buffer[TOTAL_CONNECTIONS * 3])
+{
+	for (int i = 0; i < TOTAL_CONNECTIONS * 3; i++)
+	{
+		int x = (((float)rand() / (float)RAND_MAX) * 8);
+		buffer[i] = buffer[i] ^ (1 << x);
+	}
+
+	return;
+}
+
 NeuralNetwork Creature::getNeuralNetwork()
 {
 	return *network;

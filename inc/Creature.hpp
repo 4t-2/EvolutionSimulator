@@ -44,6 +44,8 @@ class Creature
 
 		void saveData(char buffer[TOTAL_CONNECTIONS * 3]);
 
+		static void mutateData(char buffer[TOTAL_CONNECTIONS * 3]);
+
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();
 		float			   getRotation();

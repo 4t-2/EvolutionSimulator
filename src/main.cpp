@@ -23,6 +23,23 @@ agl::Vec<float, 3> Vec2fVec3f(agl::Vec<float, 2> vec)
 	return newVec;
 }
 
+void printBits(char buffer[TOTAL_CONNECTIONS * 3])
+{
+	for (int x = 0; x < TOTAL_CONNECTIONS * 3; x++)
+	{
+		for (int i = 0; i < 8; i++)
+		{
+			printf("%d", !!((buffer[x] << i) & 0x80));
+		}
+
+		printf(" ");
+	}
+
+	printf("\n");
+
+	return;
+}
+
 int main()
 {
 	agl::RenderWindow window;
@@ -85,6 +102,10 @@ int main()
 
 	char buffer[TOTAL_CONNECTIONS * 3];
 	creature->saveData(buffer);
+
+	printBits(buffer);
+	Creature::mutateData(buffer);
+	printBits(buffer);
 
 	delete creature;
 	creature = new Creature(buffer);
