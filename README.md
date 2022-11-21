@@ -4,20 +4,20 @@
 Run the makefile (currently linux only)
 
 ## TODO
-1. Create a system for creating neural networks
+1. Create a system for creating neural networks [DONE]
 	- Variable amounts of hidden neurons
 	- Variable amounts of neuron connections
 	- Lots of different sense neuron types (e.g position in the world)
 	- Lots of different action neuron types (e.g move foward)
 
-2. Create a way of storing the network
+2. Create a way of storing the network [DONE]
 	- able to grow in size as needed
 	- store the connections
 	first part is the starting neuron (has to either be a sense or hidden neuron)
 	second part is the ending neuron (has to either be a action of hidden neuron)
 	third is the weight (store as an int but divide it to be a value from -1 to 1)
 
-3. Create a way of controling creatures with the neural network
+3. Create a way of controling creatures with the neural network [DONE]
 	- Simple circle creatures, nothing complex yet
 
 4. Mutate and crossbreed different creatures so they can adapt
