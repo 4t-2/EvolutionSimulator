@@ -103,18 +103,6 @@ int main()
 	char buffer[TOTAL_CONNECTIONS * 3];
 	creature->saveData(buffer);
 
-	printBits(buffer);
-	Creature::mutateData(buffer);
-	printBits(buffer);
-
-	delete creature;
-	creature = new Creature(buffer);
-
-	creature->setPosition({500, 500});
-	creature->setWorldSize({1920, 1080});
-
-	creature->saveData(buffer);
-
 	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
 	{
 		printf("%d ", buffer[(i * 3) + 0]);

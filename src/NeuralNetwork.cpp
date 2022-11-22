@@ -22,11 +22,100 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		node[i].id = i;
 	}
 
+	// set connections stored to be equal to inputted ones
+	for (int i = 0; i < totalConnections; i++)
+	{
+		this->connection[i] = connection[i];
+	}
+
+	// set impossible connections as invalid (if it loops)
+	bool *validCheck = new bool[totalConnections];
+
+	for (int i = 0; i < totalConnections; i++)
+	{
+		validCheck[i] = false;
+	}
+
+	printf("exit\n");
+
+	for (bool allChecked = false; !allChecked;)
+	{
+		for (int i = 0; i < totalConnections; i++)
+		{
+			if (validCheck[i])
+			{
+				continue;
+			}
+
+			printf("testing %d\n", i);
+
+			int startNode = this->connection[i].startNode;
+
+			bool isNodeBase = true;
+
+			for (int x = 0; x < totalConnections; x++)
+			{
+				if (x == i)
+				{
+					continue;
+				}
+
+				if (this->connection[x].endNode == startNode)
+				{
+					if (validCheck[x] || !this->connection[x].valid)
+					{
+						continue;
+					}
+
+					isNodeBase = false;
+					break;
+				}
+			}
+
+			if (isNodeBase)
+			{
+				printf("%d is base\n", i);
+				for (int x = 0; x < totalConnections; x++)
+				{
+					if (x == i)
+					{
+						continue;
+					}
+
+					if (this->connection[i].endNode == this->connection[x].startNode && validCheck[x])
+					{
+						printf("%d is invalid\n", i);
+						this->connection[i].valid = false;
+					}
+				}
+				validCheck[i] = true;
+			}
+
+			printf("\n");
+		}
+
+		allChecked = true;
+
+		for (int i = 0; i < totalConnections; i++)
+		{
+			if (!validCheck[i])
+			{
+				allChecked = false;
+			}
+		}
+	}
+
+	printf("exit\n");
+
+	delete[] validCheck;
+
 	// set the amount of parents every node has according to connection
 	for (int y = 0; y < totalConnections; y++)
 	{
-		this->connection[y] = connection[y];
-		node[connection[y].endNode].parents++;
+		if (this->connection[y].valid)
+		{
+			node[this->connection[y].endNode].parents++;
+		}
 	}
 
 	// allocate memory for every node to store a pointer to its parents
@@ -41,12 +130,15 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 
 			for (int x = 0; x < totalConnections; x++)
 			{
-				if (connection[x].endNode == i)
+				if (connection[x].valid)
 				{
-					node[i].parent[setParents] = &node[connection[x].startNode];
-					node[i].weight[setParents] = connection[x].weight;
+					if (connection[x].endNode == i)
+					{
+						node[i].parent[setParents] = &node[connection[x].startNode];
+						node[i].weight[setParents] = connection[x].weight;
 
-					setParents++;
+						setParents++;
+					}
 				}
 			}
 		}
