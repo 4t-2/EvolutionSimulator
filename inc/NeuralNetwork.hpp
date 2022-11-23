@@ -20,6 +20,7 @@ class Connection
 		int	  endNode;
 		float weight;
 		bool  valid = true;
+		int	  id	= -1;
 };
 
 class NeuralNetwork

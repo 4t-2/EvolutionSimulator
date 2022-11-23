@@ -1,5 +1,38 @@
 #include "../inc/NeuralNetwork.hpp"
 
+void travelBranchForLoop(Connection *connection, int id, bool *isNodeVisited, int totalConnections, int totalNodes) // recursion hell
+{
+	isNodeVisited[connection[id].startNode] = true;
+
+	if (isNodeVisited[connection[id].endNode])
+	{
+		connection[id].valid = false;
+
+		return;
+	}
+	else
+	{
+		for (int i = 0; i < totalConnections; i++)
+		{
+			if (connection[id].endNode == connection[i].startNode)
+			{
+				bool *isNodeVisitedBranch = new bool[totalNodes];
+
+				for(int x = 0; x < totalNodes; x++)
+				{
+					isNodeVisitedBranch[x] = isNodeVisited[x];
+				}
+
+				travelBranchForLoop(connection, i, isNodeVisitedBranch, totalConnections, totalNodes);
+
+				delete[] isNodeVisitedBranch;
+			}
+		}
+	}
+
+	return;
+}
+
 NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection connection[], int totalConnections)
 {
 	this->totalNodes	   = totalNodes;
@@ -25,89 +58,54 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	// set connections stored to be equal to inputted ones
 	for (int i = 0; i < totalConnections; i++)
 	{
-		this->connection[i] = connection[i];
+		this->connection[i]	   = connection[i];
+		this->connection[i].id = i;
 	}
 
 	// set impossible connections as invalid (if it loops)
-	bool *validCheck = new bool[totalConnections];
+
+	bool *isConnectionBase = new bool[this->totalConnections];
 
 	for (int i = 0; i < totalConnections; i++)
 	{
-		validCheck[i] = false;
-	}
+		int startNode = this->connection[i].startNode;
 
-	printf("exit\n");
+		bool isNodeBase = true;
 
-	for (bool allChecked = false; !allChecked;)
-	{
-		for (int i = 0; i < totalConnections; i++)
+		for (int x = 0; x < totalConnections; x++)
 		{
-			if (validCheck[i])
+			if (x == i)
 			{
 				continue;
 			}
 
-			printf("testing %d\n", i);
-
-			int startNode = this->connection[i].startNode;
-
-			bool isNodeBase = true;
-
-			for (int x = 0; x < totalConnections; x++)
+			if (this->connection[x].endNode == startNode)
 			{
-				if (x == i)
-				{
-					continue;
-				}
-
-				if (this->connection[x].endNode == startNode)
-				{
-					if (validCheck[x] || !this->connection[x].valid)
-					{
-						continue;
-					}
-
-					isNodeBase = false;
-					break;
-				}
+				isNodeBase = false;
+				break;
 			}
-
-			if (isNodeBase)
-			{
-				printf("%d is base\n", i);
-				for (int x = 0; x < totalConnections; x++)
-				{
-					if (x == i)
-					{
-						continue;
-					}
-
-					if (this->connection[i].endNode == this->connection[x].startNode && validCheck[x])
-					{
-						printf("%d is invalid\n", i);
-						this->connection[i].valid = false;
-					}
-				}
-				validCheck[i] = true;
-			}
-
-			printf("\n");
 		}
 
-		allChecked = true;
+		isConnectionBase[i] = isNodeBase;
+	}
 
-		for (int i = 0; i < totalConnections; i++)
+	for (int i = 0; i < totalConnections; i++)
+	{
+		if (isConnectionBase[i])
 		{
-			if (!validCheck[i])
+			bool *isNodeVisited = new bool[this->totalNodes];
+			for (int i = 0; i < this->totalNodes; i++)
 			{
-				allChecked = false;
+				isNodeVisited[i] = false;
 			}
+			
+			travelBranchForLoop(this->connection, i, isNodeVisited, this->totalConnections, this->totalNodes);
+			
+			delete[] isNodeVisited;
 		}
 	}
 
-	printf("exit\n");
-
-	delete[] validCheck;
+delete[] isConnectionBase;
 
 	// set the amount of parents every node has according to connection
 	for (int y = 0; y < totalConnections; y++)
