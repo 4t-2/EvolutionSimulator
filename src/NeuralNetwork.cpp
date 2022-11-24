@@ -1,6 +1,7 @@
 #include "../inc/NeuralNetwork.hpp"
 
-void travelBranchForLoop(Connection *connection, int id, bool *isNodeVisited, int totalConnections, int totalNodes) // recursion hell
+void travelBranchForLoop(Connection *connection, int id, bool *isNodeVisited, int totalConnections,
+						 int totalNodes) // recursion hell
 {
 	isNodeVisited[connection[id].startNode] = true;
 
@@ -18,7 +19,7 @@ void travelBranchForLoop(Connection *connection, int id, bool *isNodeVisited, in
 			{
 				bool *isNodeVisitedBranch = new bool[totalNodes];
 
-				for(int x = 0; x < totalNodes; x++)
+				for (int x = 0; x < totalNodes; x++)
 				{
 					isNodeVisitedBranch[x] = isNodeVisited[x];
 				}
@@ -62,7 +63,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		this->connection[i].id = i;
 	}
 
-	// set impossible connections as invalid (if it loops)
+	// Invalidate looping connections
 
 	bool *isConnectionBase = new bool[this->totalConnections];
 
@@ -98,14 +99,31 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 			{
 				isNodeVisited[i] = false;
 			}
-			
+
 			travelBranchForLoop(this->connection, i, isNodeVisited, this->totalConnections, this->totalNodes);
-			
+
 			delete[] isNodeVisited;
 		}
 	}
 
-delete[] isConnectionBase;
+	delete[] isConnectionBase;
+
+	// Invalidate connections going into an input node
+	for (int i = 0; i < this->totalConnections; i++)
+	{
+		if (this->connection[i].endNode < this->totalInputNodes)
+		{
+			this->connection[i].valid = false;
+		}
+	}
+
+	for (int i = 0; i < this->totalConnections; i++)
+	{
+		if (!this->connection[i].valid)
+		{
+			printf("%d is invalid\n", i);
+		}
+	}
 
 	// set the amount of parents every node has according to connection
 	for (int y = 0; y < totalConnections; y++)
@@ -128,12 +146,12 @@ delete[] isConnectionBase;
 
 			for (int x = 0; x < totalConnections; x++)
 			{
-				if (connection[x].valid)
+				if (this->connection[x].valid)
 				{
-					if (connection[x].endNode == i)
+					if (this->connection[x].endNode == i)
 					{
-						node[i].parent[setParents] = &node[connection[x].startNode];
-						node[i].weight[setParents] = connection[x].weight;
+						node[i].parent[setParents] = &node[this->connection[x].startNode];
+						node[i].weight[setParents] = this->connection[x].weight;
 
 						setParents++;
 					}
@@ -157,14 +175,13 @@ delete[] isConnectionBase;
 		node[i].value = 2;
 	}
 
-	bool loop = true;
-
 	int nodeOrder = 0;
 
-	while (loop)
+	for (bool loop = false; !loop;)
 	{
 		for (int i = 0; i < totalNodes; i++)
 		{
+			printf("\ntesting %d\n", i);
 			if (node[i].parents)
 			{
 				bool allBase = true;
@@ -174,23 +191,27 @@ delete[] isConnectionBase;
 					if (node[i].parent[x]->value == 2)
 					{
 						allBase = false;
+						printf("not all base\n");
 					}
 				}
 
 				if (allBase)
 				{
+					printf("all base\n");
 					bool inList = false;
 
 					for (int x = 0; x < nodeOrder; x++)
 					{
 						if (node[i].id == nodeCalculationOrder[x]->id)
 						{
+							printf("already in list\n");
 							inList = true;
 						}
 					}
 
 					if (!inList)
 					{
+						printf("adding to list\n");
 						node[i].value = 0;
 
 						nodeCalculationOrder[nodeOrder] = &node[i];
