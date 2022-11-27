@@ -63,12 +63,50 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		this->connection[i].id = i;
 	}
 
+	// Invalidate duplicated connections
+
+	for (int i = 0; i < this->totalConnections; i++)
+	{
+		if (this->connection[i].valid)
+		{
+			for (int x = 0; x < this->totalConnections; x++)
+			{
+				if (this->connection[x].valid && x != i)
+				{
+					if (this->connection[x].startNode == this->connection[i].startNode &&
+						this->connection[x].endNode == this->connection[i].endNode)
+					{
+						this->connection[x].valid = false;
+					}
+				}
+			}
+		}
+	}
+
+	// invalid connections going into input
+
+	for (int i = 0; i < this->totalConnections; i++)
+	{
+		if (this->connection[i].valid)
+		{
+			if (this->connection[i].endNode < totalInputNodes)
+			{
+				this->connection[i].valid = false;
+			}
+		}
+	}
+
 	// Invalidate looping connections
 
 	bool *isConnectionBase = new bool[this->totalConnections];
 
 	for (int i = 0; i < totalConnections; i++)
 	{
+		if (!connection[i].valid)
+		{
+			continue;
+		}
+
 		int startNode = this->connection[i].startNode;
 
 		bool isNodeBase = true;
@@ -108,15 +146,8 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 
 	delete[] isConnectionBase;
 
-	// Invalidate connections going into an input node
-	for (int i = 0; i < this->totalConnections; i++)
-	{
-		if (this->connection[i].endNode < this->totalInputNodes)
-		{
-			this->connection[i].valid = false;
-		}
-	}
-
+	// print if connection is valid
+	//
 	for (int i = 0; i < this->totalConnections; i++)
 	{
 		if (!this->connection[i].valid)
@@ -128,7 +159,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	// set the amount of parents every node has according to connection
 	for (int y = 0; y < totalConnections; y++)
 	{
-		if (this->connection[y].valid)
+		// if (this->connection[y].valid)
 		{
 			node[this->connection[y].endNode].parents++;
 		}
@@ -146,7 +177,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 
 			for (int x = 0; x < totalConnections; x++)
 			{
-				if (this->connection[x].valid)
+				// if (this->connection[x].valid)
 				{
 					if (this->connection[x].endNode == i)
 					{
@@ -168,20 +199,19 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		}
 	}
 
-	nodeCalculationOrder = new Node *[connectedNodes];
-
-	for (int i = totalInputNodes; i < totalNodes; i++)
+	for (int i = 0; i < totalInputNodes; i++)
 	{
 		node[i].value = 2;
 	}
 
+	nodeCalculationOrder = new Node *[connectedNodes];
+
 	int nodeOrder = 0;
 
-	for (bool loop = false; !loop;)
+	for (bool loop = true; loop;)
 	{
 		for (int i = 0; i < totalNodes; i++)
 		{
-			printf("\ntesting %d\n", i);
 			if (node[i].parents)
 			{
 				bool allBase = true;
@@ -191,27 +221,23 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 					if (node[i].parent[x]->value == 2)
 					{
 						allBase = false;
-						printf("not all base\n");
 					}
 				}
 
 				if (allBase)
 				{
-					printf("all base\n");
 					bool inList = false;
 
 					for (int x = 0; x < nodeOrder; x++)
 					{
 						if (node[i].id == nodeCalculationOrder[x]->id)
 						{
-							printf("already in list\n");
 							inList = true;
 						}
 					}
 
 					if (!inList)
 					{
-						printf("adding to list\n");
 						node[i].value = 0;
 
 						nodeCalculationOrder[nodeOrder] = &node[i];
@@ -236,6 +262,11 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	for (int i = 0; i < totalNodes; i++)
 	{
 		node[i].value = 0;
+	}
+
+	for (int i = 0; i < connectedNodes; i++)
+	{
+		printf("%x %d\n", nodeCalculationOrder[i], nodeCalculationOrder[i]->id);
 	}
 
 	return;

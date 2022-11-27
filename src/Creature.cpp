@@ -53,8 +53,16 @@ Creature::Creature()
 	connection[1].weight	= 1;
 
 	connection[2].startNode = RIGHT_OUTPUT;
-	connection[2].endNode	= X_INPUT;
+	connection[2].endNode	= LEFT_OUTPUT;
 	connection[2].weight	= 1;
+
+	connection[3].startNode = LEFT_OUTPUT;
+	connection[3].endNode	= RIGHT_OUTPUT;
+	connection[3].weight	= 1;
+
+	connection[4].startNode = RIGHT_OUTPUT;
+	connection[4].endNode	= X_INPUT;
+	connection[4].weight	= 1;
 
 	// INPUT
 	// constant
