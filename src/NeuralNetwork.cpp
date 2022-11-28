@@ -34,6 +34,47 @@ void travelBranchForLoop(Connection *connection, int id, bool *isNodeVisited, in
 	return;
 }
 
+void travelNodeTree(Node *node, int totalNodes, Node **nodeCalculationOrder, int connectedNodes, int *nodeOrder, int id)
+{
+	for (int i = 0; i < totalNodes; i++)
+	{
+		if (node[i].parents)
+		{
+			for (int x = 0; x < node[i].parents; x++)
+			{
+				if (x == i)
+				{
+					continue;
+				}
+
+				if (node[i].parent[x]->id == id)
+				{
+					for (int y = 0; y < *nodeOrder; y++)
+					{
+						printf("matching %d %d\n", nodeCalculationOrder[y]->id, node[i].parent[x]->id);
+						if (nodeCalculationOrder[y]->id == node[i].parent[x]->id)
+						{
+							printf("%d already in list\n", node[i].parent[x]->id);
+							goto exitLoop;
+						}
+					}
+
+					printf("%d %d\n", i, x);
+
+					nodeCalculationOrder[*nodeOrder] = &node[i];
+					*nodeOrder += 1;
+
+					travelNodeTree(node, totalNodes, nodeCalculationOrder, connectedNodes, nodeOrder, i);
+				}
+
+			exitLoop:;
+			}
+		}
+	}
+
+	return;
+}
+
 NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection connection[], int totalConnections)
 {
 	this->totalNodes	   = totalNodes;
@@ -159,7 +200,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	// set the amount of parents every node has according to connection
 	for (int y = 0; y < totalConnections; y++)
 	{
-		// if (this->connection[y].valid)
+		if (this->connection[y].valid)
 		{
 			node[this->connection[y].endNode].parents++;
 		}
@@ -177,7 +218,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 
 			for (int x = 0; x < totalConnections; x++)
 			{
-				// if (this->connection[x].valid)
+				if (this->connection[x].valid)
 				{
 					if (this->connection[x].endNode == i)
 					{
@@ -208,66 +249,20 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 
 	int nodeOrder = 0;
 
-	for (bool loop = true; loop;)
+	for (int i = 0; i < totalInputNodes; i++)
 	{
-		for (int i = 0; i < totalNodes; i++)
-		{
-			if (node[i].parents)
-			{
-				bool allBase = true;
-
-				for (int x = 0; x < node[i].parents; x++)
-				{
-					if (node[i].parent[x]->value == 2)
-					{
-						allBase = false;
-					}
-				}
-
-				if (allBase)
-				{
-					bool inList = false;
-
-					for (int x = 0; x < nodeOrder; x++)
-					{
-						if (node[i].id == nodeCalculationOrder[x]->id)
-						{
-							inList = true;
-						}
-					}
-
-					if (!inList)
-					{
-						node[i].value = 0;
-
-						nodeCalculationOrder[nodeOrder] = &node[i];
-
-						nodeOrder++;
-					}
-				}
-			}
-		}
-
-		loop = false;
-
-		for (int i = 0; i < totalNodes; i++)
-		{
-			if (node[i].parents && node[i].value == 2)
-			{
-				loop = true;
-			}
-		}
+		printf("starting at %d\n", i);
+		travelNodeTree(node, totalNodes, nodeCalculationOrder, connectedNodes, &nodeOrder, i);
 	}
 
-	for (int i = 0; i < totalNodes; i++)
-	{
-		node[i].value = 0;
-	}
+	printf("%d\n", connectedNodes);
 
 	for (int i = 0; i < connectedNodes; i++)
 	{
 		printf("%x %d\n", nodeCalculationOrder[i], nodeCalculationOrder[i]->id);
 	}
+
+	printf("order %d\n", nodeOrder);
 
 	return;
 }

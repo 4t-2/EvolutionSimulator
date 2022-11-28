@@ -48,21 +48,19 @@ Creature::Creature()
 	connection[0].endNode	= LEFT_OUTPUT;
 	connection[0].weight	= 0.5;
 
-	connection[1].startNode = LEFT_OUTPUT;
+	connection[1].startNode = RIGHT_OUTPUT;
 	connection[1].endNode	= RIGHT_OUTPUT;
 	connection[1].weight	= 1;
 
-	connection[2].startNode = RIGHT_OUTPUT;
+	connection[2].startNode = X_INPUT;
 	connection[2].endNode	= LEFT_OUTPUT;
 	connection[2].weight	= 1;
 
-	connection[3].startNode = LEFT_OUTPUT;
-	connection[3].endNode	= RIGHT_OUTPUT;
-	connection[3].weight	= 1;
-
-	connection[4].startNode = RIGHT_OUTPUT;
-	connection[4].endNode	= X_INPUT;
-	connection[4].weight	= 1;
+	printf("CONSTANT_INPUT %d\n", CONSTANT_INPUT);
+	printf("LEFT_OUTPUT %d\n", LEFT_OUTPUT);
+	printf("RIGHT_OUTPUT %d\n", RIGHT_OUTPUT);
+	printf("X_INPUT %d\n", X_INPUT);
+	printf("FOWARD_OUTPUT %d\n", FOWARD_OUTPUT);
 
 	// INPUT
 	// constant

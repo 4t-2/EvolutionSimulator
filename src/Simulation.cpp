@@ -9,7 +9,8 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 	srand(time(NULL));
 
 	creature = new Creature[totalCreatures];
-	food	 = new Food[totalFood];
+
+	food = new Food[totalFood];
 
 	for (int i = 0; i < totalCreatures; i++)
 	{
