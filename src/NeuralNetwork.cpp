@@ -51,10 +51,10 @@ void travelNodeTree(Node *node, int totalNodes, Node **nodeCalculationOrder, int
 				{
 					for (int y = 0; y < *nodeOrder; y++)
 					{
-						printf("matching %d %d\n", nodeCalculationOrder[y]->id, node[i].parent[x]->id);
-						if (nodeCalculationOrder[y]->id == node[i].parent[x]->id)
+						printf("matching %d %d\n", nodeCalculationOrder[y]->id, i);
+						if (nodeCalculationOrder[y]->id == i)
 						{
-							printf("%d already in list\n", node[i].parent[x]->id);
+							printf("%d already in list\n", i);
 							goto exitLoop;
 						}
 					}

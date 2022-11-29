@@ -48,8 +48,8 @@ Creature::Creature()
 	connection[0].endNode	= LEFT_OUTPUT;
 	connection[0].weight	= 0.5;
 
-	connection[1].startNode = RIGHT_OUTPUT;
-	connection[1].endNode	= RIGHT_OUTPUT;
+	connection[1].startNode = LEFT_OUTPUT;
+	connection[1].endNode	= FOWARD_OUTPUT;
 	connection[1].weight	= 1;
 
 	connection[2].startNode = X_INPUT;
@@ -221,19 +221,9 @@ void Creature::saveData(char buffer[TOTAL_CONNECTIONS * 3])
 {
 	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
 	{
-		if (network->getConnection(i).valid)
-		{
-			buffer[(i * 3) + 0] = network->getConnection(i).startNode;
-			buffer[(i * 3) + 1] = network->getConnection(i).endNode;
-			buffer[(i * 3) + 2] = 127 * network->getConnection(i).weight;
-		}
-		else
-		{
-
-			buffer[(i * 3) + 0] = 0;
-			buffer[(i * 3) + 1] = 0;
-			buffer[(i * 3) + 2] = 0;
-		}
+		buffer[(i * 3) + 0] = network->getConnection(i).startNode;
+		buffer[(i * 3) + 1] = network->getConnection(i).endNode;
+		buffer[(i * 3) + 2] = 127 * network->getConnection(i).weight;
 	}
 }
 
