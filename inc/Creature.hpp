@@ -37,6 +37,8 @@ class Creature
 		Creature(char data[TOTAL_CONNECTIONS * 3]);
 
 		void setPosition(agl::Vec<float, 2> position);
+		void setVelocity(agl::Vec<float, 2> velocity);
+		void setRotation(float rotation);
 		void setWorldSize(agl::Vec<float, 2> worldSize);
 
 		void updateNetwork(Food *food, int totalFood);
@@ -44,10 +46,11 @@ class Creature
 
 		void saveData(char buffer[TOTAL_CONNECTIONS * 3]);
 
-		static void mutateData(char buffer[TOTAL_CONNECTIONS * 3]);
+		static void mutateData(char buffer[TOTAL_CONNECTIONS * 3], int chance);
 
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();
+		agl::Vec<float, 2> getVelocity();
 		float			   getRotation();
 		bool			   getEating();
 		bool			   getLayingEgg();

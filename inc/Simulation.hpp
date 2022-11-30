@@ -26,4 +26,5 @@ class Simulation
 
 		int getTotalFood();
 		int getTotalCreatures();
+		agl::Vec<float, 2> getSize();
 };

@@ -68,3 +68,8 @@ int Simulation::getTotalCreatures()
 {
 	return totalCreatures;
 }
+
+agl::Vec<float, 2> Simulation::getSize()
+{
+	return size;
+}

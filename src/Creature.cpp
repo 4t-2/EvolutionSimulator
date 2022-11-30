@@ -122,6 +122,20 @@ void Creature::setPosition(agl::Vec<float, 2> position)
 	return;
 }
 
+void Creature::setVelocity(agl::Vec<float, 2> velocity)
+{
+	this->velocity= velocity;
+
+	return;
+}
+
+void Creature::setRotation(float rotation)
+{
+	this->rotation= rotation;
+
+	return;
+}
+
 void Creature::setWorldSize(agl::Vec<float, 2> worldSize)
 {
 	this->worldSize = worldSize;
@@ -227,12 +241,15 @@ void Creature::saveData(char buffer[TOTAL_CONNECTIONS * 3])
 	}
 }
 
-void Creature::mutateData(char buffer[TOTAL_CONNECTIONS * 3])
+void Creature::mutateData(char buffer[TOTAL_CONNECTIONS * 3], int chance)
 {
 	for (int i = 0; i < TOTAL_CONNECTIONS * 3; i++)
 	{
-		int x	  = (((float)rand() / (float)RAND_MAX) * 8);
-		buffer[i] = buffer[i] ^ (1 << x);
+		for (int x = 0; x < 8; x++)
+		{
+			int mutation = (((float)rand() / (float)RAND_MAX) * chance);
+			buffer[i]	 = buffer[i] ^ ((mutation == 0) << x);
+		}
 	}
 
 	return;
@@ -248,9 +265,14 @@ agl::Vec<float, 2> Creature::getPosition()
 	return position;
 }
 
+agl::Vec<float, 2> Creature::getVelocity()
+{
+	return velocity;
+}
+
 float Creature::getRotation()
 {
-	return -rotation * 180 / 3.14159;
+	return rotation;
 }
 
 bool Creature::getEating()

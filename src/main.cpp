@@ -103,12 +103,16 @@ int main()
 	char buffer[TOTAL_CONNECTIONS * 3];
 	creature->saveData(buffer);
 
+	printBits(buffer);
+
 	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
 	{
 		printf("%d ", buffer[(i * 3) + 0]);
 		printf("%d ", buffer[(i * 3) + 1]);
 		printf("%d\n", buffer[(i * 3) + 2]);
 	}
+
+	bool mHeld = false;
 
 	while (!event.windowClose())
 	{
@@ -124,13 +128,46 @@ int main()
 			simulation.updateFood();
 		}
 
+		if (event.isKeyPressed(XK_m))
+		{
+			mHeld = true;
+		}
+		else if (mHeld)
+		{
+			mHeld = false;
+
+			Creature::mutateData(buffer, 10);
+
+			printBits(buffer);
+
+			for (int i = 0; i < TOTAL_CONNECTIONS; i++)
+			{
+				printf("%d ", buffer[(i * 3) + 0]);
+				printf("%d ", buffer[(i * 3) + 1]);
+				printf("%d\n", buffer[(i * 3) + 2]);
+			}
+
+			agl::Vec<float, 2> pos = creature->getPosition();
+			agl::Vec<float, 2> vel = creature->getVelocity();
+			float			   rot = creature->getRotation();
+
+			delete creature;
+
+			creature = new Creature(buffer);
+
+			creature->setPosition(pos);
+			creature->setVelocity(vel);
+			creature->setRotation(rot);
+			creature->setWorldSize(simulation.getSize());
+		}
+
 		window.clear();
 
 		// AGL rendering
 
 		// draw creature
 		creatureShape.setPosition(creature->getPosition());
-		creatureShape.setRotation(agl::Vec<float, 3>{0, 0, creature->getRotation()});
+		creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(creature->getRotation() * 180 / PI)});
 		window.drawShape(creatureShape);
 
 		// draw rays
@@ -143,7 +180,7 @@ int main()
 			rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
 
 			rayShape.setPosition(creature->getPosition());
-			rayShape.setRotation(agl::Vec<float, 3>{0, 0, creature->getRotation() + angleOffset});
+			rayShape.setRotation(agl::Vec<float, 3>{0, 0, -float(creature->getRotation() * 180 / PI) + angleOffset});
 			window.drawShape(rayShape);
 		}
 
