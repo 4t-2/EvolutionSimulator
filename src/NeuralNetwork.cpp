@@ -255,6 +255,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		travelNodeTree(node, totalNodes, nodeCalculationOrder, connectedNodes, &nodeOrder, i);
 	}
 
+	connectedNodes = nodeOrder;
 	printf("%d\n", connectedNodes);
 
 	for (int i = 0; i < connectedNodes; i++)
@@ -263,6 +264,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	}
 
 	printf("order %d\n", nodeOrder);
+
 
 	return;
 }

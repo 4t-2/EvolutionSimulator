@@ -44,17 +44,17 @@ Creature::Creature()
 {
 	Connection connection[TOTAL_CONNECTIONS];
 
-	connection[0].startNode = CONSTANT_INPUT;
-	connection[0].endNode	= LEFT_OUTPUT;
-	connection[0].weight	= 0.5;
+	connection[0].startNode = 81;
+	connection[0].endNode	= 167;
+	connection[0].weight	= (float)183 / 127;
 
-	connection[1].startNode = LEFT_OUTPUT;
-	connection[1].endNode	= FOWARD_OUTPUT;
-	connection[1].weight	= 1;
+	connection[1].startNode = 93;
+	connection[1].endNode	= 113;
+	connection[1].weight	= (float)255 / 127;
 
-	connection[2].startNode = X_INPUT;
-	connection[2].endNode	= LEFT_OUTPUT;
-	connection[2].weight	= 1;
+	connection[2].startNode = 56;
+	connection[2].endNode	= 5;
+	connection[2].weight	= (float)255 / 127;
 
 	printf("CONSTANT_INPUT %d\n", CONSTANT_INPUT);
 	printf("LEFT_OUTPUT %d\n", LEFT_OUTPUT);
@@ -83,7 +83,7 @@ Creature::Creature()
 	return;
 }
 
-Creature::Creature(char data[TOTAL_CONNECTIONS * 3])
+Creature::Creature(unsigned char data[TOTAL_CONNECTIONS * 3])
 {
 	Connection connection[TOTAL_CONNECTIONS];
 
@@ -231,7 +231,7 @@ void Creature::updateActions(Food *food)
 	return;
 }
 
-void Creature::saveData(char buffer[TOTAL_CONNECTIONS * 3])
+void Creature::saveData(unsigned char buffer[TOTAL_CONNECTIONS * 3])
 {
 	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
 	{
@@ -241,7 +241,7 @@ void Creature::saveData(char buffer[TOTAL_CONNECTIONS * 3])
 	}
 }
 
-void Creature::mutateData(char buffer[TOTAL_CONNECTIONS * 3], int chance)
+void Creature::mutateData(unsigned char buffer[TOTAL_CONNECTIONS * 3], int chance)
 {
 	for (int i = 0; i < TOTAL_CONNECTIONS * 3; i++)
 	{

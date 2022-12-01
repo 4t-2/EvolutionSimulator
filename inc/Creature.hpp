@@ -34,7 +34,7 @@ class Creature
 		float closestAngle;
 
 		Creature();
-		Creature(char data[TOTAL_CONNECTIONS * 3]);
+		Creature(unsigned char data[TOTAL_CONNECTIONS * 3]);
 
 		void setPosition(agl::Vec<float, 2> position);
 		void setVelocity(agl::Vec<float, 2> velocity);
@@ -44,9 +44,9 @@ class Creature
 		void updateNetwork(Food *food, int totalFood);
 		void updateActions(Food *food);
 
-		void saveData(char buffer[TOTAL_CONNECTIONS * 3]);
+		void saveData(unsigned char buffer[TOTAL_CONNECTIONS * 3]);
 
-		static void mutateData(char buffer[TOTAL_CONNECTIONS * 3], int chance);
+		static void mutateData(unsigned char buffer[TOTAL_CONNECTIONS * 3], int chance);
 
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();

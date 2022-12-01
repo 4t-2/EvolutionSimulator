@@ -23,7 +23,7 @@ agl::Vec<float, 3> Vec2fVec3f(agl::Vec<float, 2> vec)
 	return newVec;
 }
 
-void printBits(char buffer[TOTAL_CONNECTIONS * 3])
+void printBits(unsigned char buffer[TOTAL_CONNECTIONS * 3])
 {
 	for (int x = 0; x < TOTAL_CONNECTIONS * 3; x++)
 	{
@@ -100,7 +100,7 @@ int main()
 	Creature *creature = simulation.getCreature();
 	Food	 *food	   = simulation.getFood();
 
-	char buffer[TOTAL_CONNECTIONS * 3];
+	unsigned char buffer[TOTAL_CONNECTIONS * 3];
 	creature->saveData(buffer);
 
 	printBits(buffer);
