@@ -12,11 +12,11 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 
 	food = new Food[totalFood];
 
-	for (int i = 0; i < totalCreatures; i++)
-	{
-		creature[i].setPosition({(float)size.x / 2, (float)size.y / 2});
-		creature[i].setWorldSize({size.x, size.y});
-	}
+	creature[0].setPosition({(float)size.x / 2, (float)size.y / 2});
+	creature[0].setWorldSize({size.x, size.y});
+
+	creature[1].setPosition({((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
+	creature[1].setWorldSize({size.x, size.y});
 
 	for (int i = 0; i < totalFood; i++)
 	{
@@ -37,7 +37,7 @@ void Simulation::updateCreatures()
 {
 	for (int i = 0; i < totalCreatures; i++)
 	{
-		creature[i].updateNetwork(food, totalFood);
+		creature[i].updateNetwork(food, totalFood, creature, totalCreatures);
 		creature[i].updateActions(food);
 	}
 }

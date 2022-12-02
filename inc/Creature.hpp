@@ -11,7 +11,7 @@
 #define TOTAL_HIDDEN 6
 #define TOTAL_NODES	 (TOTAL_INPUT + TOTAL_HIDDEN)
 
-#define TOTAL_CONNECTIONS 3
+#define TOTAL_CONNECTIONS 2
 
 class Creature
 {
@@ -41,7 +41,7 @@ class Creature
 		void setRotation(float rotation);
 		void setWorldSize(agl::Vec<float, 2> worldSize);
 
-		void updateNetwork(Food *food, int totalFood);
+		void updateNetwork(Food *food, int totalFood, Creature* creature, int totalCreatures);
 		void updateActions(Food *food);
 
 		void saveData(unsigned char buffer[TOTAL_CONNECTIONS * 3]);

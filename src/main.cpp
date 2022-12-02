@@ -95,7 +95,7 @@ int main()
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH, -1});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, 0});
 
-	Simulation simulation({WIDTH, HEIGHT}, 1, 10);
+	Simulation simulation({WIDTH, HEIGHT}, 2, 10);
 
 	Creature *creature = simulation.getCreature();
 	Food	 *food	   = simulation.getFood();
@@ -166,9 +166,12 @@ int main()
 		// AGL rendering
 
 		// draw creature
-		creatureShape.setPosition(creature->getPosition());
-		creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(creature->getRotation() * 180 / PI)});
-		window.drawShape(creatureShape);
+		for (int i = 0; i < simulation.getTotalCreatures(); i++)
+		{
+			creatureShape.setPosition(creature[i].getPosition());
+			creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(creature[i].getRotation() * 180 / PI)});
+			window.drawShape(creatureShape);
+		}
 
 		// draw rays
 		for (int i = 0; i < RAY_TOTAL; i++)
