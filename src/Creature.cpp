@@ -152,6 +152,11 @@ void Creature::updateNetwork(Food *food, int totalFood, Creature *creature, int 
 
 		for (int i = 0; i < totalFood; i++)
 		{
+			if(!food[i].exists)
+			{
+				continue;
+			}
+
 			agl::Vec<float, 2> offset	= position - food[i].position;
 			float			   distance = offset.length();
 

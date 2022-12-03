@@ -46,6 +46,19 @@ void Simulation::updateFood()
 {
 	for (int i = 0; i < totalFood; i++)
 	{
+		for (int x = 0; x < totalCreatures; x++)
+		{
+			if (food[i].exists)
+			{
+				agl::Vec<float, 2> offset = creature[x].getPosition() - food[i].position;
+
+				if (offset.length() < 10)
+				{
+					food[i].exists = false;
+					printf("creature %d ate food %d\n", x, i);
+				}
+			}
+		}
 	}
 }
 
