@@ -1,5 +1,8 @@
 # EvolutionSimulator
 
+## What is this
+This project was inspired by [Bibits](https://www.youtube.com/@TheBibitesDigitalLife) and [this video](https://www.youtube.com/watch?v=N3tRFayqVtk). It creates some creatures with simulated brains (with a NEAT like neural network) that live and die with the successfull ones (living long enough to reproduce) being able to pass down their genetic information to the next generation and so on.
+
 ## How to compile
 Run the makefile (currently linux only)
 
@@ -20,7 +23,7 @@ Run the makefile (currently linux only)
 3. Create a way of controling creatures with the neural network [DONE]
 	- Simple circle creatures, nothing complex yet
 
-4. Mutate and crossbreed different creatures so they can adapt
+4. Mutate and crossbreed different creatures so they can adapt [DONE]
 
 5. Have constant supply of plants growing
 	- Plants dont need to be able to evolve yet
