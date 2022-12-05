@@ -105,6 +105,11 @@ Creature::Creature(unsigned char data[TOTAL_CONNECTIONS * 3])
 	return;
 }
 
+Creature::~Creature()
+{
+	this->clear();
+}
+
 void Creature::setPosition(agl::Vec<float, 2> position)
 {
 	this->position = position;
@@ -138,12 +143,12 @@ bool isVisible()
 	return false;
 }
 
-agl::Vec<float, 2> closerObject(agl::Vec<float, 2> offset, float nearestDistance)
+float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 {
-	return agl::Vec<float, 2>();
+	return nearestDistance;
 }
 
-void Creature::updateNetwork(Food *food, int totalFood, Creature *creature, int totalCreatures)
+void Creature::updateNetwork(Food *food, int totalFood, List<Creature*> *existingCreature)
 {
 	for (int x = 0; x < RAY_TOTAL; x++)
 	{
@@ -181,14 +186,14 @@ void Creature::updateNetwork(Food *food, int totalFood, Creature *creature, int 
 			}
 		}
 
-		for (int i = 0; i < totalCreatures; i++)
+		for (int i = 0; i < existingCreature->getLength(); i++)
 		{
-			if (&creature[i] == this)
+			if (existingCreature->get(i) == this)
 			{
 				continue;
 			}
 
-			agl::Vec<float, 2> offset	= position - creature[i].getPosition();
+			agl::Vec<float, 2> offset	= position - existingCreature->get(i)->getPosition();
 			float			   distance = offset.length();
 
 			if (distance > nearestDistance)
@@ -261,6 +266,8 @@ void Creature::updateActions(Food *food)
 
 	rotation = loop(-PI, PI, rotation);
 
+	energy -= speed;
+
 	velocity.x = cos(rotation - (PI / 2)) * speed;
 	velocity.y = sin(rotation - (PI / 2)) * speed;
 
@@ -290,6 +297,14 @@ void Creature::mutateData(unsigned char buffer[TOTAL_CONNECTIONS * 3], int chanc
 			buffer[i]	 = buffer[i] ^ ((mutation == 0) << x);
 		}
 	}
+
+	return;
+}
+
+void Creature::clear()
+{
+	delete network;
+	network = nullptr;
 
 	return;
 }

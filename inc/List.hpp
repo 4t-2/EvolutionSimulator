@@ -1,0 +1,54 @@
+#pragma once
+
+template <typename T> class List
+{
+	private:
+		int length = 0;
+		T	*data;
+
+	public:
+		List(int max)
+		{
+			data = new T[max];
+
+			for(int i = 0 ; i < max; i++)
+			{
+				data[i] = 0;
+			}
+		}
+
+		~List()
+		{
+			delete[] data;
+		}
+
+		void add(T data)
+		{
+			this->data[length] = data;
+			length++;
+		}
+
+		void pop(int index)
+		{
+			data[index] = 0;
+
+			for(int i = index+1; i < length; i++)
+			{
+				data[i-1] = data[i];
+			}
+
+			length--;
+
+			return;
+		}
+
+		T get(int index)
+		{
+			return data[index];
+		}
+
+		int	 getLength()
+		{
+			return length;
+		}
+};

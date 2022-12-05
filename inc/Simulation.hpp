@@ -8,23 +8,28 @@ class Simulation
 	private:
 		agl::Vec<float, 2> size;
 
-		Creature *creature;
-		Food	 *food;
+		Creature		 *creatureBuffer;
+		List<Creature *> *existingCreatures;
 
-		int totalCreatures;
+		Food *food;
+
+		int maxCreatures;
 		int totalFood;
 
 	public:
-		Simulation(agl::Vec<float, 2>size, int totalCreatures, int totalFood);
+		Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFood);
 		void destroy();
 
 		void updateCreatures();
 		void updateFood();
 
-		Creature *getCreature();
-		Food *getFood();
+		Creature *getCreatureBuffer();
+		int		  getMaxCreatures();
 
-		int getTotalFood();
-		int getTotalCreatures();
+		Food *getFood();
+		int	  getTotalFood();
+
+		List<Creature *> *getExistingCreatures();
+
 		agl::Vec<float, 2> getSize();
 };

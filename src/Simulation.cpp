@@ -2,21 +2,27 @@
 
 Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFood)
 {
-	this->size			 = size;
-	this->totalCreatures = totalCreatures;
-	this->totalFood		 = totalFood;
+	this->size		   = size;
+	this->maxCreatures = totalCreatures;
+	this->totalFood	   = totalFood;
 
 	srand(time(NULL));
 
-	creature = new Creature[totalCreatures];
+	creatureBuffer	  = new Creature[this->maxCreatures];
+	existingCreatures = new List<Creature *>(this->maxCreatures);
 
 	food = new Food[totalFood];
 
-	creature[0].setPosition({(float)size.x / 2, (float)size.y / 2});
-	creature[0].setWorldSize({size.x, size.y});
+	creatureBuffer[0].setPosition({(float)size.x / 2, (float)size.y / 2});
+	creatureBuffer[0].setWorldSize({size.x, size.y});
 
-	creature[1].setPosition({((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
-	creature[1].setWorldSize({size.x, size.y});
+	creatureBuffer[1].setPosition({((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
+	creatureBuffer[1].setWorldSize({size.x, size.y});
+
+	for (int i = 0; i < this->maxCreatures; i++)
+	{
+		existingCreatures->add(&creatureBuffer[i]);
+	}
 
 	for (int i = 0; i < totalFood; i++)
 	{
@@ -29,16 +35,22 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 
 void Simulation::destroy()
 {
-	delete[] creature;
+	delete existingCreatures;
+	delete[] creatureBuffer;
 	delete[] food;
+}
+
+void killCreature(Creature *creature)
+{
+	return;
 }
 
 void Simulation::updateCreatures()
 {
-	for (int i = 0; i < totalCreatures; i++)
+	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
-		creature[i].updateNetwork(food, totalFood, creature, totalCreatures);
-		creature[i].updateActions(food);
+		existingCreatures->get(i)->updateNetwork(food, totalFood, existingCreatures);
+		existingCreatures->get(i)->updateActions(food);
 	}
 }
 
@@ -46,13 +58,13 @@ void Simulation::updateFood()
 {
 	for (int i = 0; i < totalFood; i++)
 	{
-		for (int x = 0; x < totalCreatures; x++)
+		for (int x = 0; x < maxCreatures; x++)
 		{
 			if (food[i].exists)
 			{
-				agl::Vec<float, 2> offset = creature[x].getPosition() - food[i].position;
+				agl::Vec<float, 2> offset = creatureBuffer[x].getPosition() - food[i].position;
 
-				if (offset.length() < 10)
+				if (offset.length() < 10 && creatureBuffer[x].getEating())
 				{
 					food[i].exists = false;
 					printf("creature %d ate food %d\n", x, i);
@@ -62,9 +74,14 @@ void Simulation::updateFood()
 	}
 }
 
-Creature *Simulation::getCreature()
+Creature *Simulation::getCreatureBuffer()
 {
-	return creature;
+	return creatureBuffer;
+}
+
+int Simulation::getMaxCreatures()
+{
+	return maxCreatures;
 }
 
 Food *Simulation::getFood()
@@ -77,9 +94,9 @@ int Simulation::getTotalFood()
 	return totalFood;
 }
 
-int Simulation::getTotalCreatures()
+List<Creature *> *Simulation::getExistingCreatures()
 {
-	return totalCreatures;
+	return existingCreatures;
 }
 
 agl::Vec<float, 2> Simulation::getSize()

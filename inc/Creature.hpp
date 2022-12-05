@@ -2,6 +2,7 @@
 
 #include "../lib/AGL/agl.hpp"
 #include "Food.hpp"
+#include "List.hpp"
 #include "NeuralNetwork.hpp"
 
 #define RAY_TOTAL  10
@@ -29,24 +30,36 @@ class Creature
 		bool eating	   = false;
 		bool layingEgg = false;
 
+		float sight;
+		float speed;
+		float tough;
+
+		// sight + (speed^2)(tough^2)
+		float energy = 100;
+
 	public:
 		float closest;
 		float closestAngle;
 
 		Creature();
 		Creature(unsigned char data[TOTAL_CONNECTIONS * 3]);
+		~Creature();
+
+		void setup(unsigned char data[TOTAL_CONNECTIONS * 3]);
 
 		void setPosition(agl::Vec<float, 2> position);
 		void setVelocity(agl::Vec<float, 2> velocity);
 		void setRotation(float rotation);
 		void setWorldSize(agl::Vec<float, 2> worldSize);
 
-		void updateNetwork(Food *food, int totalFood, Creature* creature, int totalCreatures);
+		void updateNetwork(Food *food, int totalFood, List<Creature*> *existingCreatures);
 		void updateActions(Food *food);
 
 		void saveData(unsigned char buffer[TOTAL_CONNECTIONS * 3]);
 
 		static void mutateData(unsigned char buffer[TOTAL_CONNECTIONS * 3], int chance);
+
+		void clear();
 
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();
