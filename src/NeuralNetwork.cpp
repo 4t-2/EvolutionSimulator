@@ -51,15 +51,11 @@ void travelNodeTree(Node *node, int totalNodes, Node **nodeCalculationOrder, int
 				{
 					for (int y = 0; y < *nodeOrder; y++)
 					{
-						printf("matching %d %d\n", nodeCalculationOrder[y]->id, i);
 						if (nodeCalculationOrder[y]->id == i)
 						{
-							printf("%d already in list\n", i);
 							goto exitLoop;
 						}
 					}
-
-					printf("%d %d\n", i, x);
 
 					nodeCalculationOrder[*nodeOrder] = &node[i];
 					*nodeOrder += 1;
@@ -187,16 +183,6 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 
 	delete[] isConnectionBase;
 
-	// print if connection is valid
-	//
-	for (int i = 0; i < this->totalConnections; i++)
-	{
-		if (!this->connection[i].valid)
-		{
-			printf("%d is invalid\n", i);
-		}
-	}
-
 	// set the amount of parents every node has according to connection
 	for (int y = 0; y < totalConnections; y++)
 	{
@@ -251,20 +237,10 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 
 	for (int i = 0; i < totalInputNodes; i++)
 	{
-		printf("starting at %d\n", i);
 		travelNodeTree(node, totalNodes, nodeCalculationOrder, connectedNodes, &nodeOrder, i);
 	}
 
 	connectedNodes = nodeOrder;
-	printf("%d\n", connectedNodes);
-
-	for (int i = 0; i < connectedNodes; i++)
-	{
-		printf("%x %d\n", nodeCalculationOrder[i], nodeCalculationOrder[i]->id);
-	}
-
-	printf("order %d\n", nodeOrder);
-
 
 	return;
 }

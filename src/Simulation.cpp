@@ -13,16 +13,29 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 
 	food = new Food[totalFood];
 
+	Connection connection[TOTAL_CONNECTIONS];
+	connection[0].startNode = CONSTANT_INPUT;
+	connection[0].endNode	= RIGHT_OUTPUT;
+	connection[0].weight	= 1;
+
+	connection[1].startNode = CONSTANT_INPUT;
+	connection[1].endNode	= FOWARD_OUTPUT;
+	connection[1].weight	= 0.5;
+
+	this->addCreature(connection);
+
+	connection[0].endNode = LEFT_OUTPUT;
+
+	this->addCreature(connection);
+
+	this->killCreature(&creatureBuffer[0]);
+
+	this->addCreature(connection);
+	
+	printf("length %d\n", existingCreatures->getLength());
+
 	creatureBuffer[0].setPosition({(float)size.x / 2, (float)size.y / 2});
-	creatureBuffer[0].setWorldSize({size.x, size.y});
-
 	creatureBuffer[1].setPosition({((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
-	creatureBuffer[1].setWorldSize({size.x, size.y});
-
-	for (int i = 0; i < this->maxCreatures; i++)
-	{
-		existingCreatures->add(&creatureBuffer[i]);
-	}
 
 	for (int i = 0; i < totalFood; i++)
 	{
@@ -40,8 +53,52 @@ void Simulation::destroy()
 	delete[] food;
 }
 
-void killCreature(Creature *creature)
+void Simulation::addCreature(Connection connection[TOTAL_CONNECTIONS])
 {
+	bool alreadyExists;
+
+	printf("start\n");
+
+	for (int i = 0; i < maxCreatures; i++)
+	{
+		alreadyExists = false;
+
+		printf("i %d\n", i);
+		for (int x = 0; x < existingCreatures->getLength(); x++)
+		{
+			printf("x %d\n", x);
+			if (&creatureBuffer[i] == existingCreatures->get(x))
+			{
+				printf("already exist\n");
+				alreadyExists = true;
+				break;
+			}
+		}
+
+		if (!alreadyExists)
+		{
+			existingCreatures->add(&creatureBuffer[i]);
+			creatureBuffer[i].setup(connection);
+			break;
+		}
+	}
+
+	printf("end\n");
+}
+
+void Simulation::killCreature(Creature *creature)
+{
+	creature->clear();
+
+	for (int i = 0; i < existingCreatures->getLength(); i++)
+	{
+		if (existingCreatures->get(i) == creature)
+		{
+			existingCreatures->pop(i);
+			break;
+		}
+	}
+
 	return;
 }
 
@@ -49,7 +106,7 @@ void Simulation::updateCreatures()
 {
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
-		existingCreatures->get(i)->updateNetwork(food, totalFood, existingCreatures);
+		existingCreatures->get(i)->updateNetwork(food, totalFood, existingCreatures, size);
 		existingCreatures->get(i)->updateActions(food);
 	}
 }
@@ -67,7 +124,6 @@ void Simulation::updateFood()
 				if (offset.length() < 10 && creatureBuffer[x].getEating())
 				{
 					food[i].exists = false;
-					printf("creature %d ate food %d\n", x, i);
 				}
 			}
 		}

@@ -11,6 +11,8 @@ class Simulation
 		Creature		 *creatureBuffer;
 		List<Creature *> *existingCreatures;
 
+		int currentId = 1;
+
 		Food *food;
 
 		int maxCreatures;
@@ -22,6 +24,9 @@ class Simulation
 
 		void updateCreatures();
 		void updateFood();
+
+		void addCreature(Connection connection[TOTAL_CONNECTIONS]);
+		void killCreature(Creature *creature);
 
 		Creature *getCreatureBuffer();
 		int		  getMaxCreatures();
