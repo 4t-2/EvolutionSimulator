@@ -89,6 +89,13 @@ void Creature::setRotation(float rotation)
 	return;
 }
 
+void Creature::setHealth(float health)
+{
+	this->health = health;
+
+	return;
+}
+
 bool isVisible()
 {
 	return false;
@@ -210,10 +217,18 @@ void Creature::updateActions(Food *food)
 	{
 		eating = true;
 	}
+	else
+	{
+		eating = false;
+	}
 
 	if (network->getNode(LAYEGG_OUTPUT).value > 0)
 	{
 		layingEgg = true;
+	}
+	else
+	{
+		layingEgg = false;
 	}
 
 	rotation = loop(-PI, PI, rotation);
@@ -281,4 +296,9 @@ bool Creature::getEating()
 bool Creature::getLayingEgg()
 {
 	return layingEgg;
+}
+
+float Creature::getHealth()
+{
+	return health;
 }

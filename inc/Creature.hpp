@@ -48,6 +48,7 @@ class Creature
 
 		// sight + (speed^2)(tough^2)
 		float energy = 100;
+		float health = 100;
 
 	public:
 		float closest;
@@ -63,8 +64,10 @@ class Creature
 		void setPosition(agl::Vec<float, 2> position);
 		void setVelocity(agl::Vec<float, 2> velocity);
 		void setRotation(float rotation);
+		void setHealth(float health);
 
-		void updateNetwork(Food *food, int totalFood, List<Creature*> *existingCreatures, agl::Vec<float, 2> worldSize);
+		void updateNetwork(Food *food, int totalFood, List<Creature *> *existingCreatures,
+						   agl::Vec<float, 2> worldSize);
 		void updateActions(Food *food);
 
 		void saveData(unsigned char buffer[TOTAL_CONNECTIONS * 3]);
@@ -77,4 +80,5 @@ class Creature
 		float			   getRotation();
 		bool			   getEating();
 		bool			   getLayingEgg();
+		float			   getHealth();
 };

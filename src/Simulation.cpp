@@ -24,18 +24,18 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 
 	this->addCreature(connection);
 
-	connection[0].endNode = LEFT_OUTPUT;
+	connection[0].startNode = CONSTANT_INPUT;
+	connection[0].endNode	= LEFT_OUTPUT;
+	connection[0].weight	= 1;
+
+	connection[1].startNode = CONSTANT_INPUT;
+	connection[1].endNode	= EAT_OUTPUT;
+	connection[1].weight	= 0.5;
 
 	this->addCreature(connection);
-
-	this->killCreature(&creatureBuffer[0]);
-
-	this->addCreature(connection);
-	
-	printf("length %d\n", existingCreatures->getLength());
 
 	creatureBuffer[0].setPosition({(float)size.x / 2, (float)size.y / 2});
-	creatureBuffer[1].setPosition({((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
+	creatureBuffer[1].setPosition({((float)size.x / 2), ((float)size.y / 2)});
 
 	for (int i = 0; i < totalFood; i++)
 	{
@@ -57,19 +57,14 @@ void Simulation::addCreature(Connection connection[TOTAL_CONNECTIONS])
 {
 	bool alreadyExists;
 
-	printf("start\n");
-
 	for (int i = 0; i < maxCreatures; i++)
 	{
 		alreadyExists = false;
 
-		printf("i %d\n", i);
 		for (int x = 0; x < existingCreatures->getLength(); x++)
 		{
-			printf("x %d\n", x);
 			if (&creatureBuffer[i] == existingCreatures->get(x))
 			{
-				printf("already exist\n");
 				alreadyExists = true;
 				break;
 			}
@@ -82,8 +77,6 @@ void Simulation::addCreature(Connection connection[TOTAL_CONNECTIONS])
 			break;
 		}
 	}
-
-	printf("end\n");
 }
 
 void Simulation::killCreature(Creature *creature)
@@ -108,6 +101,43 @@ void Simulation::updateCreatures()
 	{
 		existingCreatures->get(i)->updateNetwork(food, totalFood, existingCreatures, size);
 		existingCreatures->get(i)->updateActions(food);
+	}
+
+	for(int i = 0; i < existingCreatures->getLength(); i++)
+	{
+		Creature * eatingCreature = existingCreatures->get(i);
+
+		if(eatingCreature->getEating())
+		{
+			for(int x = 0; x < existingCreatures->getLength(); x++)
+			{
+				Creature *eatenCreature = existingCreatures->get(x);
+
+				if(eatingCreature == eatenCreature)
+				{
+					continue;
+				}
+
+				float distance = (eatenCreature->getPosition() - eatingCreature->getPosition()).length();
+
+				if(distance < 25)
+				{
+					eatenCreature->setHealth(eatenCreature->getHealth()-1);
+					printf("health now %f\n", eatenCreature->getHealth());
+				}
+			}
+		}
+	}
+
+	for(int i = 0; i < existingCreatures->getLength(); i++)
+	{
+		Creature*creature = existingCreatures->get(i);
+
+		if(creature->getHealth() <= 0)
+		{
+			this->killCreature(creature);
+			i--;
+		}
 	}
 }
 

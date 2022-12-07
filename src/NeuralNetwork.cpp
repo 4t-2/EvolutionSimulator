@@ -139,7 +139,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 
 	for (int i = 0; i < totalConnections; i++)
 	{
-		if (!connection[i].valid)
+		if (!this->connection[i].valid)
 		{
 			continue;
 		}
