@@ -42,6 +42,19 @@ template <typename T> class List
 			return;
 		}
 
+		int find(T item)
+		{
+			for(int i = 0; i < length; i++)
+			{
+				if(item == data[i])
+				{
+					return i;
+				}
+			}
+
+			return -1;
+		}
+
 		T get(int index)
 		{
 			return data[index];

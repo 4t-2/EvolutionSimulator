@@ -101,6 +101,8 @@ int main()
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
 	Food			 *food				= simulation.getFood();
 
+	Creature *focusCreature;
+
 	unsigned char buffer[TOTAL_CONNECTIONS * 3];
 	creature->saveData(buffer);
 
@@ -153,21 +155,6 @@ int main()
 			window.drawShape(creatureShape);
 		}
 
-		// draw rays
-		for (int i = 0; i < RAY_TOTAL; i++)
-		{
-			float angleOffset = ((i / ((float)RAY_TOTAL - 1)) * 180) + 90;
-
-			float weight = existingCreatures->get(0)->getNeuralNetwork().getNode(i + 5).value;
-
-			rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-
-			rayShape.setPosition(existingCreatures->get(0)->getPosition());
-			rayShape.setRotation(
-				agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(0)->getRotation() * 180 / PI) + angleOffset});
-			window.drawShape(rayShape);
-		}
-
 		// Draw food
 		for (int i = 0; i < simulation.getTotalFood(); i++)
 		{
@@ -184,82 +171,111 @@ int main()
 		// draw background
 		window.drawShape(background);
 
-		// draw node connections
-		for (int i = 0; i < existingCreatures->get(0)->getNeuralNetwork().getTotalConnections(); i++)
+		if (existingCreatures->find(focusCreature) != -1)
 		{
-			float startAngle = (360. / existingCreatures->get(0)->getNeuralNetwork().getTotalNodes()) *
-							   (existingCreatures->get(0)->getNeuralNetwork().getConnection(i).startNode + 1);
-			agl::Vec<float, 3> start = Vec2fVec3f(agl::pointOnCircle(agl::degreeToRadian(startAngle)));
-			start.x					 = (start.x * 100) + 150;
-			start.y					 = (start.y * 100) + 150;
-
-			float endAngle = (360. / existingCreatures->get(0)->getNeuralNetwork().getTotalNodes()) *
-							 (existingCreatures->get(0)->getNeuralNetwork().getConnection(i).endNode + 1);
-			agl::Vec<float, 3> end = Vec2fVec3f(agl::pointOnCircle(agl::degreeToRadian(endAngle)));
-			end.x				   = (end.x * 100) + 150;
-			end.y				   = (end.y * 100) + 150;
-
-			agl::Vec<float, 3> offset = end - start;
-
-			float length = offset.length();
-			connectionShape.setSize(agl::Vec<float, 3>{2, length, 0});
-
-			float angle = acos(offset.x / length) * (180 / 3.14159);
-			connectionShape.setRotation(agl::Vec<float, 3>{0, 0, angle + 90});
-
-			float weight = existingCreatures->get(0)->getNeuralNetwork().getConnection(i).weight;
-
-			if (weight > 0)
+			int index = existingCreatures->find(focusCreature);
+			
+			// draw rays
+			for (int i = 0; i < RAY_TOTAL; i++)
 			{
-				connectionShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-			}
-			else
-			{
-				connectionShape.setColor({(unsigned char)(-weight * 255), 0, BASE_B_VALUE});
+				float angleOffset = ((i / ((float)RAY_TOTAL - 1)) * 180) + 90;
+
+				float weight = existingCreatures->get(index)->getNeuralNetwork().getNode(i + 5).value;
+
+				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
+
+				rayShape.setPosition(existingCreatures->get(index)->getPosition());
+				rayShape.setRotation(agl::Vec<float, 3>{
+					0, 0, -float(existingCreatures->get(index)->getRotation() * 180 / PI) + angleOffset});
+				window.drawShape(rayShape);
 			}
 
-			connectionShape.setPosition(start);
-			window.drawShape(connectionShape);
-		}
-
-		// draw nodes
-		for (int i = 0; i < existingCreatures->get(0)->getNeuralNetwork().getTotalNodes(); i++)
-		{
-			float angle = (360. / existingCreatures->get(0)->getNeuralNetwork().getTotalNodes()) * (i + 1);
-
-			float x = cos(angle * (3.14159 / 180));
-			float y = sin(angle * (3.14159 / 180));
-
-			agl::Vec<float, 3> pos;
-			pos.x = x * 100;
-			pos.y = y * 100;
-
-			pos.x += 150;
-			pos.y += 150;
-
-			pos.z = 3;
-
-			nodeShape.setPosition(pos);
-
-			float nodeValue = existingCreatures->get(0)->getNeuralNetwork().getNode(i).value;
-
-			if (nodeValue > 0)
+			// draw node connections
+			for (int i = 0; i < existingCreatures->get(existingCreatures->find(focusCreature))
+									->getNeuralNetwork()
+									.getTotalConnections();
+				 i++)
 			{
-				nodeShape.setColor({0, (unsigned char)(nodeValue * 255), BASE_B_VALUE});
-			}
-			else
-			{
-				nodeShape.setColor({(unsigned char)(-nodeValue * 255), 0, BASE_B_VALUE});
+				float startAngle = (360. / existingCreatures->get(index)->getNeuralNetwork().getTotalNodes()) *
+								   (existingCreatures->get(index)->getNeuralNetwork().getConnection(i).startNode + 1);
+				agl::Vec<float, 3> start = Vec2fVec3f(agl::pointOnCircle(agl::degreeToRadian(startAngle)));
+				start.x					 = (start.x * 100) + 150;
+				start.y					 = (start.y * 100) + 150;
+
+				float endAngle = (360. / existingCreatures->get(index)->getNeuralNetwork().getTotalNodes()) *
+								 (existingCreatures->get(index)->getNeuralNetwork().getConnection(i).endNode + 1);
+				agl::Vec<float, 3> end = Vec2fVec3f(agl::pointOnCircle(agl::degreeToRadian(endAngle)));
+				end.x				   = (end.x * 100) + 150;
+				end.y				   = (end.y * 100) + 150;
+
+				agl::Vec<float, 3> offset = end - start;
+
+				float length = offset.length();
+				connectionShape.setSize(agl::Vec<float, 3>{2, length, 0});
+
+				float angle = acos(offset.x / length) * (180 / 3.14159);
+				connectionShape.setRotation(agl::Vec<float, 3>{0, 0, angle + 90});
+
+				float weight = existingCreatures->get(index)->getNeuralNetwork().getConnection(i).weight;
+
+				if (weight > 0)
+				{
+					connectionShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
+				}
+				else
+				{
+					connectionShape.setColor({(unsigned char)(-weight * 255), 0, BASE_B_VALUE});
+				}
+
+				connectionShape.setPosition(start);
+				window.drawShape(connectionShape);
 			}
 
-			window.drawShape(nodeShape);
+			// draw nodes
+			for (int i = 0;
+				 i < existingCreatures->get(existingCreatures->find(focusCreature))->getNeuralNetwork().getTotalNodes();
+				 i++)
+			{
+				float angle = (360. / existingCreatures->get(index)->getNeuralNetwork().getTotalNodes()) * (i + 1);
+
+				float x = cos(angle * (3.14159 / 180));
+				float y = sin(angle * (3.14159 / 180));
+
+				agl::Vec<float, 3> pos;
+				pos.x = x * 100;
+				pos.y = y * 100;
+
+				pos.x += 150;
+				pos.y += 150;
+
+				pos.z = 3;
+
+				nodeShape.setPosition(pos);
+
+				float nodeValue = existingCreatures->get(index)->getNeuralNetwork().getNode(i).value;
+
+				if (nodeValue > 0)
+				{
+					nodeShape.setColor({0, (unsigned char)(nodeValue * 255), BASE_B_VALUE});
+				}
+				else
+				{
+					nodeShape.setColor({(unsigned char)(-nodeValue * 255), 0, BASE_B_VALUE});
+				}
+
+				window.drawShape(nodeShape);
+			}
 		}
 
 		window.display();
 
+		if (event.isKeyPressed(XK_r))
+		{
+			focusCreature = nullptr;
+		}
+
 		if (event.isPointerButtonPressed(Button1Mask))
 		{
-		back:;
 			for (int i = 0; i < existingCreatures->getLength(); i++)
 			{
 				agl::Vec<float, 2> mouse;
@@ -268,12 +284,30 @@ int main()
 
 				float distance = (mouse - existingCreatures->get(i)->getPosition()).length();
 
-				printf("%f\n", distance);
+				if (distance < 25)
+				{
+					focusCreature = existingCreatures->get(i);
+
+					break;
+				}
+			}
+		}
+
+		if (event.isPointerButtonPressed(Button3Mask))
+		{
+			for (int i = 0; i < existingCreatures->getLength(); i++)
+			{
+				agl::Vec<float, 2> mouse;
+				mouse.x = event.getPointerWindowPosition().x;
+				mouse.y = event.getPointerWindowPosition().y;
+
+				float distance = (mouse - existingCreatures->get(i)->getPosition()).length();
 
 				if (distance < 25)
 				{
 					existingCreatures->pop(i);
-					goto back;
+
+					break;
 				}
 			}
 		}

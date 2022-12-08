@@ -35,7 +35,7 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 	this->addCreature(connection);
 
 	creatureBuffer[0].setPosition({(float)size.x / 2, (float)size.y / 2});
-	creatureBuffer[1].setPosition({((float)size.x / 2), ((float)size.y / 2)});
+	creatureBuffer[1].setPosition({((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
 
 	for (int i = 0; i < totalFood; i++)
 	{
@@ -103,37 +103,37 @@ void Simulation::updateCreatures()
 		existingCreatures->get(i)->updateActions(food);
 	}
 
-	for(int i = 0; i < existingCreatures->getLength(); i++)
+	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
-		Creature * eatingCreature = existingCreatures->get(i);
+		Creature *eatingCreature = existingCreatures->get(i);
 
-		if(eatingCreature->getEating())
+		if (eatingCreature->getEating())
 		{
-			for(int x = 0; x < existingCreatures->getLength(); x++)
+			for (int x = 0; x < existingCreatures->getLength(); x++)
 			{
 				Creature *eatenCreature = existingCreatures->get(x);
 
-				if(eatingCreature == eatenCreature)
+				if (eatingCreature == eatenCreature)
 				{
 					continue;
 				}
 
 				float distance = (eatenCreature->getPosition() - eatingCreature->getPosition()).length();
 
-				if(distance < 25)
+				if (distance < 25)
 				{
-					eatenCreature->setHealth(eatenCreature->getHealth()-1);
+					eatenCreature->setHealth(eatenCreature->getHealth() - 1);
 					printf("health now %f\n", eatenCreature->getHealth());
 				}
 			}
 		}
 	}
 
-	for(int i = 0; i < existingCreatures->getLength(); i++)
+	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
-		Creature*creature = existingCreatures->get(i);
+		Creature *creature = existingCreatures->get(i);
 
-		if(creature->getHealth() <= 0)
+		if (creature->getHealth() <= 0)
 		{
 			this->killCreature(creature);
 			i--;
