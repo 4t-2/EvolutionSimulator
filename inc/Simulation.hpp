@@ -25,7 +25,9 @@ class Simulation
 		void updateCreatures();
 		void updateFood();
 
-		void addCreature(Connection connection[TOTAL_CONNECTIONS]);
+		static void mutateData(unsigned char *buffer, int length, int chance);
+
+		void addCreature(CreatureData *creatureData);
 		void killCreature(Creature *creature);
 
 		Creature *getCreatureBuffer();

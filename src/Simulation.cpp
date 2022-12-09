@@ -13,26 +13,17 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 
 	food = new Food[totalFood];
 
-	Connection connection[TOTAL_CONNECTIONS];
-	connection[0].startNode = CONSTANT_INPUT;
-	connection[0].endNode	= RIGHT_OUTPUT;
-	connection[0].weight	= 1;
+	CreatureData creatureData(0, 0, 0, 2);
 
-	connection[1].startNode = CONSTANT_INPUT;
-	connection[1].endNode	= FOWARD_OUTPUT;
-	connection[1].weight	= 0.5;
+	creatureData.setConnection(0, CONSTANT_INPUT, RIGHT_OUTPUT, 1);
+	creatureData.setConnection(1, CONSTANT_INPUT, FOWARD_OUTPUT, 0.5);
 
-	this->addCreature(connection);
+	this->addCreature(&creatureData);
 
-	connection[0].startNode = CONSTANT_INPUT;
-	connection[0].endNode	= LEFT_OUTPUT;
-	connection[0].weight	= 1;
+	creatureData.setConnection(0, CONSTANT_INPUT, LEFT_OUTPUT, 1);
+	creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 0.5);
 
-	connection[1].startNode = CONSTANT_INPUT;
-	connection[1].endNode	= EAT_OUTPUT;
-	connection[1].weight	= 0.5;
-
-	this->addCreature(connection);
+	this->addCreature(&creatureData);
 
 	creatureBuffer[0].setPosition({(float)size.x / 2, (float)size.y / 2});
 	creatureBuffer[1].setPosition({((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
@@ -53,7 +44,21 @@ void Simulation::destroy()
 	delete[] food;
 }
 
-void Simulation::addCreature(Connection connection[TOTAL_CONNECTIONS])
+void Simulation::mutateData(unsigned char *buffer, int length, int chance)
+{
+	for (int i = 0; i < length; i++)
+	{
+		for (int x = 0; x < 8; x++)
+		{
+			int mutation = (((float)rand() / (float)RAND_MAX) * chance);
+			buffer[i]	 = buffer[i] ^ ((mutation == 0) << x);
+		}
+	}
+
+	return;
+}
+
+void Simulation::addCreature(CreatureData *creatureData)
 {
 	bool alreadyExists;
 
@@ -73,7 +78,7 @@ void Simulation::addCreature(Connection connection[TOTAL_CONNECTIONS])
 		if (!alreadyExists)
 		{
 			existingCreatures->add(&creatureBuffer[i]);
-			creatureBuffer[i].setup(connection);
+			creatureBuffer[i].setup(creatureData);
 			break;
 		}
 	}

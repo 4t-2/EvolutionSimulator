@@ -1,5 +1,43 @@
 #include "../inc/Creature.hpp"
 
+CreatureData::CreatureData(float sight, float speed, float tough, int totalConnections)
+{
+	this->sight			   = sight;
+	this->speed			   = speed;
+	this->tough			   = tough;
+	this->totalConnections = totalConnections;
+
+	connection = new Connection[totalConnections];
+
+	return;
+}
+
+CreatureData::~CreatureData()
+{
+	delete[] connection;
+
+	return;
+}
+
+void CreatureData::setConnection(int index, int startNode, int endNode, float weight)
+{
+	connection[index].startNode = startNode;
+	connection[index].endNode	= endNode;
+	connection[index].weight	= weight;
+
+	return;
+}
+
+int CreatureData::getTotalConnections()
+{
+	return totalConnections;
+}
+
+Connection *CreatureData::getConnection()
+{
+	return connection;
+}
+
 float vectorAngle(agl::Vec<float, 2> vec)
 {
 	float angle = atan(vec.x / vec.y);
@@ -31,7 +69,7 @@ Creature::Creature()
 	return;
 }
 
-void Creature::setup(Connection connection[TOTAL_CONNECTIONS])
+void Creature::setup(CreatureData *creatureData)
 {
 	// INPUT
 	// constant
@@ -49,7 +87,9 @@ void Creature::setup(Connection connection[TOTAL_CONNECTIONS])
 	// Turn left
 	// Eat
 	// Lay egg
-	network = new NeuralNetwork(TOTAL_NODES, 5 + (RAY_TOTAL * 2), connection, TOTAL_CONNECTIONS);
+
+
+	network = new NeuralNetwork(TOTAL_NODES, 5 + (RAY_TOTAL * 2), creatureData->getConnection(), creatureData->getTotalConnections());
 }
 
 void Creature::clear()
@@ -252,20 +292,6 @@ void Creature::saveData(unsigned char buffer[TOTAL_CONNECTIONS * 3])
 		buffer[(i * 3) + 1] = network->getConnection(i).endNode;
 		buffer[(i * 3) + 2] = 127 * network->getConnection(i).weight;
 	}
-}
-
-void Creature::mutateData(unsigned char buffer[TOTAL_CONNECTIONS * 3], int chance)
-{
-	for (int i = 0; i < TOTAL_CONNECTIONS * 3; i++)
-	{
-		for (int x = 0; x < 8; x++)
-		{
-			int mutation = (((float)rand() / (float)RAND_MAX) * chance);
-			buffer[i]	 = buffer[i] ^ ((mutation == 0) << x);
-		}
-	}
-
-	return;
 }
 
 NeuralNetwork Creature::getNeuralNetwork()

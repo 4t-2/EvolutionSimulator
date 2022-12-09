@@ -28,6 +28,25 @@
 #define EAT_OUTPUT		(TOTAL_INPUT + 4)
 #define LAYEGG_OUTPUT	(TOTAL_INPUT + 5)
 
+class CreatureData
+{
+	private:
+		Connection *connection;
+		int			totalConnections;
+		float		sight;
+		float		speed;
+		float		tough;
+
+	public:
+		CreatureData(float sight, float speed, float tough, int totalConnections);
+		~CreatureData();
+
+		void setConnection(int index, int start, int end, float weight);
+
+		int			getTotalConnections();
+		Connection *getConnection();
+};
+
 class Creature
 {
 	private:
@@ -55,10 +74,9 @@ class Creature
 		float closestAngle;
 
 		Creature();
-		Creature(unsigned char data[TOTAL_CONNECTIONS * 3]);
 		~Creature();
 
-		void setup(Connection connection[TOTAL_CONNECTIONS]);
+		void setup(CreatureData *creatureData);
 		void clear();
 
 		void setPosition(agl::Vec<float, 2> position);
@@ -71,8 +89,6 @@ class Creature
 		void updateActions(Food *food);
 
 		void saveData(unsigned char buffer[TOTAL_CONNECTIONS * 3]);
-
-		static void mutateData(unsigned char buffer[TOTAL_CONNECTIONS * 3], int chance);
 
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();

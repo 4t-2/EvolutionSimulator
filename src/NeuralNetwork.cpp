@@ -169,7 +169,8 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	{
 		if (isConnectionBase[i])
 		{
-			bool *isNodeVisited = new bool[this->totalNodes];
+			bool *isNodeVisited = new bool[31];
+			
 			for (int i = 0; i < this->totalNodes; i++)
 			{
 				isNodeVisited[i] = false;
