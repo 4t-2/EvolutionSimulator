@@ -28,6 +28,15 @@
 #define EAT_OUTPUT		(TOTAL_INPUT + 4)
 #define LAYEGG_OUTPUT	(TOTAL_INPUT + 5)
 
+class Buffer
+{
+	public:
+		Buffer(int size);
+		~Buffer();
+		unsigned char *data;
+		int			   size;
+};
+
 class CreatureData
 {
 	private:
@@ -88,7 +97,7 @@ class Creature
 						   agl::Vec<float, 2> worldSize);
 		void updateActions(Food *food);
 
-		void saveData(unsigned char buffer[TOTAL_CONNECTIONS * 3]);
+		CreatureData *saveData();
 
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();

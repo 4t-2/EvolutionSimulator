@@ -25,7 +25,9 @@ class Simulation
 		void updateCreatures();
 		void updateFood();
 
-		static void mutateData(unsigned char *buffer, int length, int chance);
+		static Buffer		*creatureDataToBuffer(CreatureData *creatureData);
+		static CreatureData *bufferToCreatureData(Buffer buffer);
+		static void			 mutateBuffer(Buffer *buffer, int chance);
 
 		void addCreature(CreatureData *creatureData);
 		void killCreature(Creature *creature);

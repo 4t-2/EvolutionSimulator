@@ -1,5 +1,20 @@
 #include "../inc/Creature.hpp"
 
+Buffer::Buffer(int size)
+{
+	this->size = size;
+	data = new unsigned char[this->size];
+
+	return;
+}
+
+Buffer::~Buffer()
+{
+	delete[] data;
+
+	return;
+}
+
 CreatureData::CreatureData(float sight, float speed, float tough, int totalConnections)
 {
 	this->sight			   = sight;
@@ -88,8 +103,8 @@ void Creature::setup(CreatureData *creatureData)
 	// Eat
 	// Lay egg
 
-
-	network = new NeuralNetwork(TOTAL_NODES, 5 + (RAY_TOTAL * 2), creatureData->getConnection(), creatureData->getTotalConnections());
+	network = new NeuralNetwork(TOTAL_NODES, 5 + (RAY_TOTAL * 2), creatureData->getConnection(),
+								creatureData->getTotalConnections());
 }
 
 void Creature::clear()
@@ -284,14 +299,17 @@ void Creature::updateActions(Food *food)
 	return;
 }
 
-void Creature::saveData(unsigned char buffer[TOTAL_CONNECTIONS * 3])
+CreatureData* Creature::saveData()
 {
+	CreatureData *creatureData = new CreatureData(sight, speed, tough, network->getTotalConnections());
+
 	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
 	{
-		buffer[(i * 3) + 0] = network->getConnection(i).startNode;
-		buffer[(i * 3) + 1] = network->getConnection(i).endNode;
-		buffer[(i * 3) + 2] = 127 * network->getConnection(i).weight;
+		creatureData->setConnection(i, network->getConnection(i).startNode, network->getConnection(i).endNode,
+									network->getConnection(i).weight);
 	}
+
+	return creatureData;
 }
 
 NeuralNetwork Creature::getNeuralNetwork()

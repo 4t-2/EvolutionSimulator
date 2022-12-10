@@ -103,16 +103,20 @@ int main()
 
 	Creature *focusCreature;
 
-	unsigned char buffer[TOTAL_CONNECTIONS * 3];
-	creature->saveData(buffer);
+	CreatureData *creatureData;
+	creatureData = creature->saveData();
 
-	printBits(buffer);
+	Buffer *buffer;
+
+	buffer = Simulation::creatureDataToBuffer(creatureData);
+
+	printBits(buffer->data);
 
 	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
 	{
-		printf("%d ", buffer[(i * 3) + 0]);
-		printf("%d ", buffer[(i * 3) + 1]);
-		printf("%d\n", buffer[(i * 3) + 2]);
+		printf("%d ", buffer->data[(i * 3) + 0]);
+		printf("%d ", buffer->data[(i * 3) + 1]);
+		printf("%d\n", buffer->data[(i * 3) + 2]);
 	}
 
 	bool mHeld = false;

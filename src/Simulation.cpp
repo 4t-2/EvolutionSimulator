@@ -44,14 +44,40 @@ void Simulation::destroy()
 	delete[] food;
 }
 
-void Simulation::mutateData(unsigned char *buffer, int length, int chance)
+Buffer *Simulation::creatureDataToBuffer(CreatureData *creatureData)
 {
-	for (int i = 0; i < length; i++)
+	Buffer *buffer = new Buffer(creatureData->getTotalConnections() * 3);
+
+	for (int i = 0; i < creatureData->getTotalConnections(); i++)
+	{
+		buffer->data[i] = creatureData->getConnection()[i].startNode;
+		buffer->data[i] = creatureData->getConnection()[i].endNode;
+		buffer->data[i] = 127 * creatureData->getConnection()[i].weight;
+	}
+
+	return buffer;
+}
+
+CreatureData *Simulation::bufferToCreatureData(Buffer buffer)
+{
+	CreatureData* creatureData = new CreatureData(0, 0, 0, buffer.size / 3);
+
+	for (int i = 0; i < creatureData->getTotalConnections(); i++)
+	{
+		creatureData->setConnection(i, buffer.data[(i * 3) + 0], buffer.data[(i * 3) + 1], buffer.data[(i * 3) + 2]);
+	}
+
+	return creatureData;
+}
+
+void Simulation::mutateBuffer(Buffer *buffer, int chance)
+{
+	for (int i = 0; i < buffer->size; i++)
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			int mutation = (((float)rand() / (float)RAND_MAX) * chance);
-			buffer[i]	 = buffer[i] ^ ((mutation == 0) << x);
+			int mutation	= (((float)rand() / (float)RAND_MAX) * chance);
+			buffer->data[i] = buffer->data[i] ^ ((mutation == 0) << x);
 		}
 	}
 
