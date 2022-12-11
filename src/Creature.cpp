@@ -34,6 +34,13 @@ CreatureData::~CreatureData()
 	return;
 }
 
+void CreatureData::setPosition(agl::Vec<float, 2> position)
+{
+	this->position = position;
+
+	return;
+}
+
 void CreatureData::setConnection(int index, int startNode, int endNode, float weight)
 {
 	connection[index].startNode = startNode;
@@ -51,6 +58,11 @@ int CreatureData::getTotalConnections()
 Connection *CreatureData::getConnection()
 {
 	return connection;
+}
+
+agl::Vec<float, 2> CreatureData::getPosition()
+{
+	return position;
 }
 
 float vectorAngle(agl::Vec<float, 2> vec)
@@ -103,6 +115,8 @@ void Creature::setup(CreatureData *creatureData)
 	// Eat
 	// Lay egg
 
+	position = creatureData->getPosition();
+
 	network = new NeuralNetwork(TOTAL_NODES, 5 + (RAY_TOTAL * 2), creatureData->getConnection(),
 								creatureData->getTotalConnections());
 }
@@ -147,6 +161,13 @@ void Creature::setRotation(float rotation)
 void Creature::setHealth(float health)
 {
 	this->health = health;
+
+	return;
+}
+
+void Creature::setEnergy(float energy)
+{
+	this->energy = energy;
 
 	return;
 }
@@ -303,6 +324,8 @@ CreatureData* Creature::saveData()
 {
 	CreatureData *creatureData = new CreatureData(sight, speed, tough, network->getTotalConnections());
 
+	creatureData->setPosition(position);
+
 	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
 	{
 		creatureData->setConnection(i, network->getConnection(i).startNode, network->getConnection(i).endNode,
@@ -345,4 +368,9 @@ bool Creature::getLayingEgg()
 float Creature::getHealth()
 {
 	return health;
+}
+
+float Creature::getEnergy()
+{
+	return energy;
 }

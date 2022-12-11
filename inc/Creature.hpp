@@ -40,6 +40,7 @@ class Buffer
 class CreatureData
 {
 	private:
+		agl::Vec<float, 2> position;
 		Connection *connection;
 		int			totalConnections;
 		float		sight;
@@ -51,7 +52,9 @@ class CreatureData
 		~CreatureData();
 
 		void setConnection(int index, int start, int end, float weight);
+		void setPosition(agl::Vec<float, 2> position);
 
+		agl::Vec<float, 2> getPosition();
 		int			getTotalConnections();
 		Connection *getConnection();
 };
@@ -92,6 +95,7 @@ class Creature
 		void setVelocity(agl::Vec<float, 2> velocity);
 		void setRotation(float rotation);
 		void setHealth(float health);
+		void setEnergy(float energy);
 
 		void updateNetwork(Food *food, int totalFood, List<Creature *> *existingCreatures,
 						   agl::Vec<float, 2> worldSize);
@@ -106,4 +110,5 @@ class Creature
 		bool			   getEating();
 		bool			   getLayingEgg();
 		float			   getHealth();
+		float getEnergy();
 };

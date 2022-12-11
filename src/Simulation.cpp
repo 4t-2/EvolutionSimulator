@@ -1,15 +1,19 @@
 #include "../inc/Simulation.hpp"
 
-Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFood)
+Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFood, int maxEggs)
 {
 	this->size		   = size;
 	this->maxCreatures = totalCreatures;
 	this->totalFood	   = totalFood;
+	this->maxEggs	   = maxEggs;
 
 	srand(time(NULL));
 
 	creatureBuffer	  = new Creature[this->maxCreatures];
 	existingCreatures = new List<Creature *>(this->maxCreatures);
+
+	eggBuffer	 = new Egg[this->maxEggs];
+	existingEggs = new List<Egg *>(this->maxEggs);
 
 	food = new Food[totalFood];
 
@@ -20,8 +24,8 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 
 	this->addCreature(&creatureData);
 
-	creatureData.setConnection(0, CONSTANT_INPUT, LEFT_OUTPUT, 1);
-	creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 0.5);
+	creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
+	creatureData.setConnection(1, CONSTANT_INPUT, LAYEGG_OUTPUT, 0.5);
 
 	this->addCreature(&creatureData);
 
@@ -40,7 +44,9 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 void Simulation::destroy()
 {
 	delete existingCreatures;
+	delete existingEggs;
 	delete[] creatureBuffer;
+	delete[] eggBuffer;
 	delete[] food;
 }
 
@@ -60,7 +66,7 @@ Buffer *Simulation::creatureDataToBuffer(CreatureData *creatureData)
 
 CreatureData *Simulation::bufferToCreatureData(Buffer buffer)
 {
-	CreatureData* creatureData = new CreatureData(0, 0, 0, buffer.size / 3);
+	CreatureData *creatureData = new CreatureData(0, 0, 0, buffer.size / 3);
 
 	for (int i = 0; i < creatureData->getTotalConnections(); i++)
 	{
@@ -126,7 +132,33 @@ void Simulation::killCreature(Creature *creature)
 	return;
 }
 
-void Simulation::updateCreatures()
+void Simulation::addEgg(CreatureData *creatureData)
+{
+	bool alreadyExists;
+
+	for (int i = 0; i < maxEggs; i++)
+	{
+		alreadyExists = false;
+
+		for (int x = 0; x < existingEggs->getLength(); x++)
+		{
+			if (&eggBuffer[i] == existingEggs->get(x))
+			{
+				alreadyExists = true;
+				break;
+			}
+		}
+
+		if (!alreadyExists)
+		{
+			existingEggs->add(&eggBuffer[i]);
+			eggBuffer[i].setup(creatureData);
+			break;
+		}
+	}
+}
+
+void Simulation::update()
 {
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
@@ -136,10 +168,21 @@ void Simulation::updateCreatures()
 
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
-		Creature *eatingCreature = existingCreatures->get(i);
-
-		if (eatingCreature->getEating())
+		if (existingCreatures->get(i)->getLayingEgg())
 		{
+			Creature *eggLayer = existingCreatures->get(i);
+
+			if (eggLayer->getEnergy() > 60)
+			{
+				eggLayer->setEnergy(eggLayer->getEnergy() - 60);
+				this->addEgg(eggLayer->saveData());
+			}
+		}
+
+		if (existingCreatures->get(i)->getEating())
+		{
+			Creature *eatingCreature = existingCreatures->get(i);
+
 			for (int x = 0; x < existingCreatures->getLength(); x++)
 			{
 				Creature *eatenCreature = existingCreatures->get(x);
@@ -170,10 +213,18 @@ void Simulation::updateCreatures()
 			i--;
 		}
 	}
-}
 
-void Simulation::updateFood()
-{
+	for (int i = 0; i < existingEggs->getLength(); i++)
+	{
+		existingEggs->get(i)->update();
+		if(existingEggs->get(i)->getTimeLeft() <= 0)
+		{
+			this->addCreature(existingEggs->get(i)->getCreatureData());
+			existingEggs->get(i)->clear();
+			existingEggs->pop(i);
+		}
+	}
+
 	for (int i = 0; i < totalFood; i++)
 	{
 		for (int x = 0; x < maxCreatures; x++)
@@ -219,4 +270,14 @@ List<Creature *> *Simulation::getExistingCreatures()
 agl::Vec<float, 2> Simulation::getSize()
 {
 	return size;
+}
+
+List<Egg *> *Simulation::getExistingEggs()
+{
+	return existingEggs;
+}
+
+Egg *Simulation::getEggBuffer()
+{
+	return eggBuffer;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Creature.hpp"
+#include "Egg.hpp"
 #include "Food.hpp"
 
 class Simulation
@@ -11,19 +12,22 @@ class Simulation
 		Creature		 *creatureBuffer;
 		List<Creature *> *existingCreatures;
 
+		Egg *eggBuffer;
+		List<Egg*> *existingEggs;
+
 		int currentId = 1;
 
 		Food *food;
 
+		int maxEggs;
 		int maxCreatures;
 		int totalFood;
 
 	public:
-		Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFood);
+		Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFood, int maxEggs);
 		void destroy();
 
-		void updateCreatures();
-		void updateFood();
+		void update();
 
 		static Buffer		*creatureDataToBuffer(CreatureData *creatureData);
 		static CreatureData *bufferToCreatureData(Buffer buffer);
@@ -32,13 +36,18 @@ class Simulation
 		void addCreature(CreatureData *creatureData);
 		void killCreature(Creature *creature);
 
-		Creature *getCreatureBuffer();
+		void addEgg(CreatureData*);
+
 		int		  getMaxCreatures();
-
-		Food *getFood();
-		int	  getTotalFood();
-
+		Creature *getCreatureBuffer();
 		List<Creature *> *getExistingCreatures();
+
+		int getMaxEggs();
+		Egg* getEggBuffer();
+		List<Egg *> *getExistingEggs();
+
+		int	  getTotalFood();
+		Food *getFood();
 
 		agl::Vec<float, 2> getSize();
 };

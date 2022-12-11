@@ -89,16 +89,23 @@ int main()
 	creatureShape.setSize(agl::Vec<float, 3>{25, 25, 0});
 	creatureShape.setOffset(agl::Vec<float, 3>{-12.5, -12.5, 0});
 
+	agl::Circle eggShape(10);
+	eggShape.setTexture(&blank);
+	eggShape.setColor(agl::Color::White);
+	eggShape.setSize(agl::Vec<float, 3>{10, 10, 0});
+
 	agl::Rectangle rayShape;
 	rayShape.setTexture(&blank);
 	rayShape.setColor(agl::Color::White);
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH, -1});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, 0});
 
-	Simulation simulation({WIDTH, HEIGHT}, 2, 10);
+	Simulation simulation({WIDTH, HEIGHT}, 4, 10, 2);
 
 	Creature		 *creature			= simulation.getCreatureBuffer();
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
+	Egg				 *egg				= simulation.getEggBuffer();
+	List<Egg *>		 *existingEggs		= simulation.getExistingEggs();
 	Food			 *food				= simulation.getFood();
 
 	Creature *focusCreature;
@@ -131,8 +138,7 @@ int main()
 
 		if (!event.isKeyPressed(XK_space))
 		{
-			simulation.updateCreatures();
-			simulation.updateFood();
+			simulation.update();
 		}
 
 		if (event.isKeyPressed(XK_m))
@@ -172,13 +178,20 @@ int main()
 			window.drawShape(foodShape);
 		}
 
+		// draw eggs
+		for(int i = 0; i < existingEggs->getLength(); i++)
+		{
+			eggShape.setPosition(existingEggs->get(i)->getCreatureData()->getPosition());
+			window.drawShape(eggShape);
+		}
+
 		// draw background
 		window.drawShape(background);
 
 		if (existingCreatures->find(focusCreature) != -1)
 		{
 			int index = existingCreatures->find(focusCreature);
-			
+
 			// draw rays
 			for (int i = 0; i < RAY_TOTAL; i++)
 			{
