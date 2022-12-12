@@ -98,6 +98,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	{
 		this->connection[i]	   = connection[i];
 		this->connection[i].id = i;
+		this->connection[i].valid = true;
 	}
 
 	// Invalidate duplicated connections

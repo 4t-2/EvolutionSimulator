@@ -6,13 +6,13 @@ class Egg
 {
 	private:
 		int			  timeleft	   = 0;
-		CreatureData *creatureData = nullptr;
+		CreatureData creatureData;
 
 	public:
-		void setup(CreatureData *creatureData);
+		void setup(CreatureData &creatureData);
 		void update();
 		void clear();
 
-		CreatureData *getCreatureData();
+		CreatureData &getCreatureData();
 		int			  getTimeLeft();
 };

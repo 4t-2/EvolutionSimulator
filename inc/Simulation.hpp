@@ -3,6 +3,7 @@
 #include "Creature.hpp"
 #include "Egg.hpp"
 #include "Food.hpp"
+#include "Buffer.hpp"
 
 class Simulation
 {
@@ -29,14 +30,14 @@ class Simulation
 
 		void update();
 
-		static Buffer		*creatureDataToBuffer(CreatureData *creatureData);
-		static CreatureData *bufferToCreatureData(Buffer buffer);
+		static Buffer		creatureDataToBuffer(CreatureData &creatureData);
+		static CreatureData bufferToCreatureData(Buffer buffer);
 		static void			 mutateBuffer(Buffer *buffer, int chance);
 
-		void addCreature(CreatureData *creatureData);
+		void addCreature(CreatureData &creatureData);
 		void killCreature(Creature *creature);
 
-		void addEgg(CreatureData*);
+		void addEgg(CreatureData &creatureData);
 
 		int		  getMaxCreatures();
 		Creature *getCreatureBuffer();

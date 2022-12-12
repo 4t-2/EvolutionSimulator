@@ -1,70 +1,5 @@
 #include "../inc/Creature.hpp"
 
-Buffer::Buffer(int size)
-{
-	this->size = size;
-	data = new unsigned char[this->size];
-
-	return;
-}
-
-Buffer::~Buffer()
-{
-	delete[] data;
-
-	return;
-}
-
-CreatureData::CreatureData(float sight, float speed, float tough, int totalConnections)
-{
-	this->sight			   = sight;
-	this->speed			   = speed;
-	this->tough			   = tough;
-	this->totalConnections = totalConnections;
-
-	connection = new Connection[totalConnections];
-
-	return;
-}
-
-CreatureData::~CreatureData()
-{
-	delete[] connection;
-
-	return;
-}
-
-void CreatureData::setPosition(agl::Vec<float, 2> position)
-{
-	this->position = position;
-
-	return;
-}
-
-void CreatureData::setConnection(int index, int startNode, int endNode, float weight)
-{
-	connection[index].startNode = startNode;
-	connection[index].endNode	= endNode;
-	connection[index].weight	= weight;
-
-	return;
-}
-
-int CreatureData::getTotalConnections()
-{
-	return totalConnections;
-}
-
-Connection *CreatureData::getConnection()
-{
-	return connection;
-}
-
-agl::Vec<float, 2> CreatureData::getPosition()
-{
-	return position;
-}
-
 float vectorAngle(agl::Vec<float, 2> vec)
 {
 	float angle = atan(vec.x / vec.y);
@@ -96,7 +31,7 @@ Creature::Creature()
 	return;
 }
 
-void Creature::setup(CreatureData *creatureData)
+void Creature::setup(CreatureData &creatureData)
 {
 	// INPUT
 	// constant
@@ -115,10 +50,10 @@ void Creature::setup(CreatureData *creatureData)
 	// Eat
 	// Lay egg
 
-	position = creatureData->getPosition();
+	position = creatureData.getPosition();
 
-	network = new NeuralNetwork(TOTAL_NODES, 5 + (RAY_TOTAL * 2), creatureData->getConnection(),
-								creatureData->getTotalConnections());
+	network = new NeuralNetwork(TOTAL_NODES, 5 + (RAY_TOTAL * 2), creatureData.getConnection(),
+								creatureData.getTotalConnections());
 }
 
 void Creature::clear()
@@ -320,16 +255,16 @@ void Creature::updateActions(Food *food)
 	return;
 }
 
-CreatureData* Creature::saveData()
+CreatureData Creature::saveData()
 {
-	CreatureData *creatureData = new CreatureData(sight, speed, tough, network->getTotalConnections());
+	CreatureData creatureData(sight, speed, tough, network->getTotalConnections());
 
-	creatureData->setPosition(position);
+	creatureData.setPosition(position);
 
 	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
 	{
-		creatureData->setConnection(i, network->getConnection(i).startNode, network->getConnection(i).endNode,
-									network->getConnection(i).weight);
+		creatureData.setConnection(i, network->getConnection(i).startNode, network->getConnection(i).endNode,
+								   network->getConnection(i).weight);
 	}
 
 	return creatureData;

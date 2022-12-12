@@ -110,20 +110,17 @@ int main()
 
 	Creature *focusCreature;
 
-	CreatureData *creatureData;
-	creatureData = creature->saveData();
+	CreatureData creatureData = creature->saveData();
 
-	Buffer *buffer;
+	Buffer buffer = Simulation::creatureDataToBuffer(creatureData);
 
-	buffer = Simulation::creatureDataToBuffer(creatureData);
-
-	printBits(buffer->data);
+	printBits(buffer.data);
 
 	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
 	{
-		printf("%d ", buffer->data[(i * 3) + 0]);
-		printf("%d ", buffer->data[(i * 3) + 1]);
-		printf("%d\n", buffer->data[(i * 3) + 2]);
+		printf("%d ", buffer.data[(i * 3) + 0]);
+		printf("%d ", buffer.data[(i * 3) + 1]);
+		printf("%d\n", buffer.data[(i * 3) + 2]);
 	}
 
 	bool mHeld = false;
@@ -181,7 +178,7 @@ int main()
 		// draw eggs
 		for(int i = 0; i < existingEggs->getLength(); i++)
 		{
-			eggShape.setPosition(existingEggs->get(i)->getCreatureData()->getPosition());
+			eggShape.setPosition(existingEggs->get(i)->getCreatureData().getPosition());
 			window.drawShape(eggShape);
 		}
 

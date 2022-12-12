@@ -1,6 +1,6 @@
 #include "../inc/Egg.hpp"
 
-void Egg::setup(CreatureData *creatureData)
+void Egg::setup(CreatureData &creatureData)
 {
 	this->creatureData = creatureData;
 
@@ -17,10 +17,9 @@ void Egg::update()
 void Egg::clear()
 {
 	timeleft = 0;
-	delete creatureData;
 }
 
-CreatureData *Egg::getCreatureData()
+CreatureData &Egg::getCreatureData() // HACK lazy fix keeps deconstructing so just made reference
 {
 	return creatureData;
 }

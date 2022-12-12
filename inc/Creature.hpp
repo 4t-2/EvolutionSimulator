@@ -4,6 +4,7 @@
 #include "Food.hpp"
 #include "List.hpp"
 #include "NeuralNetwork.hpp"
+#include "CreatureData.hpp"
 
 #define RAY_TOTAL  10
 #define RAY_LENGTH 500
@@ -28,36 +29,6 @@
 #define EAT_OUTPUT		(TOTAL_INPUT + 4)
 #define LAYEGG_OUTPUT	(TOTAL_INPUT + 5)
 
-class Buffer
-{
-	public:
-		Buffer(int size);
-		~Buffer();
-		unsigned char *data;
-		int			   size;
-};
-
-class CreatureData
-{
-	private:
-		agl::Vec<float, 2> position;
-		Connection *connection;
-		int			totalConnections;
-		float		sight;
-		float		speed;
-		float		tough;
-
-	public:
-		CreatureData(float sight, float speed, float tough, int totalConnections);
-		~CreatureData();
-
-		void setConnection(int index, int start, int end, float weight);
-		void setPosition(agl::Vec<float, 2> position);
-
-		agl::Vec<float, 2> getPosition();
-		int			getTotalConnections();
-		Connection *getConnection();
-};
 
 class Creature
 {
@@ -88,7 +59,7 @@ class Creature
 		Creature();
 		~Creature();
 
-		void setup(CreatureData *creatureData);
+		void setup(CreatureData &creatureData);
 		void clear();
 
 		void setPosition(agl::Vec<float, 2> position);
@@ -101,7 +72,7 @@ class Creature
 						   agl::Vec<float, 2> worldSize);
 		void updateActions(Food *food);
 
-		CreatureData *saveData();
+		CreatureData saveData();
 
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();
@@ -110,5 +81,5 @@ class Creature
 		bool			   getEating();
 		bool			   getLayingEgg();
 		float			   getHealth();
-		float getEnergy();
+		float			   getEnergy();
 };
