@@ -34,10 +34,10 @@ class Simulation
 		static CreatureData bufferToCreatureData(Buffer buffer);
 		static void			 mutateBuffer(Buffer *buffer, int chance);
 
-		void addCreature(CreatureData &creatureData);
+		void addCreature(CreatureData &creatureData, agl::Vec<float, 2> position);
 		void killCreature(Creature *creature);
 
-		void addEgg(CreatureData &creatureData);
+		void addEgg(CreatureData &creatureData, agl::Vec<float, 2> position);
 
 		int		  getMaxCreatures();
 		Creature *getCreatureBuffer();

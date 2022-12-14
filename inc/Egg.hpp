@@ -5,14 +5,18 @@
 class Egg
 {
 	private:
-		int			  timeleft	   = 0;
-		CreatureData creatureData;
+		agl::Vec<float, 2> position;
+		CreatureData	   creatureData;
+		int				   timeleft = 0;
 
 	public:
 		void setup(CreatureData &creatureData);
 		void update();
 		void clear();
 
-		CreatureData &getCreatureData();
-		int			  getTimeLeft();
+		void setPosition(agl::Vec<float, 2> position);
+
+		agl::Vec<float, 2> getPosition();
+		CreatureData	  &getCreatureData();
+		int				   getTimeLeft();
 };

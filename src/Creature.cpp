@@ -50,8 +50,6 @@ void Creature::setup(CreatureData &creatureData)
 	// Eat
 	// Lay egg
 
-	position = creatureData.getPosition();
-
 	network = new NeuralNetwork(TOTAL_NODES, 5 + (RAY_TOTAL * 2), creatureData.getConnection(),
 								creatureData.getTotalConnections());
 }
@@ -258,8 +256,6 @@ void Creature::updateActions(Food *food)
 CreatureData Creature::saveData()
 {
 	CreatureData creatureData(sight, speed, tough, network->getTotalConnections());
-
-	creatureData.setPosition(position);
 
 	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
 	{

@@ -21,8 +21,6 @@ CreatureData::CreatureData(float sight, float speed, float tough, int totalConne
 
 CreatureData::CreatureData(const CreatureData &creatureData)
 {
-	position = creatureData.position;
-
 	totalConnections = creatureData.totalConnections;
 	delete[] connection;
 	connection = new Connection[totalConnections];
@@ -39,8 +37,6 @@ CreatureData::CreatureData(const CreatureData &creatureData)
 
 void CreatureData::operator=(CreatureData &creatureData)
 {
-	position = creatureData.position;
-
 	totalConnections = creatureData.totalConnections;
 	delete[] connection;
 	connection = new Connection[totalConnections];
@@ -62,13 +58,6 @@ CreatureData::~CreatureData()
 	return;
 }
 
-void CreatureData::setPosition(agl::Vec<float, 2> position)
-{
-	this->position = position;
-
-	return;
-}
-
 void CreatureData::setConnection(int index, int startNode, int endNode, float weight)
 {
 	connection[index].startNode = startNode;
@@ -86,9 +75,4 @@ int CreatureData::getTotalConnections()
 Connection *CreatureData::getConnection()
 {
 	return connection;
-}
-
-agl::Vec<float, 2> CreatureData::getPosition()
-{
-	return position;
 }

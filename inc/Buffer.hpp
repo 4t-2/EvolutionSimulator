@@ -3,13 +3,15 @@
 class Buffer
 {
 	public:
+		unsigned char *data = nullptr;
+		int			   size;
+
 		Buffer(int size);
-		Buffer(const Buffer&buffer);
+		Buffer(const Buffer &buffer);
 		Buffer();
 		~Buffer();
 
 		void operator=(Buffer &buffer);
 
-		unsigned char *data = nullptr;
-		int			   size;
+		void printBits();
 };

@@ -1,17 +1,16 @@
 #pragma once
 
-#include "NeuralNetwork.hpp"
 #include "../lib/AGL/agl.hpp"
+#include "NeuralNetwork.hpp"
 
 class CreatureData
 {
 	private:
-		agl::Vec<float, 2> position;
-		Connection		  *connection = nullptr;
-		int				   totalConnections;
-		float			   sight;
-		float			   speed;
-		float			   tough;
+		Connection *connection = nullptr;
+		int			totalConnections;
+		float		sight;
+		float		speed;
+		float		tough;
 
 	public:
 		CreatureData();
@@ -21,10 +20,8 @@ class CreatureData
 
 		void operator=(CreatureData &creatureData);
 
-			void setConnection(int index, int start, int end, float weight);
-		void setPosition(agl::Vec<float, 2> position);
+		void setConnection(int index, int start, int end, float weight);
 
-		agl::Vec<float, 2> getPosition();
 		int				   getTotalConnections();
 		Connection		  *getConnection();
 };

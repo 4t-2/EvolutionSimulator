@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <math.h>
+#include <unistd.h>
 
 #define TOTAL_FOOD 10
 
@@ -176,9 +177,9 @@ int main()
 		}
 
 		// draw eggs
-		for(int i = 0; i < existingEggs->getLength(); i++)
+		for (int i = 0; i < existingEggs->getLength(); i++)
 		{
-			eggShape.setPosition(existingEggs->get(i)->getCreatureData().getPosition());
+			eggShape.setPosition(existingEggs->get(i)->getPosition());
 			window.drawShape(eggShape);
 		}
 

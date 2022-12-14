@@ -22,15 +22,12 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 	creatureData.setConnection(0, CONSTANT_INPUT, RIGHT_OUTPUT, 1);
 	creatureData.setConnection(1, CONSTANT_INPUT, FOWARD_OUTPUT, 0.5);
 
-	this->addCreature(creatureData);
+	this->addCreature(creatureData, {(float)size.x / 2, (float)size.y / 2});
 
 	creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 	creatureData.setConnection(1, CONSTANT_INPUT, LAYEGG_OUTPUT, 0.5);
 
-	this->addCreature(creatureData);
-
-	creatureBuffer[0].setPosition({(float)size.x / 2, (float)size.y / 2});
-	creatureBuffer[1].setPosition({((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
+	this->addCreature(creatureData, {((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
 
 	for (int i = 0; i < totalFood; i++)
 	{
@@ -56,9 +53,9 @@ Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
 
 	for (int i = 0; i < creatureData.getTotalConnections(); i++)
 	{
-		buffer.data[i] = creatureData.getConnection()[i].startNode;
-		buffer.data[i] = creatureData.getConnection()[i].endNode;
-		buffer.data[i] = 127 * creatureData.getConnection()[i].weight;
+		buffer.data[(i * 3) + 0] = creatureData.getConnection()[i].startNode;
+		buffer.data[(i * 3) + 1] = creatureData.getConnection()[i].endNode;
+		buffer.data[(i * 3) + 2] = 127 * creatureData.getConnection()[i].weight;
 	}
 
 	return buffer;
@@ -70,7 +67,11 @@ CreatureData Simulation::bufferToCreatureData(Buffer buffer)
 
 	for (int i = 0; i < creatureData.getTotalConnections(); i++)
 	{
-		creatureData.setConnection(i, buffer.data[(i * 3) + 0], buffer.data[(i * 3) + 1], buffer.data[(i * 3) + 2]);
+		creatureData.setConnection(i,							   // id
+								   buffer.data[(i * 3) + 0],	   // start
+								   buffer.data[(i * 3) + 1],	   // end
+								   buffer.data[(i * 3) + 2] / 127. // weight
+		);
 	}
 
 	return creatureData;
@@ -90,7 +91,7 @@ void Simulation::mutateBuffer(Buffer *buffer, int chance)
 	return;
 }
 
-void Simulation::addCreature(CreatureData &creatureData)
+void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> position)
 {
 	bool alreadyExists;
 
@@ -111,6 +112,7 @@ void Simulation::addCreature(CreatureData &creatureData)
 		{
 			existingCreatures->add(&creatureBuffer[i]);
 			creatureBuffer[i].setup(creatureData);
+			creatureBuffer[i].setPosition(position);
 			break;
 		}
 	}
@@ -132,7 +134,7 @@ void Simulation::killCreature(Creature *creature)
 	return;
 }
 
-void Simulation::addEgg(CreatureData &creatureData)
+void Simulation::addEgg(CreatureData &creatureData, agl::Vec<float, 2> position)
 {
 	bool alreadyExists;
 
@@ -153,6 +155,7 @@ void Simulation::addEgg(CreatureData &creatureData)
 		{
 			existingEggs->add(&eggBuffer[i]);
 			eggBuffer[i].setup(creatureData);
+			eggBuffer[i].setPosition(position);
 			break;
 		}
 	}
@@ -175,8 +178,15 @@ void Simulation::update()
 			if (eggLayer->getEnergy() > 60)
 			{
 				eggLayer->setEnergy(eggLayer->getEnergy() - 60);
+
 				CreatureData creatureData = eggLayer->saveData();
-				this->addEgg(creatureData);
+				Buffer		 buffer		  = creatureDataToBuffer(creatureData);
+
+				mutateBuffer(&buffer, 10);
+
+				CreatureData mutatedData = bufferToCreatureData(buffer);
+
+				this->addEgg(mutatedData, eggLayer->getPosition());
 			}
 		}
 
@@ -218,10 +228,10 @@ void Simulation::update()
 	for (int i = 0; i < existingEggs->getLength(); i++)
 	{
 		existingEggs->get(i)->update();
-		if(existingEggs->get(i)->getTimeLeft() <= 0)
+		if (existingEggs->get(i)->getTimeLeft() <= 0)
 		{
 			CreatureData creatureData = existingEggs->get(i)->getCreatureData();
-			this->addCreature(creatureData);
+			this->addCreature(creatureData, existingEggs->get(i)->getPosition());
 			existingEggs->get(i)->clear();
 			existingEggs->pop(i);
 		}
