@@ -1,10 +1,10 @@
 #include "../inc/Simulation.hpp"
 
-Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFood, int maxEggs)
+Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, int maxEggs)
 {
 	this->size		   = size;
-	this->maxCreatures = totalCreatures;
-	this->totalFood	   = totalFood;
+	this->maxCreatures = maxCreatures;
+	this->maxFood	   = maxFood;
 	this->maxEggs	   = maxEggs;
 
 	srand(time(NULL));
@@ -15,7 +15,8 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 	eggBuffer	 = new Egg[this->maxEggs];
 	existingEggs = new List<Egg *>(this->maxEggs);
 
-	food = new Food[totalFood];
+	foodBuffer	 = new Food[this->maxFood];
+	existingFood = new List<Food *>(this->maxFood);
 
 	CreatureData creatureData(0, 0, 0, 2);
 
@@ -25,15 +26,17 @@ Simulation::Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFoo
 	this->addCreature(creatureData, {(float)size.x / 2, (float)size.y / 2});
 
 	creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
-	creatureData.setConnection(1, CONSTANT_INPUT, LAYEGG_OUTPUT, 0.5);
+	creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 0.5);
 
 	this->addCreature(creatureData, {((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
 
-	for (int i = 0; i < totalFood; i++)
+	for (int i = 0; i < this->maxFood; i++)
 	{
-		food[i].position.x = (float)rand() / (float)RAND_MAX * size.x;
-		food[i].position.y = (float)rand() / (float)RAND_MAX * size.y;
+		this->addFood({(float)rand() / (float)RAND_MAX * size.x, //
+					   (float)rand() / (float)RAND_MAX * size.y});
 	}
+
+	foodBuffer->position = {((float)size.x / 2) + 100, 100};
 
 	return;
 }
@@ -44,7 +47,7 @@ void Simulation::destroy()
 	delete existingEggs;
 	delete[] creatureBuffer;
 	delete[] eggBuffer;
-	delete[] food;
+	delete[] foodBuffer;
 }
 
 Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
@@ -118,7 +121,7 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 	}
 }
 
-void Simulation::killCreature(Creature *creature)
+void Simulation::removeCreature(Creature *creature)
 {
 	creature->clear();
 
@@ -161,16 +164,74 @@ void Simulation::addEgg(CreatureData &creatureData, agl::Vec<float, 2> position)
 	}
 }
 
+void Simulation::removeEgg(Egg *egg)
+{
+	egg->clear();
+
+	for (int i = 0; i < existingEggs->getLength(); i++)
+	{
+		if (existingEggs->get(i) == egg)
+		{
+			existingEggs->pop(i);
+			break;
+		}
+	}
+
+	return;
+}
+
+void Simulation::addFood(agl::Vec<float, 2> position)
+{
+	bool alreadyExists;
+
+	for (int i = 0; i < maxFood; i++)
+	{
+		alreadyExists = false;
+
+		for (int x = 0; x < existingFood->getLength(); x++)
+		{
+			if (&foodBuffer[i] == existingFood->get(x))
+			{
+				alreadyExists = true;
+				break;
+			}
+		}
+
+		if (!alreadyExists)
+		{
+			existingFood->add(&foodBuffer[i]);
+			foodBuffer[i].position = position;
+			break;
+		}
+	}
+}
+
+void Simulation::removeFood(Food *food)
+{
+	*food = Food{};
+
+	for (int i = 0; i < existingFood->getLength(); i++)
+	{
+		if (existingFood->get(i) == food)
+		{
+			existingFood->pop(i);
+			break;
+		}
+	}
+
+	return;
+}
 void Simulation::update()
 {
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
-		existingCreatures->get(i)->updateNetwork(food, totalFood, existingCreatures, size);
-		existingCreatures->get(i)->updateActions(food);
+		existingCreatures->get(i)->updateNetwork(existingFood, existingCreatures, size);
+		existingCreatures->get(i)->updateActions(foodBuffer);
 	}
 
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
+		// egg laying
 		if (existingCreatures->get(i)->getLayingEgg())
 		{
 			Creature *eggLayer = existingCreatures->get(i);
@@ -190,6 +251,7 @@ void Simulation::update()
 			}
 		}
 
+		// creature eating
 		if (existingCreatures->get(i)->getEating())
 		{
 			Creature *eatingCreature = existingCreatures->get(i);
@@ -214,41 +276,48 @@ void Simulation::update()
 		}
 	}
 
+	// killing creature
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
 		Creature *creature = existingCreatures->get(i);
 
 		if (creature->getHealth() <= 0)
 		{
-			this->killCreature(creature);
+			this->removeCreature(creature);
 			i--;
 		}
 	}
 
+	// egg hatching
 	for (int i = 0; i < existingEggs->getLength(); i++)
 	{
 		existingEggs->get(i)->update();
 		if (existingEggs->get(i)->getTimeLeft() <= 0)
 		{
-			CreatureData creatureData = existingEggs->get(i)->getCreatureData();
-			this->addCreature(creatureData, existingEggs->get(i)->getPosition());
-			existingEggs->get(i)->clear();
-			existingEggs->pop(i);
+			Egg *hatchedEgg = existingEggs->get(i);
+
+			CreatureData creatureData = hatchedEgg->getCreatureData();
+			this->addCreature(creatureData, hatchedEgg->getPosition());
+
+			removeEgg(hatchedEgg);
 		}
 	}
 
-	for (int i = 0; i < totalFood; i++)
+	// creature eating food
+	for (int i = 0; i < existingFood->getLength(); i++)
 	{
-		for (int x = 0; x < maxCreatures; x++)
-		{
-			if (food[i].exists)
-			{
-				agl::Vec<float, 2> offset = creatureBuffer[x].getPosition() - food[i].position;
+		Food *food = existingFood->get(i);
 
-				if (offset.length() < 10 && creatureBuffer[x].getEating())
-				{
-					food[i].exists = false;
-				}
+		for (int x = 0; x < existingCreatures->getLength(); x++)
+		{
+			Creature *creature = existingCreatures->get(x);
+
+			agl::Vec<float, 2> offset = creature->getPosition() - food->position;
+
+			if (offset.length() < 10 && creature->getEating())
+			{
+				existingFood->pop(i);
+				i--;
 			}
 		}
 	}
@@ -262,16 +331,6 @@ Creature *Simulation::getCreatureBuffer()
 int Simulation::getMaxCreatures()
 {
 	return maxCreatures;
-}
-
-Food *Simulation::getFood()
-{
-	return food;
-}
-
-int Simulation::getTotalFood()
-{
-	return totalFood;
 }
 
 List<Creature *> *Simulation::getExistingCreatures()
@@ -292,4 +351,19 @@ List<Egg *> *Simulation::getExistingEggs()
 Egg *Simulation::getEggBuffer()
 {
 	return eggBuffer;
+}
+
+Food *Simulation::getFoodBuffer()
+{
+	return foodBuffer;
+}
+
+List<Food *> *Simulation::getExistingFood()
+{
+	return existingFood;
+}
+
+int Simulation::getMaxFood()
+{
+	return maxFood;
 }

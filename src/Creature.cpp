@@ -115,7 +115,7 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
-void Creature::updateNetwork(Food *food, int totalFood, List<Creature *> *existingCreature,
+void Creature::updateNetwork(List<Food*> *existingFood, List<Creature *> *existingCreature,
 							 agl::Vec<float, 2> worldSize)
 {
 	for (int x = 0; x < RAY_TOTAL; x++)
@@ -123,14 +123,9 @@ void Creature::updateNetwork(Food *food, int totalFood, List<Creature *> *existi
 		float nearestDistance = RAY_LENGTH;
 		int	  type			  = 0;
 
-		for (int i = 0; i < totalFood; i++)
+		for (int i = 0; i < existingFood->getLength(); i++)
 		{
-			if (!food[i].exists)
-			{
-				continue;
-			}
-
-			agl::Vec<float, 2> offset	= position - food[i].position;
+			agl::Vec<float, 2> offset	= position - existingFood->get(i)->position;
 			float			   distance = offset.length();
 
 			if (distance > nearestDistance)

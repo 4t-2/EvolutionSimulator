@@ -6,5 +6,4 @@ class Food
 {
 	public:
 		agl::Vec<float, 2> position;
-		bool			   exists = true;
 };

@@ -68,7 +68,7 @@ class Creature
 		void setHealth(float health);
 		void setEnergy(float energy);
 
-		void updateNetwork(Food *food, int totalFood, List<Creature *> *existingCreatures,
+		void updateNetwork(List<Food*> *existingFood, List<Creature *> *existingCreatures,
 						   agl::Vec<float, 2> worldSize);
 		void updateActions(Food *food);
 

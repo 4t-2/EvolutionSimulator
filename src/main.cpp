@@ -107,7 +107,7 @@ int main()
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
 	Egg				 *egg				= simulation.getEggBuffer();
 	List<Egg *>		 *existingEggs		= simulation.getExistingEggs();
-	Food			 *food				= simulation.getFood();
+	Food			 *food				= simulation.getFoodBuffer();
 
 	Creature *focusCreature;
 
@@ -164,15 +164,12 @@ int main()
 		}
 
 		// Draw food
-		for (int i = 0; i < simulation.getTotalFood(); i++)
+		for (int i = 0; i < simulation.getExistingFood()->getLength(); i++)
 		{
-			if (!food[i].exists)
-			{
-				continue;
-			}
-
 			foodShape.setColor(agl::Color::Green);
-			foodShape.setPosition(agl::Vec<float, 3>{food[i].position.x, food[i].position.y, -1});
+
+			agl::Vec<float, 2> position = simulation.getExistingFood()->get(i)->position;
+			foodShape.setPosition(agl::Vec<float, 3>{position.x, position.y, -1});
 			window.drawShape(foodShape);
 		}
 

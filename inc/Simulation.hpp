@@ -1,9 +1,9 @@
 #pragma once
 
+#include "Buffer.hpp"
 #include "Creature.hpp"
 #include "Egg.hpp"
 #include "Food.hpp"
-#include "Buffer.hpp"
 
 class Simulation
 {
@@ -12,43 +12,46 @@ class Simulation
 
 		Creature		 *creatureBuffer;
 		List<Creature *> *existingCreatures;
+		int				  maxCreatures;
 
-		Egg *eggBuffer;
-		List<Egg*> *existingEggs;
+		Egg			*eggBuffer;
+		List<Egg *> *existingEggs;
+		int			 maxEggs;
 
-		int currentId = 1;
-
-		Food *food;
-
-		int maxEggs;
-		int maxCreatures;
-		int totalFood;
+		Food		 *foodBuffer;
+		List<Food *> *existingFood;
+		int			  maxFood;
 
 	public:
-		Simulation(agl::Vec<float, 2> size, int totalCreatures, int totalFood, int maxEggs);
+		Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, int maxEggs);
 		void destroy();
 
 		void update();
 
 		static Buffer		creatureDataToBuffer(CreatureData &creatureData);
 		static CreatureData bufferToCreatureData(Buffer buffer);
-		static void			 mutateBuffer(Buffer *buffer, int chance);
+		static void			mutateBuffer(Buffer *buffer, int chance);
 
 		void addCreature(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void killCreature(Creature *creature);
+		void removeCreature(Creature *creature);
 
 		void addEgg(CreatureData &creatureData, agl::Vec<float, 2> position);
+		void removeEgg(Egg*egg);
 
-		int		  getMaxCreatures();
-		Creature *getCreatureBuffer();
+		void addFood(agl::Vec<float, 2> position);
+		void removeFood(Food*food);
+
+		Creature		 *getCreatureBuffer();
 		List<Creature *> *getExistingCreatures();
+		int				  getMaxCreatures();
 
-		int getMaxEggs();
-		Egg* getEggBuffer();
+		Egg			*getEggBuffer();
 		List<Egg *> *getExistingEggs();
+		int			 getMaxEggs();
 
-		int	  getTotalFood();
-		Food *getFood();
+		Food		 *getFoodBuffer();
+		List<Food *> *getExistingFood();
+		int			  getMaxFood();
 
 		agl::Vec<float, 2> getSize();
 };
