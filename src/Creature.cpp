@@ -115,7 +115,7 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
-void Creature::updateNetwork(List<Food*> *existingFood, List<Creature *> *existingCreature,
+void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *existingCreature,
 							 agl::Vec<float, 2> worldSize)
 {
 	for (int x = 0; x < RAY_TOTAL; x++)
@@ -193,18 +193,20 @@ void Creature::updateNetwork(List<Food*> *existingFood, List<Creature *> *existi
 
 void Creature::updateActions(Food *food)
 {
-	velocity = {0, 0};
+	acceleration = {0, 0};
 
 	float speed = 0;
 
+	float maxSpeed = 0.001;
+
 	if (network->getNode(FOWARD_OUTPUT).value > 0)
 	{
-		speed += network->getNode(FOWARD_OUTPUT).value * 2.5;
+		speed += network->getNode(FOWARD_OUTPUT).value * maxSpeed;
 	}
 
 	if (network->getNode(BACKWARD_OUTPUT).value > 0)
 	{
-		speed -= network->getNode(BACKWARD_OUTPUT).value * 2.5;
+		speed -= network->getNode(BACKWARD_OUTPUT).value * maxSpeed;
 	}
 
 	if (network->getNode(RIGHT_OUTPUT).value > 0)
@@ -239,8 +241,19 @@ void Creature::updateActions(Food *food)
 
 	energy -= speed;
 
-	velocity.x = cos(rotation - (PI / 2)) * speed;
-	velocity.y = sin(rotation - (PI / 2)) * speed;
+	float			   density		 = 1;
+	agl::Vec<float, 2> airResistance = {density * velocity.x * velocity.x, //
+										density * velocity.y * velocity.y};
+
+	acceleration.x = cos(rotation - (PI / 2)) * speed;
+	acceleration.y = sin(rotation - (PI / 2)) * speed;
+
+	std::cout << velocity.length() << " " << airResistance.length() << '\n';
+
+	acceleration = acceleration - airResistance;
+
+	velocity.x += acceleration.x;
+	velocity.y += acceleration.y;
 
 	position.x += velocity.x;
 	position.y += velocity.y;

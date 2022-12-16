@@ -58,7 +58,8 @@ int main()
 
 	agl::Camera camera;
 	camera.setOrthographicProjection(0, WIDTH, HEIGHT, 0, 0.1, 100);
-	camera.setView({0, 0, 50}, {0, 0, 0}, {0, 1, 0});
+	agl::Vec<float, 3> cameraPosition = {0, 0, 50};
+	camera.setView(cameraPosition, {0, 0, 0}, {0, 1, 0});
 
 	agl::Texture blank;
 	blank.setBlank();
@@ -323,6 +324,27 @@ int main()
 				}
 			}
 		}
+
+		static float cameraSpeed = 4;
+
+		if (event.isKeyPressed(XK_Up))
+		{
+			cameraPosition.y -= cameraSpeed;
+		}
+		if (event.isKeyPressed(XK_Down))
+		{
+			cameraPosition.y += cameraSpeed;
+		}
+		if (event.isKeyPressed(XK_Left))
+		{
+			cameraPosition.x -= cameraSpeed;
+		}
+		if (event.isKeyPressed(XK_Right))
+		{
+			cameraPosition.x += cameraSpeed;
+		}
+
+		camera.setView(cameraPosition, {cameraPosition.x, cameraPosition.y, 0}, {0, 1, 0});
 	}
 
 	blank.deleteTexture();

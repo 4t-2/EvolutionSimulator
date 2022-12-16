@@ -1,10 +1,10 @@
 #pragma once
 
 #include "../lib/AGL/agl.hpp"
+#include "CreatureData.hpp"
 #include "Food.hpp"
 #include "List.hpp"
 #include "NeuralNetwork.hpp"
-#include "CreatureData.hpp"
 
 #define RAY_TOTAL  10
 #define RAY_LENGTH 500
@@ -29,13 +29,13 @@
 #define EAT_OUTPUT		(TOTAL_INPUT + 4)
 #define LAYEGG_OUTPUT	(TOTAL_INPUT + 5)
 
-
 class Creature
 {
 	private:
-		agl::Vec<float, 2> position = {0, 0};
-		agl::Vec<float, 2> velocity = {0, 0};
-		float			   rotation = 0;
+		agl::Vec<float, 2> position		= {0, 0};
+		agl::Vec<float, 2> velocity		= {0, 0};
+		agl::Vec<float, 2> acceleration = {0, 0};
+		float			   rotation		= 0;
 
 		float radius;
 
@@ -68,7 +68,7 @@ class Creature
 		void setHealth(float health);
 		void setEnergy(float energy);
 
-		void updateNetwork(List<Food*> *existingFood, List<Creature *> *existingCreatures,
+		void updateNetwork(List<Food *> *existingFood, List<Creature *> *existingCreatures,
 						   agl::Vec<float, 2> worldSize);
 		void updateActions(Food *food);
 
