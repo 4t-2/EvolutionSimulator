@@ -76,3 +76,16 @@ Connection *CreatureData::getConnection()
 {
 	return connection;
 }
+
+float CreatureData::getSight()
+{
+	return sight;
+}
+float CreatureData::getSpeed()
+{
+	return speed;
+}
+float CreatureData::getTough()
+{
+	return tough;
+}

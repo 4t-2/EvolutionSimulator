@@ -2,6 +2,7 @@
 
 #include "../inc/Simulation.hpp"
 
+#include <X11/X.h>
 #include <cstdlib>
 #include <ctime>
 #include <math.h>
@@ -22,6 +23,11 @@ agl::Vec<float, 3> Vec2fVec3f(agl::Vec<float, 2> vec)
 	newVec.y = vec.y;
 
 	return newVec;
+}
+
+agl::Vec<float, 2> Vec2iVec2f(agl::Vec<int, 2> vec)
+{
+	return {(float)vec.x, (float)vec.y};
 }
 
 void printBits(unsigned char buffer[TOTAL_CONNECTIONS * 3])
@@ -58,8 +64,8 @@ int main()
 
 	agl::Camera camera;
 	camera.setOrthographicProjection(0, WIDTH, HEIGHT, 0, 0.1, 100);
-	agl::Vec<float, 3> cameraPosition = {0, 0, 50};
-	camera.setView(cameraPosition, {0, 0, 0}, {0, 1, 0});
+	agl::Vec<float, 2> cameraPosition = {0, 0};
+	camera.setView({cameraPosition.x, cameraPosition.y, 50}, {0, 0, 0}, {0, 1, 0});
 
 	agl::Texture blank;
 	blank.setBlank();
@@ -102,7 +108,7 @@ int main()
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH, -1});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, 0});
 
-	Simulation simulation({WIDTH, HEIGHT}, 4, 10, 2);
+	Simulation simulation({WIDTH / 2, HEIGHT / 2}, 4, 300, 2);
 
 	Creature		 *creature			= simulation.getCreatureBuffer();
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
@@ -125,7 +131,8 @@ int main()
 		printf("%d\n", buffer.data[(i * 3) + 2]);
 	}
 
-	bool mHeld = false;
+	bool mHeld	= false;
+	bool b1Held = false;
 
 	while (!event.windowClose())
 	{
@@ -287,15 +294,19 @@ int main()
 			focusCreature = nullptr;
 		}
 
+		static float sizeMultiplier = 1;
+
 		if (event.isPointerButtonPressed(Button1Mask))
 		{
 			for (int i = 0; i < existingCreatures->getLength(); i++)
 			{
 				agl::Vec<float, 2> mouse;
-				mouse.x = event.getPointerWindowPosition().x;
-				mouse.y = event.getPointerWindowPosition().y;
+				mouse.x = event.getPointerWindowPosition().x + (cameraPosition.x * sizeMultiplier) - (WIDTH / 2.);
+				mouse.y = event.getPointerWindowPosition().y + (cameraPosition.y * sizeMultiplier) - (HEIGHT / 2.);
 
 				float distance = (mouse - existingCreatures->get(i)->getPosition()).length();
+
+				printf("%x %f\n", existingCreatures->get(i), distance);
 
 				if (distance < 25)
 				{
@@ -305,6 +316,8 @@ int main()
 				}
 			}
 		}
+
+		printf("\n");
 
 		if (event.isPointerButtonPressed(Button3Mask))
 		{
@@ -325,26 +338,52 @@ int main()
 			}
 		}
 
+		static agl::Vec<float, 2> cameraOffset;
+		static agl::Vec<float, 2> startPos;
+
+		if (event.isPointerButtonPressed(Button1Mask))
+		{
+			if (b1Held) // holding click
+			{
+				cameraPosition = cameraPosition - cameraOffset;
+
+				cameraOffset = startPos - Vec2iVec2f(event.getPointerWindowPosition());
+				cameraOffset.x *= sizeMultiplier;
+				cameraOffset.y *= sizeMultiplier;
+
+				cameraPosition.x += cameraOffset.x;
+				cameraPosition.y += cameraOffset.y;
+			}
+			else // first click
+			{
+				startPos = Vec2iVec2f(event.getPointerWindowPosition());
+				b1Held	 = true;
+			}
+		}
+		else if (b1Held) // let go
+		{
+			cameraOffset = {0, 0};
+			b1Held		 = false;
+		}
+
 		static float cameraSpeed = 4;
 
-		if (event.isKeyPressed(XK_Up))
-		{
-			cameraPosition.y -= cameraSpeed;
-		}
 		if (event.isKeyPressed(XK_Down))
 		{
-			cameraPosition.y += cameraSpeed;
+			sizeMultiplier += .1;
 		}
-		if (event.isKeyPressed(XK_Left))
+		if (event.isKeyPressed(XK_Up))
 		{
-			cameraPosition.x -= cameraSpeed;
-		}
-		if (event.isKeyPressed(XK_Right))
-		{
-			cameraPosition.x += cameraSpeed;
+			sizeMultiplier -= .1;
+			if (sizeMultiplier < 0)
+			{
+				sizeMultiplier = 0;
+			}
 		}
 
-		camera.setView(cameraPosition, {cameraPosition.x, cameraPosition.y, 0}, {0, 1, 0});
+		camera.setOrthographicProjection(-((WIDTH / 2.) * sizeMultiplier), ((WIDTH / 2.) * sizeMultiplier),
+										 ((HEIGHT / 2.) * sizeMultiplier), -((HEIGHT / 2.) * sizeMultiplier), 0.1, 100);
+		camera.setView({cameraPosition.x, cameraPosition.y, 50}, {cameraPosition.x, cameraPosition.y, 0}, {0, 1, 0});
 	}
 
 	blank.deleteTexture();

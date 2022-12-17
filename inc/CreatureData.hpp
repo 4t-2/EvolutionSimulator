@@ -8,9 +8,9 @@ class CreatureData
 	private:
 		Connection *connection = nullptr;
 		int			totalConnections;
-		float		sight;
-		float		speed;
-		float		tough;
+		float		sight; // 0 - 2
+		float		speed; // 0 - 2
+		float		tough; // 0 - 2
 
 	public:
 		CreatureData();
@@ -22,6 +22,9 @@ class CreatureData
 
 		void setConnection(int index, int start, int end, float weight);
 
-		int				   getTotalConnections();
-		Connection		  *getConnection();
+		int			getTotalConnections();
+		Connection *getConnection();
+		float getSight();
+		float getSpeed();
+		float getTough();
 };

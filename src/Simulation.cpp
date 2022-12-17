@@ -52,13 +52,17 @@ void Simulation::destroy()
 
 Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
 {
-	Buffer buffer(creatureData.getTotalConnections() * 3);
+	Buffer buffer((creatureData.getTotalConnections() * 3) + 3);
+
+	buffer.data[0] = 255 * ((creatureData.getSight()) / 2);
+	buffer.data[1] = ((creatureData.getSpeed()) / 2);
+	buffer.data[2] = ((creatureData.getTough()) / 2);
 
 	for (int i = 0; i < creatureData.getTotalConnections(); i++)
 	{
-		buffer.data[(i * 3) + 0] = creatureData.getConnection()[i].startNode;
-		buffer.data[(i * 3) + 1] = creatureData.getConnection()[i].endNode;
-		buffer.data[(i * 3) + 2] = 127 * creatureData.getConnection()[i].weight;
+		buffer.data[(i * 3) + 0 + 3] = creatureData.getConnection()[i].startNode;
+		buffer.data[(i * 3) + 1 + 3] = creatureData.getConnection()[i].endNode;
+		buffer.data[(i * 3) + 2 + 3] = 255 * creatureData.getConnection()[i].weight;
 	}
 
 	return buffer;
@@ -66,14 +70,17 @@ Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
 
 CreatureData Simulation::bufferToCreatureData(Buffer buffer)
 {
-	CreatureData creatureData(0, 0, 0, buffer.size / 3);
+	CreatureData creatureData((buffer.data[0] * 2) / 255., //
+							  (buffer.data[1] * 2) / 255., //
+							  (buffer.data[2] * 2) / 255., //
+							  (buffer.size - 3) / 3);
 
 	for (int i = 0; i < creatureData.getTotalConnections(); i++)
 	{
 		creatureData.setConnection(i,							   // id
 								   buffer.data[(i * 3) + 0],	   // start
 								   buffer.data[(i * 3) + 1],	   // end
-								   buffer.data[(i * 3) + 2] / 127. // weight
+								   buffer.data[(i * 3) + 2] / 255. // weight
 		);
 	}
 
@@ -201,6 +208,7 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 		{
 			existingFood->add(&foodBuffer[i]);
 			foodBuffer[i].position = position;
+			foodBuffer[i].energy   = 10;
 			break;
 		}
 	}
@@ -316,6 +324,8 @@ void Simulation::update()
 
 			if (offset.length() < 10 && creature->getEating())
 			{
+				creature->setEnergy(creature->getEnergy() + food->energy);
+
 				existingFood->pop(i);
 				i--;
 			}

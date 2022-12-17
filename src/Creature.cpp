@@ -197,7 +197,8 @@ void Creature::updateActions(Food *food)
 
 	float speed = 0;
 
-	float maxSpeed = 0.001;
+	float maxSpeed = 1.5;
+	float maxRotation = 0.05;
 
 	if (network->getNode(FOWARD_OUTPUT).value > 0)
 	{
@@ -211,12 +212,12 @@ void Creature::updateActions(Food *food)
 
 	if (network->getNode(RIGHT_OUTPUT).value > 0)
 	{
-		rotation += 0.05 * network->getNode(RIGHT_OUTPUT).value;
+		rotation += maxRotation * network->getNode(RIGHT_OUTPUT).value;
 	}
 
 	if (network->getNode(LEFT_OUTPUT).value > 0)
 	{
-		rotation -= 0.05 * network->getNode(LEFT_OUTPUT).value;
+		rotation -= maxRotation * network->getNode(LEFT_OUTPUT).value;
 	}
 
 	if (network->getNode(EAT_OUTPUT).value > 0)
@@ -241,14 +242,12 @@ void Creature::updateActions(Food *food)
 
 	energy -= speed;
 
-	float			   density		 = 1;
-	agl::Vec<float, 2> airResistance = {density * velocity.x * velocity.x, //
-										density * velocity.y * velocity.y};
+	float			   density		 = 2;
+	agl::Vec<float, 2> airResistance = {velocity.x / density, //
+										velocity.y / density};
 
 	acceleration.x = cos(rotation - (PI / 2)) * speed;
 	acceleration.y = sin(rotation - (PI / 2)) * speed;
-
-	std::cout << velocity.length() << " " << airResistance.length() << '\n';
 
 	acceleration = acceleration - airResistance;
 
