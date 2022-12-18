@@ -67,6 +67,10 @@ int main()
 	agl::Vec<float, 2> cameraPosition = {0, 0};
 	camera.setView({cameraPosition.x, cameraPosition.y, 50}, {0, 0, 0}, {0, 1, 0});
 
+	agl::Camera guiCamera;
+	guiCamera.setOrthographicProjection(0, WIDTH, HEIGHT, 0, 0.1, 100);
+	guiCamera.setView({0, 0, 50}, {0, 0, 0}, {0, 1, 0});
+
 	agl::Texture blank;
 	blank.setBlank();
 
@@ -83,32 +87,34 @@ int main()
 	agl::Circle background(6);
 	background.setTexture(&blank);
 	background.setColor({15, 15, 15});
-	background.setPosition(agl::Vec<float, 3>{150, 150, -1});
+	background.setPosition(agl::Vec<float, 3>{150, 150, 1});
 	background.setSize(agl::Vec<float, 3>{150, 150, 1});
 
 	agl::Circle foodShape(10);
 	foodShape.setTexture(&blank);
 	foodShape.setColor(agl::Color::Green);
 	foodShape.setSize(agl::Vec<float, 3>{10, 10, 0});
+	foodShape.setOffset({0, 0, -3});
 
 	agl::Rectangle creatureShape;
 	creatureShape.setTexture(&blank);
 	creatureShape.setColor(agl::Color::White);
 	creatureShape.setSize(agl::Vec<float, 3>{25, 25, 0});
-	creatureShape.setOffset(agl::Vec<float, 3>{-12.5, -12.5, 0});
+	creatureShape.setOffset(agl::Vec<float, 3>{-12.5, -12.5, -1});
 
 	agl::Circle eggShape(10);
 	eggShape.setTexture(&blank);
 	eggShape.setColor(agl::Color::White);
 	eggShape.setSize(agl::Vec<float, 3>{10, 10, 0});
+	eggShape.setOffset({0, 0, -2});
 
 	agl::Rectangle rayShape;
 	rayShape.setTexture(&blank);
 	rayShape.setColor(agl::Color::White);
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH, -1});
-	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, 0});
+	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, -1.5});
 
-	Simulation simulation({WIDTH / 2, HEIGHT / 2}, 4, 300, 2);
+	Simulation simulation({WIDTH * 1, HEIGHT * 1}, 4, 300, 2);
 
 	Creature		 *creature			= simulation.getCreatureBuffer();
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
@@ -136,8 +142,6 @@ int main()
 
 	while (!event.windowClose())
 	{
-		window.updateMvp(camera);
-
 		event.pollWindow();
 		event.pollKeyboard();
 		event.pollPointer();
@@ -160,7 +164,9 @@ int main()
 
 		window.clear();
 
-		// AGL rendering
+		// Simulation rendering
+
+		window.updateMvp(camera);
 
 		// draw creature
 		for (int i = 0; i < existingCreatures->getLength(); i++)
@@ -177,7 +183,7 @@ int main()
 			foodShape.setColor(agl::Color::Green);
 
 			agl::Vec<float, 2> position = simulation.getExistingFood()->get(i)->position;
-			foodShape.setPosition(agl::Vec<float, 3>{position.x, position.y, -1});
+			foodShape.setPosition(agl::Vec<float, 2>{position.x, position.y});
 			window.drawShape(foodShape);
 		}
 
@@ -188,14 +194,10 @@ int main()
 			window.drawShape(eggShape);
 		}
 
-		// draw background
-		window.drawShape(background);
-
+		// draw rays
 		if (existingCreatures->find(focusCreature) != -1)
 		{
 			int index = existingCreatures->find(focusCreature);
-
-			// draw rays
 			for (int i = 0; i < RAY_TOTAL; i++)
 			{
 				float angleOffset = ((i / ((float)RAY_TOTAL - 1)) * 180) + 90;
@@ -209,6 +211,18 @@ int main()
 					0, 0, -float(existingCreatures->get(index)->getRotation() * 180 / PI) + angleOffset});
 				window.drawShape(rayShape);
 			}
+		}
+
+		// gui rendering
+
+		window.updateMvp(guiCamera);
+
+		// draw background
+		window.drawShape(background);
+
+		if (existingCreatures->find(focusCreature) != -1)
+		{
+			int index = existingCreatures->find(focusCreature);
 
 			// draw node connections
 			for (int i = 0; i < existingCreatures->get(existingCreatures->find(focusCreature))
@@ -218,17 +232,17 @@ int main()
 			{
 				float startAngle = (360. / existingCreatures->get(index)->getNeuralNetwork().getTotalNodes()) *
 								   (existingCreatures->get(index)->getNeuralNetwork().getConnection(i).startNode + 1);
-				agl::Vec<float, 3> start = Vec2fVec3f(agl::pointOnCircle(agl::degreeToRadian(startAngle)));
+				agl::Vec<float, 2> start = agl::pointOnCircle(agl::degreeToRadian(startAngle));
 				start.x					 = (start.x * 100) + 150;
 				start.y					 = (start.y * 100) + 150;
 
 				float endAngle = (360. / existingCreatures->get(index)->getNeuralNetwork().getTotalNodes()) *
 								 (existingCreatures->get(index)->getNeuralNetwork().getConnection(i).endNode + 1);
-				agl::Vec<float, 3> end = Vec2fVec3f(agl::pointOnCircle(agl::degreeToRadian(endAngle)));
+				agl::Vec<float, 2> end = agl::pointOnCircle(agl::degreeToRadian(endAngle));
 				end.x				   = (end.x * 100) + 150;
 				end.y				   = (end.y * 100) + 150;
 
-				agl::Vec<float, 3> offset = end - start;
+				agl::Vec<float, 2> offset = end - start;
 
 				float length = offset.length();
 				connectionShape.setSize(agl::Vec<float, 3>{2, length, 0});
@@ -261,14 +275,12 @@ int main()
 				float x = cos(angle * (3.14159 / 180));
 				float y = sin(angle * (3.14159 / 180));
 
-				agl::Vec<float, 3> pos;
+				agl::Vec<float, 2> pos;
 				pos.x = x * 100;
 				pos.y = y * 100;
 
 				pos.x += 150;
 				pos.y += 150;
-
-				pos.z = 3;
 
 				nodeShape.setPosition(pos);
 
@@ -301,12 +313,10 @@ int main()
 			for (int i = 0; i < existingCreatures->getLength(); i++)
 			{
 				agl::Vec<float, 2> mouse;
-				mouse.x = event.getPointerWindowPosition().x + (cameraPosition.x * sizeMultiplier) - (WIDTH / 2.);
-				mouse.y = event.getPointerWindowPosition().y + (cameraPosition.y * sizeMultiplier) - (HEIGHT / 2.);
+				mouse.x = ((event.getPointerWindowPosition().x - (WIDTH * .5)) * sizeMultiplier) + cameraPosition.x;
+				mouse.y = ((event.getPointerWindowPosition().y - (HEIGHT * .5)) * sizeMultiplier) + cameraPosition.y;
 
 				float distance = (mouse - existingCreatures->get(i)->getPosition()).length();
-
-				printf("%x %f\n", existingCreatures->get(i), distance);
 
 				if (distance < 25)
 				{
