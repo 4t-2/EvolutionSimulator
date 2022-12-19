@@ -13,7 +13,7 @@
 #define TOTAL_HIDDEN 6
 #define TOTAL_NODES	 (TOTAL_INPUT + TOTAL_HIDDEN)
 
-#define TOTAL_CONNECTIONS 2
+#define TOTAL_CONNECTIONS 20
 
 #define CONSTANT_INPUT		   0
 #define X_INPUT				   1

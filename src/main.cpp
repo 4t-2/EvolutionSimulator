@@ -3,6 +3,7 @@
 #include "../inc/Simulation.hpp"
 
 #include <X11/X.h>
+#include <cctype>
 #include <cstdlib>
 #include <ctime>
 #include <math.h>
@@ -114,7 +115,7 @@ int main()
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH, -1});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, -1.5});
 
-	Simulation simulation({WIDTH * 1, HEIGHT * 1}, 4, 300, 2);
+	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 20, 700, 20);
 
 	Creature		 *creature			= simulation.getCreatureBuffer();
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
@@ -390,6 +391,8 @@ int main()
 				sizeMultiplier = 0;
 			}
 		}
+
+		printf("%f\n", creature[0].getEnergy());
 
 		camera.setOrthographicProjection(-((WIDTH / 2.) * sizeMultiplier), ((WIDTH / 2.) * sizeMultiplier),
 										 ((HEIGHT / 2.) * sizeMultiplier), -((HEIGHT / 2.) * sizeMultiplier), 0.1, 100);

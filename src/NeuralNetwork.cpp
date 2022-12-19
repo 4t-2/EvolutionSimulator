@@ -96,8 +96,8 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	// set connections stored to be equal to inputted ones
 	for (int i = 0; i < totalConnections; i++)
 	{
-		this->connection[i]	   = connection[i];
-		this->connection[i].id = i;
+		this->connection[i]		  = connection[i];
+		this->connection[i].id	  = i;
 		this->connection[i].valid = true;
 	}
 
@@ -133,6 +133,30 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 			}
 		}
 	}
+
+	// // invalidate connection to and from non existing nodes
+	// for (int i = 0; i < this->totalConnections; i++)
+	// {
+	// 	if (this->connection[i].valid)
+	// 	{
+	// 		if (this->connection[i].startNode >= totalNodes || this->connection[i].endNode >= totalNodes)
+	// 		{
+	// 			this->connection[i].valid = false;
+	// 		}
+	// 	}
+	// }
+
+	// // invalid connections going into themself
+	// for (int i = 0; i < this->totalConnections; i++)
+	// {
+	// 	if (this->connection[i].valid)
+	// 	{
+	// 		if (this->connection[i].startNode == this->connection[i].endNode)
+	// 		{
+	// 			this->connection[i].valid = false;
+	// 		}
+	// 	}
+	// }
 
 	// Invalidate looping connections
 
@@ -171,7 +195,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		if (isConnectionBase[i])
 		{
 			bool *isNodeVisited = new bool[31];
-			
+
 			for (int i = 0; i < this->totalNodes; i++)
 			{
 				isNodeVisited[i] = false;

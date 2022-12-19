@@ -1,5 +1,19 @@
 #include "../inc/Simulation.hpp"
 
+void randomData(Buffer *buffer)
+{
+	for(int i = 0; i < buffer->size; i++)
+	{
+		for (int x = 0; x < 8; x++)
+		{
+			int bit	= (((float)rand() / (float)RAND_MAX) * 2);
+			buffer->data[i] = buffer->data[i] | (bit << x);
+		}
+	}
+
+	return;
+}
+
 Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, int maxEggs)
 {
 	this->size		   = size;
@@ -18,17 +32,19 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 	foodBuffer	 = new Food[this->maxFood];
 	existingFood = new List<Food *>(this->maxFood);
 
-	CreatureData creatureData(0, 0, 0, 2);
+	for(int i = 0; i < maxCreatures; i++)
+	{
+		Buffer buffer(3+(TOTAL_CONNECTIONS*3));
+		randomData(&buffer);
 
-	creatureData.setConnection(0, CONSTANT_INPUT, RIGHT_OUTPUT, 1);
-	creatureData.setConnection(1, CONSTANT_INPUT, FOWARD_OUTPUT, 0.5);
+		CreatureData creatureData = this->bufferToCreatureData(buffer);
 
-	this->addCreature(creatureData, {(float)size.x / 2, (float)size.y / 2});
+		agl::Vec<float, 2> position;
+		position.x = (rand() / (float)RAND_MAX) * size.x;
+		position.y = (rand() / (float)RAND_MAX) * size.y;
 
-	creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
-	creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 0.5);
-
-	this->addCreature(creatureData, {((float)size.x / 2) + 100, ((float)size.y / 2) + 100});
+		this->addCreature(creatureData, position);
+	}
 
 	for (int i = 0; i < this->maxFood; i++)
 	{
@@ -278,9 +294,15 @@ void Simulation::update()
 				if (distance < 25)
 				{
 					eatenCreature->setHealth(eatenCreature->getHealth() - 1);
-					printf("health now %f\n", eatenCreature->getHealth());
 				}
 			}
+		}
+
+		// tired creature damage
+		if (existingCreatures->get(i)->getEnergy() <= 0)
+		{
+			existingCreatures->get(i)->setHealth(existingCreatures->get(i)->getHealth() - 1);
+			existingCreatures->get(i)->setEnergy(0);
 		}
 	}
 

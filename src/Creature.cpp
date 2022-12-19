@@ -118,6 +118,15 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *existingCreature,
 							 agl::Vec<float, 2> worldSize)
 {
+	network->setInputNode(CONSTANT_INPUT, 1);
+
+	network->setInputNode(X_INPUT, ((position.x / worldSize.x) * 2) - 1);
+	network->setInputNode(Y_INPUT, ((position.y / worldSize.y) * 2) - 1);
+
+	network->setInputNode(ROTATION_INPUT, rotation / PI);
+
+	network->setInputNode(SPEED_INPUT, velocity.length());
+
 	for (int x = 0; x < RAY_TOTAL; x++)
 	{
 		float nearestDistance = RAY_LENGTH;
@@ -184,8 +193,6 @@ void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *exist
 		network->setInputNode((x + 5) + RAY_TOTAL, type);
 	}
 
-	network->setInputNode(0, 1);
-
 	network->update();
 
 	return;
@@ -197,7 +204,7 @@ void Creature::updateActions(Food *food)
 
 	float speed = 0;
 
-	float maxSpeed = 1.5;
+	float maxSpeed	  = 1.5;
 	float maxRotation = 0.05;
 
 	if (network->getNode(FOWARD_OUTPUT).value > 0)
@@ -240,7 +247,8 @@ void Creature::updateActions(Food *food)
 
 	rotation = loop(-PI, PI, rotation);
 
-	energy -= speed;
+	energy -= speed / 10;
+	energy -= 0.01;
 
 	float			   density		 = 2;
 	agl::Vec<float, 2> airResistance = {velocity.x / density, //
