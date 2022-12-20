@@ -32,12 +32,21 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 	foodBuffer	 = new Food[this->maxFood];
 	existingFood = new List<Food *>(this->maxFood);
 
-	for(int i = 0; i < maxCreatures; i++)
-	{
-		Buffer buffer(3+(TOTAL_CONNECTIONS*3));
-		randomData(&buffer);
+	int connections = 10;
 
-		CreatureData creatureData = this->bufferToCreatureData(buffer);
+	for(int i = 0; i < maxCreatures / 2; i++)
+	{
+		// Buffer buffer(3+(connections*3));
+		// randomData(&buffer);
+		//
+		// CreatureData creatureData = this->bufferToCreatureData(buffer);
+
+		CreatureData creatureData(0, 0, 0, connections);
+		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
+		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
+		creatureData.setConnection(2, FOOD_ROTATION, LEFT_OUTPUT, 1);
+		creatureData.setConnection(3, FOOD_ROTATION, RIGHT_OUTPUT, -1);
+		creatureData.setConnection(4, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
 
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * size.x;
@@ -45,6 +54,15 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 
 		this->addCreature(creatureData, position);
 	}
+
+	// CreatureData c1(0, 0, 0, 2);
+	// c1.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
+	// c1.setConnection(1, CONSTANT_INPUT, LEFT_OUTPUT, 1);
+	// this->addCreature(c1, {500, 500});
+	//
+	// CreatureData c2(0, 0, 0, 1);
+	// c2.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 0.1);
+	// this->addCreature(c2, {450, 500});
 
 	for (int i = 0; i < this->maxFood; i++)
 	{
@@ -224,7 +242,7 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 		{
 			existingFood->add(&foodBuffer[i]);
 			foodBuffer[i].position = position;
-			foodBuffer[i].energy   = 10;
+			foodBuffer[i].energy   = 100;
 			break;
 		}
 	}
@@ -264,7 +282,7 @@ void Simulation::update()
 			{
 				eggLayer->setEnergy(eggLayer->getEnergy() - 60);
 
-				CreatureData creatureData = eggLayer->saveData();
+				CreatureData creatureData = eggLayer->getCreatureData();
 				Buffer		 buffer		  = creatureDataToBuffer(creatureData);
 
 				mutateBuffer(&buffer, 10);
@@ -352,6 +370,17 @@ void Simulation::update()
 				i--;
 			}
 		}
+	}
+
+	// adding more food
+	if(existingFood->getLength() < maxFood)
+	{
+		
+		agl::Vec<float, 2> position;
+		position.x = (rand() / (float)RAND_MAX) * size.x;
+		position.y = (rand() / (float)RAND_MAX) * size.y;
+
+		this->addFood(position);
 	}
 }
 

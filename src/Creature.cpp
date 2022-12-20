@@ -1,31 +1,5 @@
 #include "../inc/Creature.hpp"
 
-float vectorAngle(agl::Vec<float, 2> vec)
-{
-	float angle = atan(vec.x / vec.y);
-
-	if (vec.y < 0)
-	{
-		angle *= -1;
-
-		if (vec.x > 0)
-		{
-			angle = PI - angle;
-		}
-		else
-		{
-			angle = -(PI + angle);
-		}
-	}
-
-	return angle;
-}
-
-float loop(float min, float max, float value)
-{
-	return value - (max + abs(min)) * int(value / max);
-}
-
 Creature::Creature()
 {
 	return;
@@ -50,17 +24,30 @@ void Creature::setup(CreatureData &creatureData)
 	// Eat
 	// Lay egg
 
-	network = new NeuralNetwork(TOTAL_NODES, 5 + (RAY_TOTAL * 2), creatureData.getConnection(),
-								creatureData.getTotalConnections());
+	this->creatureData = creatureData;
+	this->energy	   = 50;
+
+	network =
+		new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, creatureData.getConnection(), creatureData.getTotalConnections());
 }
 
 void Creature::clear()
 {
 	delete network;
 
-	position = {0, 0};
-	velocity = {0, 0};
-	rotation = 0;
+	position	 = {0, 0};
+	velocity	 = {0, 0};
+	acceleration = {0, 0};
+	rotation	 = 0;
+	radius		 = 0;
+	network		 = nullptr;
+	eating		 = false;
+	layingEgg	 = false;
+	sight		 = 0;
+	speed		 = 0;
+	tough		 = 0;
+	energy		 = 100;
+	health		 = 100;
 
 	return;
 }
@@ -127,71 +114,121 @@ void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *exist
 
 	network->setInputNode(SPEED_INPUT, velocity.length());
 
-	for (int x = 0; x < RAY_TOTAL; x++)
+	// for (int x = 0; x < RAY_TOTAL; x++)
+	// {
+	// 	float nearestDistance = RAY_LENGTH;
+	// 	int	  type			  = 0;
+	//
+	// 	for (int i = 0; i < existingFood->getLength(); i++)
+	// 	{
+	// 		agl::Vec<float, 2> offset	= position -
+	// existingFood->get(i)->position; 		float distance =
+	// offset.length();
+	//
+	// 		if (distance > nearestDistance)
+	// 		{
+	// 			continue;
+	// 		}
+	//
+	// 		float foodRotation	= vectorAngle(offset);
+	// 		float creatureAngle = rotation;
+	// 		float rayAngle		= (((float)x / (RAY_TOTAL - 1)) * PI) -
+	// (PI / 2);
+	//
+	// 		rayAngle -= creatureAngle;
+	//
+	// 		float angleDifference	 = loop(-PI, PI, foodRotation -
+	// rayAngle); 		float maxAngleDifference = (PI / RAY_TOTAL) / 2;
+	//
+	// 		if (angleDifference < maxAngleDifference && angleDifference >
+	// -maxAngleDifference)
+	// 		{
+	// 			nearestDistance = distance;
+	// 			type			= 1;
+	// 		}
+	// 	}
+	//
+	// 	for (int i = 0; i < existingCreature->getLength(); i++)
+	// 	{
+	// 		if (existingCreature->get(i) == this)
+	// 		{
+	// 			continue;
+	// 		}
+	//
+	// 		agl::Vec<float, 2> offset	= position -
+	// existingCreature->get(i)->getPosition();
+	// 		float			   distance = offset.length();
+	//
+	// 		if (distance > nearestDistance)
+	// 		{
+	// 			continue;
+	// 		}
+	//
+	// 		float creatureRotation = vectorAngle(offset);
+	// 		float creatureAngle	   = rotation;
+	// 		float rayAngle		   = (((float)x / (RAY_TOTAL - 1)) * PI) -
+	// (PI / 2);
+	//
+	// 		rayAngle -= creatureAngle;
+	//
+	// 		float angleDifference	 = loop(-PI, PI, creatureRotation -
+	// rayAngle); 		float maxAngleDifference = (PI / RAY_TOTAL) / 2;
+	//
+	// 		if (angleDifference < maxAngleDifference && angleDifference >
+	// -maxAngleDifference)
+	// 		{
+	// 			nearestDistance = distance;
+	// 			type			= -1;
+	// 		}
+	// 	}
+	//
+	// 	network->setInputNode((x + 5), (RAY_LENGTH - nearestDistance) /
+	// RAY_LENGTH); 	network->setInputNode((x + 5) + RAY_TOTAL, type);
+	// }
+
+	float creatureDistance = RAY_LENGTH;
+	float creatureRotation = 0;
+	float foodDistance	   = RAY_LENGTH;
+	float foodRotation	   = 0;
+
+	for (int i = 0; i < existingCreature->getLength(); i++)
 	{
-		float nearestDistance = RAY_LENGTH;
-		int	  type			  = 0;
-
-		for (int i = 0; i < existingFood->getLength(); i++)
+		if (existingCreature->get(i) == this)
 		{
-			agl::Vec<float, 2> offset	= position - existingFood->get(i)->position;
-			float			   distance = offset.length();
-
-			if (distance > nearestDistance)
-			{
-				continue;
-			}
-
-			float foodRotation	= vectorAngle(offset);
-			float creatureAngle = rotation;
-			float rayAngle		= (((float)x / (RAY_TOTAL - 1)) * PI) - (PI / 2);
-
-			rayAngle -= creatureAngle;
-
-			float angleDifference	 = loop(-PI, PI, foodRotation - rayAngle);
-			float maxAngleDifference = (PI / RAY_TOTAL) / 2;
-
-			if (angleDifference < maxAngleDifference && angleDifference > -maxAngleDifference)
-			{
-				nearestDistance = distance;
-				type			= 1;
-			}
+			continue;
 		}
 
-		for (int i = 0; i < existingCreature->getLength(); i++)
+		agl::Vec<float, 2> offset	= position - existingCreature->get(i)->position;
+		float			   distance = offset.length();
+
+		if (distance > creatureDistance)
 		{
-			if (existingCreature->get(i) == this)
-			{
-				continue;
-			}
-
-			agl::Vec<float, 2> offset	= position - existingCreature->get(i)->getPosition();
-			float			   distance = offset.length();
-
-			if (distance > nearestDistance)
-			{
-				continue;
-			}
-
-			float creatureRotation = vectorAngle(offset);
-			float creatureAngle	   = rotation;
-			float rayAngle		   = (((float)x / (RAY_TOTAL - 1)) * PI) - (PI / 2);
-
-			rayAngle -= creatureAngle;
-
-			float angleDifference	 = loop(-PI, PI, creatureRotation - rayAngle);
-			float maxAngleDifference = (PI / RAY_TOTAL) / 2;
-
-			if (angleDifference < maxAngleDifference && angleDifference > -maxAngleDifference)
-			{
-				nearestDistance = distance;
-				type			= -1;
-			}
+			continue;
 		}
 
-		network->setInputNode((x + 5), (RAY_LENGTH - nearestDistance) / RAY_LENGTH);
-		network->setInputNode((x + 5) + RAY_TOTAL, type);
+		creatureRotation = vectorAngle(offset) + rotation;
+		creatureDistance = distance;
 	}
+
+	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / RAY_LENGTH));
+	network->setInputNode(CREATURE_ROTATION, creatureRotation / PI);
+
+	for (int i = 0; i < existingFood->getLength(); i++)
+	{
+		agl::Vec<float, 2> offset	= position - existingFood->get(i)->position;
+		float			   distance = offset.length();
+
+		if (distance > foodDistance)
+		{
+			continue;
+		}
+
+		foodRotation = vectorAngle(offset) + rotation;
+		foodDistance = distance;
+	}
+
+	network->setInputNode(FOOD_DISTANCE, 1 - (foodDistance / RAY_LENGTH));
+	network->setInputNode(FOOD_ROTATION, foodRotation / PI);
 
 	network->update();
 
@@ -247,8 +284,8 @@ void Creature::updateActions(Food *food)
 
 	rotation = loop(-PI, PI, rotation);
 
-	energy -= speed / 10;
-	energy -= 0.01;
+	energy -= abs(speed) / 50; // needs to be absolute as going backwards would create energy
+	energy -= 0.03;
 
 	float			   density		 = 2;
 	agl::Vec<float, 2> airResistance = {velocity.x / density, //
@@ -268,16 +305,8 @@ void Creature::updateActions(Food *food)
 	return;
 }
 
-CreatureData Creature::saveData()
+CreatureData Creature::getCreatureData()
 {
-	CreatureData creatureData(sight, speed, tough, network->getTotalConnections());
-
-	for (int i = 0; i < TOTAL_CONNECTIONS; i++)
-	{
-		creatureData.setConnection(i, network->getConnection(i).startNode, network->getConnection(i).endNode,
-								   network->getConnection(i).weight);
-	}
-
 	return creatureData;
 }
 

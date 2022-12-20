@@ -5,22 +5,24 @@
 #include "Food.hpp"
 #include "List.hpp"
 #include "NeuralNetwork.hpp"
+#include "other.hpp"
 
 #define RAY_TOTAL  10
 #define RAY_LENGTH 500
 
-#define TOTAL_INPUT	 (5 + (RAY_TOTAL * 2))
-#define TOTAL_HIDDEN 6
-#define TOTAL_NODES	 (TOTAL_INPUT + TOTAL_HIDDEN)
+#define TOTAL_INPUT	 (10)
+#define TOTAL_OUTPUT 6
+#define TOTAL_NODES	 (TOTAL_INPUT + TOTAL_OUTPUT)
 
-#define TOTAL_CONNECTIONS 20
-
-#define CONSTANT_INPUT		   0
-#define X_INPUT				   1
-#define Y_INPUT				   2
-#define ROTATION_INPUT		   3
-#define SPEED_INPUT			   4
-#define RAYDISTANCESTART_INPUT 5
+#define CONSTANT_INPUT	  0
+#define X_INPUT			  1
+#define Y_INPUT			  2
+#define ROTATION_INPUT	  3
+#define SPEED_INPUT		  4
+#define FOOD_DISTANCE	  6
+#define FOOD_ROTATION	  7
+#define CREATURE_DISTANCE 8
+#define CREATURE_ROTATION 9
 
 #define FOWARD_OUTPUT	(TOTAL_INPUT + 0)
 #define BACKWARD_OUTPUT (TOTAL_INPUT + 1)
@@ -29,28 +31,29 @@
 #define EAT_OUTPUT		(TOTAL_INPUT + 4)
 #define LAYEGG_OUTPUT	(TOTAL_INPUT + 5)
 
-class Creature
-{
+    class Creature {
 	private:
 		agl::Vec<float, 2> position		= {0, 0};
 		agl::Vec<float, 2> velocity		= {0, 0};
 		agl::Vec<float, 2> acceleration = {0, 0};
 		float			   rotation		= 0;
 
-		float radius;
+		float radius = 0;
 
-		NeuralNetwork *network;
+		NeuralNetwork *network = nullptr;
 
 		bool eating	   = false;
 		bool layingEgg = false;
 
-		float sight;
-		float speed;
-		float tough;
+		float sight = 0;
+		float speed = 0;
+		float tough = 0;
 
 		// sight + (speed^2)(tough^2)
 		float energy = 100;
 		float health = 100;
+
+		CreatureData creatureData;
 
 	public:
 		float closest;
@@ -72,7 +75,7 @@ class Creature
 						   agl::Vec<float, 2> worldSize);
 		void updateActions(Food *food);
 
-		CreatureData saveData();
+		CreatureData getCreatureData();
 
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();

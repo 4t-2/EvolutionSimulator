@@ -96,9 +96,11 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	// set connections stored to be equal to inputted ones
 	for (int i = 0; i < totalConnections; i++)
 	{
-		this->connection[i]		  = connection[i];
-		this->connection[i].id	  = i;
-		this->connection[i].valid = true;
+		this->connection[i].endNode	  = connection[i].endNode % totalNodes;
+		this->connection[i].startNode = connection[i].startNode % totalNodes;
+		this->connection[i].weight	  = connection[i].weight;
+		this->connection[i].id		  = i;
+		this->connection[i].valid	  = true;
 	}
 
 	// Invalidate duplicated connections
@@ -139,7 +141,8 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	// {
 	// 	if (this->connection[i].valid)
 	// 	{
-	// 		if (this->connection[i].startNode >= totalNodes || this->connection[i].endNode >= totalNodes)
+	// 		if (this->connection[i].startNode >= totalNodes ||
+	// this->connection[i].endNode >= totalNodes)
 	// 		{
 	// 			this->connection[i].valid = false;
 	// 		}
@@ -151,7 +154,8 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	// {
 	// 	if (this->connection[i].valid)
 	// 	{
-	// 		if (this->connection[i].startNode == this->connection[i].endNode)
+	// 		if (this->connection[i].startNode ==
+	// this->connection[i].endNode)
 	// 		{
 	// 			this->connection[i].valid = false;
 	// 		}
