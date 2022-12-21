@@ -4,6 +4,7 @@
 
 #include <X11/X.h>
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <math.h>
@@ -29,6 +30,17 @@ agl::Vec<float, 3> Vec2fVec3f(agl::Vec<float, 2> vec)
 agl::Vec<float, 2> Vec2iVec2f(agl::Vec<int, 2> vec)
 {
 	return {(float)vec.x, (float)vec.y};
+}
+
+void printConnections(CreatureData creatureData)
+{
+	for (int i = 0; i < creatureData.getTotalConnections(); i++)
+	{
+		printf("connection %d going from %d to %d with weight %f\n", i, creatureData.getConnection()[i].startNode,
+			   creatureData.getConnection()[i].endNode, creatureData.getConnection()[i].weight);
+	}
+
+	return;
 }
 
 int main()
@@ -99,7 +111,7 @@ int main()
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH, -1});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, -1.5});
 
-	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 60, 700, 20);
+	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 1000, 500, 100);
 
 	Creature		 *creature			= simulation.getCreatureBuffer();
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
@@ -113,8 +125,11 @@ int main()
 
 	Buffer buffer = Simulation::creatureDataToBuffer(creatureData);
 
-	bool mHeld	= false;
-	bool b1Held = false;
+	bool mHeld		= false;
+	bool b1Held		= false;
+	bool ReturnHeld = false;
+
+	bool skipRender = false;
 
 	while (!event.windowClose())
 	{
@@ -136,6 +151,21 @@ int main()
 			mHeld = false;
 
 			existingCreatures->pop(0);
+		}
+
+		if (event.isKeyPressed(XK_Return))
+		{
+			ReturnHeld = true;
+		}
+		else if (ReturnHeld)
+		{
+			ReturnHeld = false;
+			skipRender = !skipRender;
+		}
+
+		if (skipRender)
+		{
+			goto skipRendering;
 		}
 
 		window.clear();
@@ -170,9 +200,19 @@ int main()
 			window.drawShape(eggShape);
 		}
 
+		printf("\n");
+
 		// draw rays
 		if (existingCreatures->find(focusCreature) != -1)
 		{
+			printf("eating %d\n", focusCreature->getEating());
+			printf("egg laying %d\n", focusCreature->getLayingEgg());
+			printf("health %f\n", focusCreature->getHealth());
+			printf("energy %f\n", focusCreature->getEnergy());
+			printf("life left %d\n", focusCreature->getLifeLeft());
+			printf("food angle %f\n", focusCreature->getNeuralNetwork().getNode(FOOD_ROTATION).value);
+			printf("creature angle %f\n", focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value);
+
 			{
 				float angleOffset = focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value * 180;
 				angleOffset += 180;
@@ -285,11 +325,15 @@ int main()
 
 				window.drawShape(nodeShape);
 			}
-
-			printf("%f %f\n", focusCreature->getHealth(), focusCreature->getEnergy());
 		}
 
 		window.display();
+
+		printf("total creatures %d\n", existingCreatures->getLength());
+		printf("total eggs %d\n", existingEggs->getLength());
+		printf("total food %d\n", simulation.getExistingFood()->getLength());
+
+	skipRendering:;
 
 		if (event.isKeyPressed(XK_r))
 		{

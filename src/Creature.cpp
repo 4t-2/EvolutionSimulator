@@ -26,6 +26,8 @@ void Creature::setup(CreatureData &creatureData)
 
 	this->creatureData = creatureData;
 	this->energy	   = 50;
+	this->health	   = 100;
+	this->lifeLeft	   = 60 * 60;
 
 	network =
 		new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, creatureData.getConnection(), creatureData.getTotalConnections());
@@ -46,8 +48,8 @@ void Creature::clear()
 	sight		 = 0;
 	speed		 = 0;
 	tough		 = 0;
-	energy		 = 100;
-	health		 = 100;
+	energy		 = 0;
+	health		 = 0;
 
 	return;
 }
@@ -166,8 +168,8 @@ void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *exist
 	//
 	// 		float creatureRotation = vectorAngle(offset);
 	// 		float creatureAngle	   = rotation;
-	// 		float rayAngle		   = (((float)x / (RAY_TOTAL - 1)) * PI) -
-	// (PI / 2);
+	// 		float rayAngle		   = (((float)x / (RAY_TOTAL - 1)) * PI)
+	// - (PI / 2);
 	//
 	// 		rayAngle -= creatureAngle;
 	//
@@ -211,7 +213,7 @@ void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *exist
 	}
 
 	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / RAY_LENGTH));
-	network->setInputNode(CREATURE_ROTATION, creatureRotation / PI);
+	network->setInputNode(CREATURE_ROTATION, loop(-PI, PI, creatureRotation) / PI);
 
 	for (int i = 0; i < existingFood->getLength(); i++)
 	{
@@ -284,8 +286,10 @@ void Creature::updateActions(Food *food)
 
 	rotation = loop(-PI, PI, rotation);
 
-	energy -= abs(speed) / 50; // needs to be absolute as going backwards would create energy
-	energy -= 0.03;
+	energy -= abs(speed) / 200; // needs to be absolute as going backwards would create energy
+	energy -= 0.005;
+
+	lifeLeft--;
 
 	float			   density		 = 2;
 	agl::Vec<float, 2> airResistance = {velocity.x / density, //
@@ -348,4 +352,9 @@ float Creature::getHealth()
 float Creature::getEnergy()
 {
 	return energy;
+}
+
+int Creature::getLifeLeft()
+{
+	return lifeLeft;
 }

@@ -2,11 +2,11 @@
 
 void randomData(Buffer *buffer)
 {
-	for(int i = 0; i < buffer->size; i++)
+	for (int i = 0; i < buffer->size; i++)
 	{
 		for (int x = 0; x < 8; x++)
 		{
-			int bit	= (((float)rand() / (float)RAND_MAX) * 2);
+			int bit			= (((float)rand() / (float)RAND_MAX) * 2);
 			buffer->data[i] = buffer->data[i] | (bit << x);
 		}
 	}
@@ -34,14 +34,13 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 
 	int connections = 10;
 
-	for(int i = 0; i < maxCreatures / 2; i++)
+	for (int i = 0; i < 10; i++)
 	{
-		// Buffer buffer(3+(connections*3));
-		// randomData(&buffer);
-		//
-		// CreatureData creatureData = this->bufferToCreatureData(buffer);
+		Buffer buffer(3 + (connections * 3));
+		randomData(&buffer);
 
-		CreatureData creatureData(0, 0, 0, connections);
+		CreatureData creatureData = this->bufferToCreatureData(buffer);
+
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
 		creatureData.setConnection(2, FOOD_ROTATION, LEFT_OUTPUT, 1);
@@ -54,15 +53,6 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 
 		this->addCreature(creatureData, position);
 	}
-
-	// CreatureData c1(0, 0, 0, 2);
-	// c1.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
-	// c1.setConnection(1, CONSTANT_INPUT, LEFT_OUTPUT, 1);
-	// this->addCreature(c1, {500, 500});
-	//
-	// CreatureData c2(0, 0, 0, 1);
-	// c2.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 0.1);
-	// this->addCreature(c2, {450, 500});
 
 	for (int i = 0; i < this->maxFood; i++)
 	{
@@ -96,7 +86,7 @@ Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
 	{
 		buffer.data[(i * 3) + 0 + 3] = creatureData.getConnection()[i].startNode;
 		buffer.data[(i * 3) + 1 + 3] = creatureData.getConnection()[i].endNode;
-		buffer.data[(i * 3) + 2 + 3] = 255 * creatureData.getConnection()[i].weight;
+		buffer.data[(i * 3) + 2 + 3] = 127 * (creatureData.getConnection()[i].weight + 1);
 	}
 
 	return buffer;
@@ -111,10 +101,10 @@ CreatureData Simulation::bufferToCreatureData(Buffer buffer)
 
 	for (int i = 0; i < creatureData.getTotalConnections(); i++)
 	{
-		creatureData.setConnection(i,							   // id
-								   buffer.data[(i * 3) + 0],	   // start
-								   buffer.data[(i * 3) + 1],	   // end
-								   buffer.data[(i * 3) + 2] / 255. // weight
+		creatureData.setConnection(i,										 // id
+								   buffer.data[(i * 3) + 0 + 3],			 // start
+								   buffer.data[(i * 3) + 1 + 3],			 // end
+								   (buffer.data[(i * 3) + 2 + 3] / 127.) - 1 // weight
 		);
 	}
 
@@ -157,6 +147,8 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 			existingCreatures->add(&creatureBuffer[i]);
 			creatureBuffer[i].setup(creatureData);
 			creatureBuffer[i].setPosition(position);
+			creatureBuffer[i].setRotation(((float)rand() / (float)RAND_MAX) * PI * 2);
+
 			break;
 		}
 	}
@@ -242,7 +234,7 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 		{
 			existingFood->add(&foodBuffer[i]);
 			foodBuffer[i].position = position;
-			foodBuffer[i].energy   = 100;
+			foodBuffer[i].energy   = 20;
 			break;
 		}
 	}
@@ -285,7 +277,7 @@ void Simulation::update()
 				CreatureData creatureData = eggLayer->getCreatureData();
 				Buffer		 buffer		  = creatureDataToBuffer(creatureData);
 
-				mutateBuffer(&buffer, 10);
+				mutateBuffer(&buffer, 50);
 
 				CreatureData mutatedData = bufferToCreatureData(buffer);
 
@@ -321,6 +313,12 @@ void Simulation::update()
 		{
 			existingCreatures->get(i)->setHealth(existingCreatures->get(i)->getHealth() - 1);
 			existingCreatures->get(i)->setEnergy(0);
+		}
+
+		// age damage
+		if (existingCreatures->get(i)->getLifeLeft() < 0)
+		{
+			existingCreatures->get(i)->setHealth(existingCreatures->get(i)->getHealth() - 1);
 		}
 	}
 
@@ -373,9 +371,9 @@ void Simulation::update()
 	}
 
 	// adding more food
-	if(existingFood->getLength() < maxFood)
+	if (existingFood->getLength() < maxFood)
 	{
-		
+
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * size.x;
 		position.y = (rand() / (float)RAND_MAX) * size.y;

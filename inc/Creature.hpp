@@ -7,8 +7,7 @@
 #include "NeuralNetwork.hpp"
 #include "other.hpp"
 
-#define RAY_TOTAL  10
-#define RAY_LENGTH 500
+#define RAY_LENGTH 1000
 
 #define TOTAL_INPUT	 (10)
 #define TOTAL_OUTPUT 6
@@ -31,7 +30,8 @@
 #define EAT_OUTPUT		(TOTAL_INPUT + 4)
 #define LAYEGG_OUTPUT	(TOTAL_INPUT + 5)
 
-    class Creature {
+class Creature
+{
 	private:
 		agl::Vec<float, 2> position		= {0, 0};
 		agl::Vec<float, 2> velocity		= {0, 0};
@@ -50,8 +50,10 @@
 		float tough = 0;
 
 		// sight + (speed^2)(tough^2)
-		float energy = 100;
-		float health = 100;
+		float energy = 0;
+		float health = 0;
+
+		int lifeLeft = 0;
 
 		CreatureData creatureData;
 
@@ -85,4 +87,5 @@
 		bool			   getLayingEgg();
 		float			   getHealth();
 		float			   getEnergy();
+		int				   getLifeLeft();
 };
