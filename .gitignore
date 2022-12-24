@@ -33,3 +33,5 @@
 
 # AGL library
 lib/AGL
+
+*.xcf

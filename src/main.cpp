@@ -50,6 +50,9 @@ int main()
 	window.setClearColor(agl::Color::Black);
 	window.setFPS(60);
 
+	window.GLEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_GREATER, 0.1f);
+
 	agl::Event event;
 	event.setWindow(window);
 
@@ -66,6 +69,15 @@ int main()
 	agl::Camera guiCamera;
 	guiCamera.setOrthographicProjection(0, WIDTH, HEIGHT, 0, 0.1, 100);
 	guiCamera.setView({0, 0, 50}, {0, 0, 0}, {0, 1, 0});
+
+	agl::Texture foodTexture;
+	foodTexture.loadFromFile("./img/food.png");
+
+	agl::Texture creatureTexture;
+	creatureTexture.loadFromFile("./img/creature.png");
+
+	agl::Texture eggTexture;
+	eggTexture.loadFromFile("./img/egg.png");
 
 	agl::Texture blank;
 	blank.setBlank();
@@ -87,23 +99,23 @@ int main()
 	background.setPosition(agl::Vec<float, 3>{150, 150, 1});
 	background.setSize(agl::Vec<float, 3>{150, 150, 1});
 
-	agl::Circle foodShape(10);
-	foodShape.setTexture(&blank);
+	agl::Rectangle foodShape;
+	foodShape.setTexture(&foodTexture);
 	foodShape.setColor(agl::Color::Green);
 	foodShape.setSize(agl::Vec<float, 3>{10, 10, 0});
-	foodShape.setOffset({0, 0, -3});
+	foodShape.setOffset({5, 5, -3});
 
 	agl::Rectangle creatureShape;
-	creatureShape.setTexture(&blank);
+	creatureShape.setTexture(&creatureTexture);
 	creatureShape.setColor(agl::Color::White);
-	creatureShape.setSize(agl::Vec<float, 3>{25, 25, 0});
+	creatureShape.setSize(agl::Vec<float, 3>{25, 60, 0});
 	creatureShape.setOffset(agl::Vec<float, 3>{-12.5, -12.5, -1});
 
-	agl::Circle eggShape(10);
-	eggShape.setTexture(&blank);
+	agl::Rectangle eggShape;
+	eggShape.setTexture(&eggTexture);
 	eggShape.setColor(agl::Color::White);
-	eggShape.setSize(agl::Vec<float, 3>{10, 10, 0});
-	eggShape.setOffset({0, 0, -2});
+	eggShape.setSize(agl::Vec<float, 3>{15, 15, 0});
+	eggShape.setOffset({7.5, 7.5, -2});
 
 	agl::Rectangle rayShape;
 	rayShape.setTexture(&blank);
@@ -130,6 +142,8 @@ int main()
 	bool ReturnHeld = false;
 
 	bool skipRender = false;
+
+	int frame = 0;
 
 	while (!event.windowClose())
 	{
@@ -180,9 +194,22 @@ int main()
 			creatureShape.setPosition(existingCreatures->get(i)->getPosition());
 			creatureShape.setRotation(
 				agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(i)->getRotation() * 180 / PI)});
+
+			int textureFrame = (frame / 7) % 6;
+
+			if(textureFrame > 2)
+			{
+				textureFrame -= 2;
+
+				creatureShape.setTextureScaling({-(1. / 3.), 1});
+			} else {
+				creatureShape.setTextureScaling({1. / 3., 1});
+			}
+
+			creatureShape.setTextureTranslation({float(1. / 3.) * textureFrame, 0});
+
 			window.drawShape(creatureShape);
 		}
-
 		// Draw food
 		for (int i = 0; i < simulation.getExistingFood()->getLength(); i++)
 		{
@@ -426,6 +453,8 @@ int main()
 		camera.setOrthographicProjection(-((WIDTH / 2.) * sizeMultiplier), ((WIDTH / 2.) * sizeMultiplier),
 										 ((HEIGHT / 2.) * sizeMultiplier), -((HEIGHT / 2.) * sizeMultiplier), 0.1, 100);
 		camera.setView({cameraPosition.x, cameraPosition.y, 50}, {cameraPosition.x, cameraPosition.y, 0}, {0, 1, 0});
+
+		frame++;
 	}
 
 	blank.deleteTexture();

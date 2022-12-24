@@ -6,15 +6,16 @@ layout(location = 1) in vec2 vertexUV;
 uniform mat4 transform;
 uniform mat4 mvp;
 uniform vec3 shapeColor;
+uniform mat4 textureTransform;
 
-out vec2 UV;
-out vec3 fragColor;
+out vec2 UVcoord;
+out vec4 fragColor;
 
 void main()
 {
-    UV = vertexUV;
+    UVcoord = vec2((textureTransform * vec4(vertexUV, 0, 1)).xy);
 
-	fragColor = shapeColor;
+	fragColor = vec4(shapeColor, 1);
 
     gl_Position = mvp * transform * vec4(position, 1);
 }
