@@ -73,8 +73,11 @@ int main()
 	agl::Texture foodTexture;
 	foodTexture.loadFromFile("./img/food.png");
 
-	agl::Texture creatureTexture;
-	creatureTexture.loadFromFile("./img/creature.png");
+	agl::Texture creatureBodyTexture;
+	creatureBodyTexture.loadFromFile("./img/creatureBody.png");
+	
+	agl::Texture creatureExtraTexture;
+	creatureExtraTexture.loadFromFile("./img/creatureExtra.png");
 
 	agl::Texture eggTexture;
 	eggTexture.loadFromFile("./img/egg.png");
@@ -106,7 +109,7 @@ int main()
 	foodShape.setOffset({5, 5, -3});
 
 	agl::Rectangle creatureShape;
-	creatureShape.setTexture(&creatureTexture);
+	creatureShape.setTexture(&creatureBodyTexture);
 	creatureShape.setColor(agl::Color::White);
 	creatureShape.setSize(agl::Vec<float, 3>{25, 60, 0});
 	creatureShape.setOffset(agl::Vec<float, 3>{-12.5, -12.5, -1});
@@ -197,6 +200,8 @@ int main()
 
 			float speed = existingCreatures->get(i)->getVelocity().length() / 10;
 
+			creatureShape.setTexture(&creatureBodyTexture);
+			
 			int textureFrame = int(frame * speed) % 6;
 
 			if (textureFrame > 2)
@@ -211,11 +216,24 @@ int main()
 			}
 
 			creatureShape.setTextureTranslation({float(1. / 3.) * textureFrame, 0});
-			
+
+			creatureShape.setColor(hueToRGB(existingCreatures->get(i)->getHue()));
+
 			float size = existingCreatures->get(i)->getSize();
 
 			creatureShape.setSize(agl::Vec<float, 3>{25 * size, 60 * size, 0});
 			creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -1});
+
+			window.drawShape(creatureShape);
+
+			creatureShape.setTexture(&creatureExtraTexture);
+			
+			creatureShape.setColor(agl::Color::White);
+
+			creatureShape.setTextureScaling({1, 1});
+			creatureShape.setTextureTranslation({1, 1});
+			
+			creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -.5});
 
 			window.drawShape(creatureShape);
 		}
@@ -252,6 +270,7 @@ int main()
 			printf("speed %f\n", focusCreature->getSpeed());
 			printf("size %f\n", focusCreature->getSize());
 			printf("velocity %f\n", focusCreature->getVelocity().length());
+			printf("hue %d\n", focusCreature->getHue());
 
 			{
 				float angleOffset = focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value * 180;

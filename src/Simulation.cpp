@@ -36,7 +36,7 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 
 	for (int i = 0; i < 10; i++)
 	{
-		Buffer buffer(3 + (connections * 3));
+		Buffer buffer(EXTRA_BYTES + (connections * 3));
 		randomData(&buffer);
 
 		CreatureData creatureData = this->bufferToCreatureData(buffer);
@@ -78,17 +78,18 @@ void Simulation::destroy()
 
 Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
 {
-	Buffer buffer((creatureData.getTotalConnections() * 3) + 3);
+	Buffer buffer((creatureData.getTotalConnections() * 3) + EXTRA_BYTES);
 
-	buffer.data[0] = 255 * ((creatureData.getSight()) / 2);
-	buffer.data[1] = 255 * ((creatureData.getSpeed()) / 2);
-	buffer.data[2] = 255 * ((creatureData.getSize()) / 2);
+	buffer.data[0] = 255 * (creatureData.getSight() / 2);
+	buffer.data[1] = 255 * (creatureData.getSpeed() / 2);
+	buffer.data[2] = 255 * (creatureData.getSize() / 2);
+	buffer.data[3] = 255 * (creatureData.getHue() / 359.);
 
 	for (int i = 0; i < creatureData.getTotalConnections(); i++)
 	{
-		buffer.data[(i * 3) + 0 + 3] = creatureData.getConnection()[i].startNode;
-		buffer.data[(i * 3) + 1 + 3] = creatureData.getConnection()[i].endNode;
-		buffer.data[(i * 3) + 2 + 3] = 127 * (creatureData.getConnection()[i].weight + 1);
+		buffer.data[(i * 3) + 0 + EXTRA_BYTES] = creatureData.getConnection()[i].startNode;
+		buffer.data[(i * 3) + 1 + EXTRA_BYTES] = creatureData.getConnection()[i].endNode;
+		buffer.data[(i * 3) + 2 + EXTRA_BYTES] = 127 * (creatureData.getConnection()[i].weight + 1);
 	}
 
 	return buffer;
@@ -96,17 +97,18 @@ Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
 
 CreatureData Simulation::bufferToCreatureData(Buffer buffer)
 {
-	CreatureData creatureData((buffer.data[0] * 2) / 255., //
-							  (buffer.data[1] * 2) / 255., //
-							  (buffer.data[2] * 2) / 255., //
-							  (buffer.size - 3) / 3);
+	CreatureData creatureData((buffer.data[0] * 2) / 255.,	  //
+							  (buffer.data[1] * 2) / 255.,	  //
+							  (buffer.data[2] * 2) / 255.,	  //
+							  (buffer.data[3] * 359.) / 255., //
+							  (buffer.size - EXTRA_BYTES) / 3);
 
 	for (int i = 0; i < creatureData.getTotalConnections(); i++)
 	{
-		creatureData.setConnection(i,										 // id
-								   buffer.data[(i * 3) + 0 + 3],			 // start
-								   buffer.data[(i * 3) + 1 + 3],			 // end
-								   (buffer.data[(i * 3) + 2 + 3] / 127.) - 1 // weight
+		creatureData.setConnection(i,												   // id
+								   buffer.data[(i * 3) + 0 + EXTRA_BYTES],			   // start
+								   buffer.data[(i * 3) + 1 + EXTRA_BYTES],			   // end
+								   (buffer.data[(i * 3) + 2 + EXTRA_BYTES] / 127.) - 1 // weight
 		);
 	}
 

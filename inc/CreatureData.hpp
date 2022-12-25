@@ -3,6 +3,8 @@
 #include "../lib/AGL/agl.hpp"
 #include "NeuralNetwork.hpp"
 
+#define EXTRA_BYTES 4
+
 class CreatureData
 {
 	private:
@@ -10,11 +12,12 @@ class CreatureData
 		int			totalConnections;
 		float		sight; // 0 - 2
 		float		speed; // 0 - 2
-		float		size; // 0 - 2
+		float		size;  // 0 - 2
+		int			hue;   // 0 - 359
 
 	public:
 		CreatureData();
-		CreatureData(float sight, float speed, float size, int totalConnections);
+		CreatureData(float sight, float speed, float size, int hue, int totalConnections);
 		CreatureData(const CreatureData &creatureData);
 		~CreatureData();
 
@@ -24,7 +27,8 @@ class CreatureData
 
 		int			getTotalConnections();
 		Connection *getConnection();
-		float getSight();
-		float getSpeed();
-		float getSize();
+		float		getSight();
+		float		getSpeed();
+		float		getSize();
+		int			getHue();
 };

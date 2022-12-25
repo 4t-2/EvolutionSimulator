@@ -64,6 +64,8 @@ class Creature
 
 		float rayLength = 0;
 
+		int hue = 0;
+
 		CreatureData creatureData;
 
 	public:
@@ -102,4 +104,5 @@ class Creature
 		float			   getSpeed();
 		float			   getSize();
 		float			   getRadius();
+		int getHue();
 };

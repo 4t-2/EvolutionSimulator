@@ -30,6 +30,8 @@ void Creature::setup(CreatureData &creatureData)
 	speed = creatureData.getSpeed();
 	size  = creatureData.getSize();
 
+	hue = creatureData.getHue();
+
 	// sight = 1;
 	// speed = 1;
 	// size = 1;
@@ -397,4 +399,9 @@ float Creature::getSize()
 float Creature::getRadius()
 {
 	return radius;
+}
+
+int Creature::getHue()
+{
+	return hue;
 }
