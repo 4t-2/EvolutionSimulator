@@ -10,11 +10,11 @@ class CreatureData
 		int			totalConnections;
 		float		sight; // 0 - 2
 		float		speed; // 0 - 2
-		float		tough; // 0 - 2
+		float		size; // 0 - 2
 
 	public:
 		CreatureData();
-		CreatureData(float sight, float speed, float tough, int totalConnections);
+		CreatureData(float sight, float speed, float size, int totalConnections);
 		CreatureData(const CreatureData &creatureData);
 		~CreatureData();
 
@@ -26,5 +26,5 @@ class CreatureData
 		Connection *getConnection();
 		float getSight();
 		float getSpeed();
-		float getTough();
+		float getSize();
 };

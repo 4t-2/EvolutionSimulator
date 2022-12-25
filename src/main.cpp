@@ -47,7 +47,7 @@ int main()
 {
 	agl::RenderWindow window;
 	window.setup({WIDTH, HEIGHT}, "EvolutionSimulator");
-	window.setClearColor(agl::Color::Black);
+	window.setClearColor(agl::Color{0, 0, 16});
 	window.setFPS(60);
 
 	window.GLEnable(GL_ALPHA_TEST);
@@ -120,10 +120,10 @@ int main()
 	agl::Rectangle rayShape;
 	rayShape.setTexture(&blank);
 	rayShape.setColor(agl::Color::White);
-	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH, -1});
+	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, -1.5});
 
-	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 1000, 500, 100);
+	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 1000, 1500, 100);
 
 	Creature		 *creature			= simulation.getCreatureBuffer();
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
@@ -195,18 +195,27 @@ int main()
 			creatureShape.setRotation(
 				agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(i)->getRotation() * 180 / PI)});
 
-			int textureFrame = (frame / 7) % 6;
+			float speed = existingCreatures->get(i)->getVelocity().length() / 10;
 
-			if(textureFrame > 2)
+			int textureFrame = int(frame * speed) % 6;
+
+			if (textureFrame > 2)
 			{
 				textureFrame -= 2;
 
 				creatureShape.setTextureScaling({-(1. / 3.), 1});
-			} else {
+			}
+			else
+			{
 				creatureShape.setTextureScaling({1. / 3., 1});
 			}
 
 			creatureShape.setTextureTranslation({float(1. / 3.) * textureFrame, 0});
+			
+			float size = existingCreatures->get(i)->getSize();
+
+			creatureShape.setSize(agl::Vec<float, 3>{25 * size, 60 * size, 0});
+			creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -1});
 
 			window.drawShape(creatureShape);
 		}
@@ -239,6 +248,10 @@ int main()
 			printf("life left %d\n", focusCreature->getLifeLeft());
 			printf("food angle %f\n", focusCreature->getNeuralNetwork().getNode(FOOD_ROTATION).value);
 			printf("creature angle %f\n", focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value);
+			printf("sight %f\n", focusCreature->getSight());
+			printf("speed %f\n", focusCreature->getSpeed());
+			printf("size %f\n", focusCreature->getSize());
+			printf("velocity %f\n", focusCreature->getVelocity().length());
 
 			{
 				float angleOffset = focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value * 180;
@@ -247,7 +260,7 @@ int main()
 				float weight = focusCreature->getNeuralNetwork().getNode(CREATURE_DISTANCE).value;
 
 				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-
+				rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH * focusCreature->getSight()});
 				rayShape.setPosition(focusCreature->getPosition());
 				rayShape.setRotation(
 					agl::Vec<float, 3>{0, 0, angleOffset - agl::radianToDegree(focusCreature->getRotation())});
@@ -379,7 +392,7 @@ int main()
 
 				float distance = (mouse - existingCreatures->get(i)->getPosition()).length();
 
-				if (distance < 25)
+				if (distance < existingCreatures->get(i)->getRadius())
 				{
 					focusCreature = existingCreatures->get(i);
 
@@ -398,7 +411,7 @@ int main()
 
 				float distance = (mouse - existingCreatures->get(i)->getPosition()).length();
 
-				if (distance < 25)
+				if (distance < existingCreatures->get(i)->getRadius())
 				{
 					existingCreatures->pop(i);
 

@@ -7,11 +7,11 @@ CreatureData::CreatureData()
 	return;
 }
 
-CreatureData::CreatureData(float sight, float speed, float tough, int totalConnections)
+CreatureData::CreatureData(float sight, float speed, float size, int totalConnections)
 {
 	this->sight			   = sight;
 	this->speed			   = speed;
-	this->tough			   = tough;
+	this->size			   = size;
 	this->totalConnections = totalConnections;
 
 	connection = new Connection[totalConnections];
@@ -32,7 +32,7 @@ CreatureData::CreatureData(const CreatureData &creatureData)
 
 	sight = creatureData.sight;
 	speed = creatureData.speed;
-	tough = creatureData.tough;
+	size = creatureData.size;
 }
 
 void CreatureData::operator=(CreatureData &creatureData)
@@ -48,7 +48,7 @@ void CreatureData::operator=(CreatureData &creatureData)
 
 	sight = creatureData.sight;
 	speed = creatureData.speed;
-	tough = creatureData.tough;
+	size = creatureData.size;
 }
 
 CreatureData::~CreatureData()
@@ -85,7 +85,7 @@ float CreatureData::getSpeed()
 {
 	return speed;
 }
-float CreatureData::getTough()
+float CreatureData::getSize()
 {
-	return tough;
+	return size;
 }

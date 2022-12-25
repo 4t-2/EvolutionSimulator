@@ -41,6 +41,8 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 
 		CreatureData creatureData = this->bufferToCreatureData(buffer);
 
+		// CreatureData creatureData(1, 1, 1, 5);
+
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
 		creatureData.setConnection(2, FOOD_ROTATION, LEFT_OUTPUT, 1);
@@ -79,8 +81,8 @@ Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
 	Buffer buffer((creatureData.getTotalConnections() * 3) + 3);
 
 	buffer.data[0] = 255 * ((creatureData.getSight()) / 2);
-	buffer.data[1] = ((creatureData.getSpeed()) / 2);
-	buffer.data[2] = ((creatureData.getTough()) / 2);
+	buffer.data[1] = 255 * ((creatureData.getSpeed()) / 2);
+	buffer.data[2] = 255 * ((creatureData.getSize()) / 2);
 
 	for (int i = 0; i < creatureData.getTotalConnections(); i++)
 	{
@@ -270,14 +272,14 @@ void Simulation::update()
 		{
 			Creature *eggLayer = existingCreatures->get(i);
 
-			if (eggLayer->getEnergy() > 60)
+			if (eggLayer->getEnergy() > (60 * eggLayer->getSize()))
 			{
-				eggLayer->setEnergy(eggLayer->getEnergy() - 60);
+				eggLayer->setEnergy(eggLayer->getEnergy() - (60 * eggLayer->getSize()));
 
 				CreatureData creatureData = eggLayer->getCreatureData();
 				Buffer		 buffer		  = creatureDataToBuffer(creatureData);
 
-				mutateBuffer(&buffer, 50);
+				mutateBuffer(&buffer, 100);
 
 				CreatureData mutatedData = bufferToCreatureData(buffer);
 
@@ -301,7 +303,7 @@ void Simulation::update()
 
 				float distance = (eatenCreature->getPosition() - eatingCreature->getPosition()).length();
 
-				if (distance < 25)
+				if (distance < (eatingCreature->getRadius() + eatenCreature->getRadius()))
 				{
 					eatenCreature->setHealth(eatenCreature->getHealth() - 1);
 				}
@@ -360,7 +362,7 @@ void Simulation::update()
 
 			agl::Vec<float, 2> offset = creature->getPosition() - food->position;
 
-			if (offset.length() < 10 && creature->getEating())
+			if (offset.length() < (creature->getRadius() + 10) && creature->getEating())
 			{
 				creature->setEnergy(creature->getEnergy() + food->energy);
 

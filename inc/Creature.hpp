@@ -9,8 +9,8 @@
 
 #define RAY_LENGTH 1000
 
-#define TOTAL_INPUT	 (10)
-#define TOTAL_OUTPUT 6
+#define TOTAL_INPUT	 12
+#define TOTAL_OUTPUT 5
 #define TOTAL_NODES	 (TOTAL_INPUT + TOTAL_OUTPUT)
 
 #define CONSTANT_INPUT	  0
@@ -18,17 +18,19 @@
 #define Y_INPUT			  2
 #define ROTATION_INPUT	  3
 #define SPEED_INPUT		  4
-#define FOOD_DISTANCE	  6
-#define FOOD_ROTATION	  7
-#define CREATURE_DISTANCE 8
-#define CREATURE_ROTATION 9
+#define FOOD_DISTANCE	  5
+#define FOOD_ROTATION	  6
+#define CREATURE_DISTANCE 7
+#define CREATURE_ROTATION 8
+#define ENERGY_INPUT	  9
+#define HEALTH_INPUT	  10
+#define LIFE_INPUT		  11
 
-#define FOWARD_OUTPUT	(TOTAL_INPUT + 0)
-#define BACKWARD_OUTPUT (TOTAL_INPUT + 1)
-#define RIGHT_OUTPUT	(TOTAL_INPUT + 2)
-#define LEFT_OUTPUT		(TOTAL_INPUT + 3)
-#define EAT_OUTPUT		(TOTAL_INPUT + 4)
-#define LAYEGG_OUTPUT	(TOTAL_INPUT + 5)
+#define FOWARD_OUTPUT (TOTAL_INPUT + 0)
+#define RIGHT_OUTPUT  (TOTAL_INPUT + 1)
+#define LEFT_OUTPUT	  (TOTAL_INPUT + 2)
+#define EAT_OUTPUT	  (TOTAL_INPUT + 3)
+#define LAYEGG_OUTPUT (TOTAL_INPUT + 4)
 
 class Creature
 {
@@ -47,13 +49,20 @@ class Creature
 
 		float sight = 0;
 		float speed = 0;
-		float tough = 0;
+		float size	= 0;
 
-		// sight + (speed^2)(tough^2)
-		float energy = 0;
-		float health = 0;
+		// sight + (speed^2)(size^3)
+		float energy	= 0;
+		float health	= 0;
+		int	  life		= 0;
+		float maxEnergy = 0;
+		float maxHealth = 0;
+		float maxLife	= 0;
 
-		int lifeLeft = 0;
+		float maxForce	  = 0;
+		float maxRotation = 0;
+
+		float rayLength = 0;
 
 		CreatureData creatureData;
 
@@ -82,10 +91,15 @@ class Creature
 		NeuralNetwork	   getNeuralNetwork();
 		agl::Vec<float, 2> getPosition();
 		agl::Vec<float, 2> getVelocity();
+		agl::Vec<float, 2> getAcceleration();
 		float			   getRotation();
 		bool			   getEating();
 		bool			   getLayingEgg();
 		float			   getHealth();
 		float			   getEnergy();
 		int				   getLifeLeft();
+		float			   getSight();
+		float			   getSpeed();
+		float			   getSize();
+		float			   getRadius();
 };

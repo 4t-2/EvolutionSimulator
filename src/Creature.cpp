@@ -25,9 +25,29 @@ void Creature::setup(CreatureData &creatureData)
 	// Lay egg
 
 	this->creatureData = creatureData;
-	this->energy	   = 50;
-	this->health	   = 100;
-	this->lifeLeft	   = 60 * 60;
+
+	sight = creatureData.getSight();
+	speed = creatureData.getSpeed();
+	size  = creatureData.getSize();
+
+	// sight = 1;
+	// speed = 1;
+	// size = 1;
+
+	this->rayLength = RAY_LENGTH * sight;
+
+	this->maxForce	  = 1.5 * speed;
+	this->maxRotation = 0.05 * speed;
+
+	this->energy = 50 * size;
+	this->health = 100 * size;
+	this->life	 = 60 * 60 * size;
+
+	this->maxEnergy = 100 * size;
+	this->maxHealth = 100 * size;
+	this->maxLife	= 60 * 60 * size;
+
+	this->radius = 12.5 * size;
 
 	network =
 		new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, creatureData.getConnection(), creatureData.getTotalConnections());
@@ -47,7 +67,7 @@ void Creature::clear()
 	layingEgg	 = false;
 	sight		 = 0;
 	speed		 = 0;
-	tough		 = 0;
+	size		 = 0;
 	energy		 = 0;
 	health		 = 0;
 
@@ -188,9 +208,9 @@ void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *exist
 	// RAY_LENGTH); 	network->setInputNode((x + 5) + RAY_TOTAL, type);
 	// }
 
-	float creatureDistance = RAY_LENGTH;
+	float creatureDistance = rayLength;
 	float creatureRotation = 0;
-	float foodDistance	   = RAY_LENGTH;
+	float foodDistance	   = rayLength;
 	float foodRotation	   = 0;
 
 	for (int i = 0; i < existingCreature->getLength(); i++)
@@ -212,7 +232,7 @@ void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *exist
 		creatureDistance = distance;
 	}
 
-	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / RAY_LENGTH));
+	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / rayLength));
 	network->setInputNode(CREATURE_ROTATION, loop(-PI, PI, creatureRotation) / PI);
 
 	for (int i = 0; i < existingFood->getLength(); i++)
@@ -229,8 +249,12 @@ void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *exist
 		foodDistance = distance;
 	}
 
-	network->setInputNode(FOOD_DISTANCE, 1 - (foodDistance / RAY_LENGTH));
+	network->setInputNode(FOOD_DISTANCE, 1 - (foodDistance / rayLength));
 	network->setInputNode(FOOD_ROTATION, foodRotation / PI);
+
+	network->setInputNode(ENERGY_INPUT, energy / maxEnergy);
+	network->setInputNode(HEALTH_INPUT, health / maxHealth);
+	network->setInputNode(LIFE_INPUT, life / maxLife);
 
 	network->update();
 
@@ -241,19 +265,11 @@ void Creature::updateActions(Food *food)
 {
 	acceleration = {0, 0};
 
-	float speed = 0;
-
-	float maxSpeed	  = 1.5;
-	float maxRotation = 0.05;
+	float force = 0;
 
 	if (network->getNode(FOWARD_OUTPUT).value > 0)
 	{
-		speed += network->getNode(FOWARD_OUTPUT).value * maxSpeed;
-	}
-
-	if (network->getNode(BACKWARD_OUTPUT).value > 0)
-	{
-		speed -= network->getNode(BACKWARD_OUTPUT).value * maxSpeed;
+		force += network->getNode(FOWARD_OUTPUT).value * maxForce;
 	}
 
 	if (network->getNode(RIGHT_OUTPUT).value > 0)
@@ -286,17 +302,16 @@ void Creature::updateActions(Food *food)
 
 	rotation = loop(-PI, PI, rotation);
 
-	energy -= abs(speed) / 200; // needs to be absolute as going backwards would create energy
-	energy -= 0.005;
+	energy -= (sight + (abs(force * force) * (size * size * size))) / 200;
 
-	lifeLeft--;
+	life--;
 
 	float			   density		 = 2;
 	agl::Vec<float, 2> airResistance = {velocity.x / density, //
 										velocity.y / density};
 
-	acceleration.x = cos(rotation - (PI / 2)) * speed;
-	acceleration.y = sin(rotation - (PI / 2)) * speed;
+	acceleration.x = cos(rotation - (PI / 2)) * force;
+	acceleration.y = sin(rotation - (PI / 2)) * force;
 
 	acceleration = acceleration - airResistance;
 
@@ -329,6 +344,11 @@ agl::Vec<float, 2> Creature::getVelocity()
 	return velocity;
 }
 
+agl::Vec<float, 2> Creature::getAcceleration()
+{
+	return acceleration;
+}
+
 float Creature::getRotation()
 {
 	return rotation;
@@ -356,5 +376,25 @@ float Creature::getEnergy()
 
 int Creature::getLifeLeft()
 {
-	return lifeLeft;
+	return life;
+}
+
+float Creature::getSight()
+{
+	return sight;
+}
+
+float Creature::getSpeed()
+{
+	return speed;
+}
+
+float Creature::getSize()
+{
+	return size;
+}
+
+float Creature::getRadius()
+{
+	return radius;
 }
