@@ -26,6 +26,8 @@ class Simulation
 		Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, int maxEggs);
 		void destroy();
 
+		void updateNetworks();
+		void updateSimulation();
 		void update();
 
 		static Buffer		creatureDataToBuffer(CreatureData &creatureData);

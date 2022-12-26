@@ -259,11 +259,19 @@ void Simulation::removeFood(Food *food)
 
 	return;
 }
-void Simulation::update()
+
+void Simulation::updateNetworks()
 {
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
 		existingCreatures->get(i)->updateNetwork(existingFood, existingCreatures, size);
+	}
+}
+
+void Simulation::updateSimulation()
+{
+	for (int i = 0; i < existingCreatures->getLength(); i++)
+	{
 		existingCreatures->get(i)->updateActions(foodBuffer);
 	}
 
@@ -384,6 +392,12 @@ void Simulation::update()
 
 		this->addFood(position);
 	}
+}
+
+void Simulation::update()
+{
+	this->updateNetworks();
+	this->updateSimulation();
 }
 
 Creature *Simulation::getCreatureBuffer()

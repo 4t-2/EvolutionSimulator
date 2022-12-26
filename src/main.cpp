@@ -75,7 +75,7 @@ int main()
 
 	agl::Texture creatureBodyTexture;
 	creatureBodyTexture.loadFromFile("./img/creatureBody.png");
-	
+
 	agl::Texture creatureExtraTexture;
 	creatureExtraTexture.loadFromFile("./img/creatureExtra.png");
 
@@ -105,7 +105,7 @@ int main()
 	agl::Rectangle foodShape;
 	foodShape.setTexture(&foodTexture);
 	foodShape.setColor(agl::Color::Green);
-	foodShape.setSize(agl::Vec<float, 3>{10, 10, 0});
+	foodShape.setSize(agl::Vec<float, 3>{-10, -10, 0});
 	foodShape.setOffset({5, 5, -3});
 
 	agl::Rectangle creatureShape;
@@ -154,11 +154,6 @@ int main()
 		event.pollKeyboard();
 		event.pollPointer();
 
-		if (!event.isKeyPressed(XK_space))
-		{
-			simulation.update();
-		}
-
 		if (event.isKeyPressed(XK_m))
 		{
 			mHeld = true;
@@ -178,6 +173,11 @@ int main()
 		{
 			ReturnHeld = false;
 			skipRender = !skipRender;
+		}
+		
+		if(!event.isKeyPressed(XK_space))
+		{
+			simulation.updateNetworks();
 		}
 
 		if (skipRender)
@@ -201,7 +201,7 @@ int main()
 			float speed = existingCreatures->get(i)->getVelocity().length() / 10;
 
 			creatureShape.setTexture(&creatureBodyTexture);
-			
+
 			int textureFrame = int(frame * speed) % 6;
 
 			if (textureFrame > 2)
@@ -227,12 +227,12 @@ int main()
 			window.drawShape(creatureShape);
 
 			creatureShape.setTexture(&creatureExtraTexture);
-			
+
 			creatureShape.setColor(agl::Color::White);
 
 			creatureShape.setTextureScaling({1, 1});
 			creatureShape.setTextureTranslation({1, 1});
-			
+
 			creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -.5});
 
 			window.drawShape(creatureShape);
@@ -289,6 +289,8 @@ int main()
 			{
 				float angleOffset = focusCreature->getNeuralNetwork().getNode(FOOD_ROTATION).value * 180;
 				angleOffset += 180;
+				
+				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->getRotation());
 
 				float weight = focusCreature->getNeuralNetwork().getNode(FOOD_DISTANCE).value;
 
@@ -296,7 +298,7 @@ int main()
 
 				rayShape.setPosition(focusCreature->getPosition());
 				rayShape.setRotation(
-					agl::Vec<float, 3>{0, 0, angleOffset - agl::radianToDegree(focusCreature->getRotation())});
+					agl::Vec<float, 3>{0, 0, rayAngle});
 				window.drawShape(rayShape);
 			}
 		}
@@ -393,6 +395,11 @@ int main()
 		printf("total food %d\n", simulation.getExistingFood()->getLength());
 
 	skipRendering:;
+
+		if(!event.isKeyPressed(XK_space))
+		{
+			simulation.updateSimulation();
+		}
 
 		if (event.isKeyPressed(XK_r))
 		{
