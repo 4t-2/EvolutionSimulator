@@ -4,6 +4,7 @@
 #include "Creature.hpp"
 #include "Egg.hpp"
 #include "Food.hpp"
+#include "Grid.hpp"
 
 class Simulation
 {
@@ -22,6 +23,9 @@ class Simulation
 		List<Food *> *existingFood;
 		int			  maxFood;
 
+		Grid<Food *> *foodGrid;
+		Grid<Creature *> *creatureGrid;
+
 	public:
 		Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, int maxEggs);
 		void destroy();
@@ -38,10 +42,10 @@ class Simulation
 		void removeCreature(Creature *creature);
 
 		void addEgg(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void removeEgg(Egg*egg);
+		void removeEgg(Egg *egg);
 
 		void addFood(agl::Vec<float, 2> position);
-		void removeFood(Food*food);
+		void removeFood(Food *food);
 
 		Creature		 *getCreatureBuffer();
 		List<Creature *> *getExistingCreatures();

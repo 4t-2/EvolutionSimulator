@@ -116,6 +116,11 @@ void Creature::setEnergy(float energy)
 	return;
 }
 
+void Creature::setGridPosition(agl::Vec<int, 2> gridPosition)
+{
+	this->gridPosition = gridPosition;
+}
+
 bool isVisible()
 {
 	return false;
@@ -126,8 +131,7 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
-void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *existingCreature,
-							 agl::Vec<float, 2> worldSize)
+void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, agl::Vec<float, 2> worldSize)
 {
 	network->setInputNode(CONSTANT_INPUT, 1);
 
@@ -210,6 +214,20 @@ void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *exist
 	// RAY_LENGTH); 	network->setInputNode((x + 5) + RAY_TOTAL, type);
 	// }
 
+	agl::Vec<int, 2> oldGridPosition = gridPosition;
+
+	gridPosition = creatureGrid->toGridPosition(position, worldSize);
+
+	if (oldGridPosition.x != gridPosition.x || oldGridPosition.y != gridPosition.y)
+	{
+		creatureGrid->removeData(oldGridPosition, this);
+
+		creatureGrid->addData(gridPosition, this);
+	}
+
+	List<Food *>	 *existingFood	   = foodGrid->getList(gridPosition);
+	List<Creature *> *existingCreature = creatureGrid->getList(gridPosition);
+
 	float creatureDistance = rayLength;
 	float creatureRotation = 0;
 	float foodDistance	   = rayLength;
@@ -263,7 +281,7 @@ void Creature::updateNetwork(List<Food *> *existingFood, List<Creature *> *exist
 	return;
 }
 
-void Creature::updateActions(Food *food)
+void Creature::updateActions()
 {
 	acceleration = {0, 0};
 
@@ -404,4 +422,9 @@ float Creature::getRadius()
 int Creature::getHue()
 {
 	return hue;
+}
+
+agl::Vec<int, 2> Creature::getGridPosition()
+{
+	return gridPosition;
 }

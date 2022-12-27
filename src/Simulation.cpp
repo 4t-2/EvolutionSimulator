@@ -32,6 +32,9 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 	foodBuffer	 = new Food[this->maxFood];
 	existingFood = new List<Food *>(this->maxFood);
 
+	foodGrid	 = new Grid<Food *>({10, 10}, maxFood);
+	creatureGrid = new Grid<Creature *>({10, 10}, maxCreatures);
+
 	int connections = 10;
 
 	for (int i = 0; i < 10; i++)
@@ -153,6 +156,11 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 			creatureBuffer[i].setPosition(position);
 			creatureBuffer[i].setRotation(((float)rand() / (float)RAND_MAX) * PI * 2);
 
+			agl::Vec<int, 2> gridPosition = creatureGrid->toGridPosition(position, size);
+
+			creatureBuffer->setGridPosition(gridPosition);
+			creatureGrid->addData(gridPosition, &creatureBuffer[i]);
+
 			break;
 		}
 	}
@@ -239,6 +247,11 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 			existingFood->add(&foodBuffer[i]);
 			foodBuffer[i].position = position;
 			foodBuffer[i].energy   = 20;
+
+			agl::Vec<int, 2> gridPosition = foodGrid->toGridPosition(position, size);
+
+			foodGrid->addData(gridPosition, &foodBuffer[i]);
+
 			break;
 		}
 	}
@@ -246,13 +259,17 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 
 void Simulation::removeFood(Food *food)
 {
-	*food = Food{};
-
 	for (int i = 0; i < existingFood->getLength(); i++)
 	{
 		if (existingFood->get(i) == food)
 		{
+			agl::Vec<int, 2> gridPosition = foodGrid->toGridPosition(food->position, size);
+
+			foodGrid->removeData(gridPosition, food);
 			existingFood->pop(i);
+
+			*food = Food{};
+
 			break;
 		}
 	}
@@ -264,7 +281,7 @@ void Simulation::updateNetworks()
 {
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
-		existingCreatures->get(i)->updateNetwork(existingFood, existingCreatures, size);
+		existingCreatures->get(i)->updateNetwork(foodGrid, creatureGrid, size);
 	}
 }
 
@@ -272,15 +289,17 @@ void Simulation::updateSimulation()
 {
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
-		existingCreatures->get(i)->updateActions(foodBuffer);
+		existingCreatures->get(i)->updateActions();
 	}
 
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
+		Creature *creature = existingCreatures->get(i);
+
 		// egg laying
-		if (existingCreatures->get(i)->getLayingEgg())
+		if (creature->getLayingEgg())
 		{
-			Creature *eggLayer = existingCreatures->get(i);
+			Creature *eggLayer = creature;
 
 			if (eggLayer->getEnergy() > (60 * eggLayer->getSize()))
 			{
@@ -298,9 +317,9 @@ void Simulation::updateSimulation()
 		}
 
 		// creature eating
-		if (existingCreatures->get(i)->getEating())
+		if (creature->getEating())
 		{
-			Creature *eatingCreature = existingCreatures->get(i);
+			Creature *eatingCreature = creature;
 
 			for (int x = 0; x < existingCreatures->getLength(); x++)
 			{
@@ -321,28 +340,40 @@ void Simulation::updateSimulation()
 		}
 
 		// tired creature damage
-		if (existingCreatures->get(i)->getEnergy() <= 0)
+		if (creature->getEnergy() <= 0)
 		{
-			existingCreatures->get(i)->setHealth(existingCreatures->get(i)->getHealth() - 1);
-			existingCreatures->get(i)->setEnergy(0);
+			creature->setHealth(creature->getHealth() - 1);
+			creature->setEnergy(0);
 		}
 
 		// age damage
-		if (existingCreatures->get(i)->getLifeLeft() < 0)
+		if (creature->getLifeLeft() < 0)
 		{
-			existingCreatures->get(i)->setHealth(existingCreatures->get(i)->getHealth() - 1);
+			creature->setHealth(creature->getHealth() - 1);
 		}
-	}
 
-	// killing creature
-	for (int i = 0; i < existingCreatures->getLength(); i++)
-	{
-		Creature *creature = existingCreatures->get(i);
-
+		// killing creature
 		if (creature->getHealth() <= 0)
 		{
 			this->removeCreature(creature);
 			i--;
+		}
+
+		List<Food *> *foodList = foodGrid->getList(creature->getGridPosition());
+
+		for (int x = 0; x < foodList->getLength(); x++)
+		{
+			Food *food = foodList->get(x);
+
+			agl::Vec<float, 2> offset = creature->getPosition() - food->position;
+
+			if (offset.length() < (creature->getRadius() + 10) && creature->getEating())
+			{
+				creature->setEnergy(creature->getEnergy() + food->energy);
+
+				this->removeFood(food);
+				x--;
+			}
 		}
 	}
 
@@ -358,27 +389,6 @@ void Simulation::updateSimulation()
 			this->addCreature(creatureData, hatchedEgg->getPosition());
 
 			removeEgg(hatchedEgg);
-		}
-	}
-
-	// creature eating food
-	for (int i = 0; i < existingFood->getLength(); i++)
-	{
-		Food *food = existingFood->get(i);
-
-		for (int x = 0; x < existingCreatures->getLength(); x++)
-		{
-			Creature *creature = existingCreatures->get(x);
-
-			agl::Vec<float, 2> offset = creature->getPosition() - food->position;
-
-			if (offset.length() < (creature->getRadius() + 10) && creature->getEating())
-			{
-				creature->setEnergy(creature->getEnergy() + food->energy);
-
-				existingFood->pop(i);
-				i--;
-			}
 		}
 	}
 

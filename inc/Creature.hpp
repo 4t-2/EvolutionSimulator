@@ -3,7 +3,7 @@
 #include "../lib/AGL/agl.hpp"
 #include "CreatureData.hpp"
 #include "Food.hpp"
-#include "List.hpp"
+#include "Grid.hpp"
 #include "NeuralNetwork.hpp"
 #include "other.hpp"
 
@@ -39,6 +39,8 @@ class Creature
 		agl::Vec<float, 2> velocity		= {0, 0};
 		agl::Vec<float, 2> acceleration = {0, 0};
 		float			   rotation		= 0;
+
+		agl::Vec<int, 2> gridPosition = {0, 0};
 
 		float radius = 0;
 
@@ -83,10 +85,10 @@ class Creature
 		void setRotation(float rotation);
 		void setHealth(float health);
 		void setEnergy(float energy);
+		void setGridPosition(agl::Vec<int, 2> gridPosition);
 
-		void updateNetwork(List<Food *> *existingFood, List<Creature *> *existingCreatures,
-						   agl::Vec<float, 2> worldSize);
-		void updateActions(Food *food);
+		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, agl::Vec<float, 2> worldSize);
+		void updateActions();
 
 		CreatureData getCreatureData();
 
@@ -104,5 +106,6 @@ class Creature
 		float			   getSpeed();
 		float			   getSize();
 		float			   getRadius();
-		int getHue();
+		int				   getHue();
+		agl::Vec<int, 2>   getGridPosition();
 };

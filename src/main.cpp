@@ -126,7 +126,7 @@ int main()
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, -1.5});
 
-	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 1000, 1500, 100);
+	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 1000, 2000, 100);
 
 	Creature		 *creature			= simulation.getCreatureBuffer();
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
@@ -174,8 +174,8 @@ int main()
 			ReturnHeld = false;
 			skipRender = !skipRender;
 		}
-		
-		if(!event.isKeyPressed(XK_space))
+
+		if (!event.isKeyPressed(XK_space))
 		{
 			simulation.updateNetworks();
 		}
@@ -184,6 +184,8 @@ int main()
 		{
 			goto skipRendering;
 		}
+
+		printf("%d\n", simulation.getExistingCreatures()->getLength());
 
 		window.clear();
 
@@ -254,24 +256,9 @@ int main()
 			window.drawShape(eggShape);
 		}
 
-		printf("\n");
-
 		// draw rays
 		if (existingCreatures->find(focusCreature) != -1)
 		{
-			printf("eating %d\n", focusCreature->getEating());
-			printf("egg laying %d\n", focusCreature->getLayingEgg());
-			printf("health %f\n", focusCreature->getHealth());
-			printf("energy %f\n", focusCreature->getEnergy());
-			printf("life left %d\n", focusCreature->getLifeLeft());
-			printf("food angle %f\n", focusCreature->getNeuralNetwork().getNode(FOOD_ROTATION).value);
-			printf("creature angle %f\n", focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value);
-			printf("sight %f\n", focusCreature->getSight());
-			printf("speed %f\n", focusCreature->getSpeed());
-			printf("size %f\n", focusCreature->getSize());
-			printf("velocity %f\n", focusCreature->getVelocity().length());
-			printf("hue %d\n", focusCreature->getHue());
-
 			{
 				float angleOffset = focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value * 180;
 				angleOffset += 180;
@@ -289,7 +276,7 @@ int main()
 			{
 				float angleOffset = focusCreature->getNeuralNetwork().getNode(FOOD_ROTATION).value * 180;
 				angleOffset += 180;
-				
+
 				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->getRotation());
 
 				float weight = focusCreature->getNeuralNetwork().getNode(FOOD_DISTANCE).value;
@@ -297,8 +284,7 @@ int main()
 				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
 
 				rayShape.setPosition(focusCreature->getPosition());
-				rayShape.setRotation(
-					agl::Vec<float, 3>{0, 0, rayAngle});
+				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
 				window.drawShape(rayShape);
 			}
 		}
@@ -390,13 +376,9 @@ int main()
 
 		window.display();
 
-		printf("total creatures %d\n", existingCreatures->getLength());
-		printf("total eggs %d\n", existingEggs->getLength());
-		printf("total food %d\n", simulation.getExistingFood()->getLength());
-
 	skipRendering:;
 
-		if(!event.isKeyPressed(XK_space))
+		if (!event.isKeyPressed(XK_space))
 		{
 			simulation.updateSimulation();
 		}
