@@ -5,6 +5,7 @@
 class Food
 {
 	public:
+		int id;
 		agl::Vec<float, 2> position;
 		float energy;
 };
