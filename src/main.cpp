@@ -177,7 +177,7 @@ int main()
 
 		if (!event.isKeyPressed(XK_space))
 		{
-			simulation.updateNetworks();
+			simulation.update();
 		}
 
 		if (skipRender)
@@ -378,11 +378,6 @@ int main()
 
 	skipRendering:;
 
-		if (!event.isKeyPressed(XK_space))
-		{
-			simulation.updateSimulation();
-		}
-
 		if (event.isKeyPressed(XK_r))
 		{
 			focusCreature = nullptr;
@@ -477,6 +472,8 @@ int main()
 
 		frame++;
 	}
+
+	simulation.destroy();
 
 	blank.deleteTexture();
 	shader.deleteProgram();

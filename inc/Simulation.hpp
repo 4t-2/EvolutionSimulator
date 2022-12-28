@@ -24,7 +24,6 @@ class Simulation
 		int			  maxFood;
 
 		Grid<Food *> *foodGrid;
-		Grid<Creature *> *creatureGrid;
 
 	public:
 		Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, int maxEggs);

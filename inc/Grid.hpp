@@ -51,7 +51,10 @@ template <typename T> class Grid
 		{
 			int index = gridData[gridPosition.x][gridPosition.y]->find(data);
 
-			gridData[gridPosition.x][gridPosition.y]->pop(index);
+			if (index != -1)
+			{
+				gridData[gridPosition.x][gridPosition.y]->pop(index);
+			}
 		}
 
 		List<T> *getList(agl::Vec<int, 2> gridPosition)
@@ -74,13 +77,13 @@ template <typename T> class Grid
 				gridPosition.y = 0;
 			}
 
-			if (gridPosition.x > 9)
+			if (gridPosition.x > (size.x - 1))
 			{
-				gridPosition.x = 9;
+				gridPosition.x = (size.x - 1);
 			}
-			if (gridPosition.y > 9)
+			if (gridPosition.y > (size.y - 1))
 			{
-				gridPosition.y = 9;
+				gridPosition.y = (size.y - 1);
 			}
 
 			return gridPosition;

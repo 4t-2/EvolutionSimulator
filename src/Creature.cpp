@@ -131,7 +131,7 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
-void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, agl::Vec<float, 2> worldSize)
+void Creature::updateNetwork(Grid<Food *> *foodGrid, List<Creature *> *existingCreature, agl::Vec<float, 2> worldSize)
 {
 	network->setInputNode(CONSTANT_INPUT, 1);
 
@@ -214,20 +214,6 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 	// RAY_LENGTH); 	network->setInputNode((x + 5) + RAY_TOTAL, type);
 	// }
 
-	agl::Vec<int, 2> oldGridPosition = gridPosition;
-
-	gridPosition = creatureGrid->toGridPosition(position, worldSize);
-
-	if (oldGridPosition.x != gridPosition.x || oldGridPosition.y != gridPosition.y)
-	{
-		creatureGrid->removeData(oldGridPosition, this);
-
-		creatureGrid->addData(gridPosition, this);
-	}
-
-	List<Food *>	 *existingFood	   = foodGrid->getList(gridPosition);
-	List<Creature *> *existingCreature = creatureGrid->getList(gridPosition);
-
 	float creatureDistance = rayLength;
 	float creatureRotation = 0;
 	float foodDistance	   = rayLength;
@@ -255,18 +241,36 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / rayLength));
 	network->setInputNode(CREATURE_ROTATION, loop(-PI, PI, creatureRotation) / PI);
 
-	for (int i = 0; i < existingFood->getLength(); i++)
+	for (int x = -1; x < 2; x++)
 	{
-		agl::Vec<float, 2> offset	= position - existingFood->get(i)->position;
-		float			   distance = offset.length();
-
-		if (distance > foodDistance)
+		if (gridPosition.x + x < 0 || gridPosition.x + x > (foodGrid->getSize().x - 1))
 		{
 			continue;
 		}
 
-		foodRotation = vectorAngle(offset) + rotation;
-		foodDistance = distance;
+		for (int y = -1; y < 2; y++)
+		{
+			if (gridPosition.y + y < 0 || gridPosition.y + y > (foodGrid->getSize().y - 1))
+			{
+				continue;
+			}
+
+			List<Food *> *existingFood = foodGrid->getList({gridPosition.x + x, gridPosition.y + y});
+
+			for (int i = 0; i < existingFood->getLength(); i++)
+			{
+				agl::Vec<float, 2> offset	= position - existingFood->get(i)->position;
+				float			   distance = offset.length();
+
+				if (distance > foodDistance)
+				{
+					continue;
+				}
+
+				foodRotation = vectorAngle(offset) + rotation;
+				foodDistance = distance;
+			}
+		}
 	}
 
 	network->setInputNode(FOOD_DISTANCE, 1 - (foodDistance / rayLength));

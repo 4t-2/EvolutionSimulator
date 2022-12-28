@@ -32,12 +32,15 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 	foodBuffer	 = new Food[this->maxFood];
 	existingFood = new List<Food *>(this->maxFood);
 
-	foodGrid	 = new Grid<Food *>({10, 10}, maxFood);
-	creatureGrid = new Grid<Creature *>({10, 10}, maxCreatures);
+	agl::Vec<int, 2> gridSize;
+	gridSize.x = size.x / 670;
+	gridSize.y = size.y / 670;
+
+	foodGrid = new Grid<Food *>(gridSize, maxFood);
 
 	int connections = 10;
 
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 500; i++)
 	{
 		Buffer buffer(EXTRA_BYTES + (connections * 3));
 		randomData(&buffer);
@@ -72,8 +75,12 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 
 void Simulation::destroy()
 {
+	delete foodGrid;
+
 	delete existingCreatures;
 	delete existingEggs;
+	delete existingFood;
+
 	delete[] creatureBuffer;
 	delete[] eggBuffer;
 	delete[] foodBuffer;
@@ -156,11 +163,6 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 			creatureBuffer[i].setPosition(position);
 			creatureBuffer[i].setRotation(((float)rand() / (float)RAND_MAX) * PI * 2);
 
-			agl::Vec<int, 2> gridPosition = creatureGrid->toGridPosition(position, size);
-
-			creatureBuffer->setGridPosition(gridPosition);
-			creatureGrid->addData(gridPosition, &creatureBuffer[i]);
-
 			break;
 		}
 	}
@@ -168,8 +170,6 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 
 void Simulation::removeCreature(Creature *creature)
 {
-	creature->clear();
-
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
 		if (existingCreatures->get(i) == creature)
@@ -178,6 +178,8 @@ void Simulation::removeCreature(Creature *creature)
 			break;
 		}
 	}
+
+	creature->clear();
 
 	return;
 }
@@ -281,7 +283,7 @@ void Simulation::updateNetworks()
 {
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
-		existingCreatures->get(i)->updateNetwork(foodGrid, creatureGrid, size);
+		existingCreatures->get(i)->updateNetwork(foodGrid, existingCreatures, size);
 	}
 }
 
@@ -289,7 +291,11 @@ void Simulation::updateSimulation()
 {
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
-		existingCreatures->get(i)->updateActions();
+		Creature *creature = existingCreatures->get(i);
+
+		creature->updateActions();
+
+		creature->setGridPosition(foodGrid->toGridPosition(creature->getPosition(), size));
 	}
 
 	for (int i = 0; i < existingCreatures->getLength(); i++)
@@ -406,8 +412,8 @@ void Simulation::updateSimulation()
 
 void Simulation::update()
 {
-	this->updateNetworks();
 	this->updateSimulation();
+	this->updateNetworks();
 }
 
 Creature *Simulation::getCreatureBuffer()
