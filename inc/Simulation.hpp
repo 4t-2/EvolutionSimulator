@@ -14,6 +14,7 @@ class Simulation
 		Creature		 *creatureBuffer;
 		List<Creature *> *existingCreatures;
 		int				  maxCreatures;
+		Grid<Creature*> *creatureGrid;
 
 		Egg			*eggBuffer;
 		List<Egg *> *existingEggs;
@@ -22,7 +23,6 @@ class Simulation
 		Food		 *foodBuffer;
 		List<Food *> *existingFood;
 		int			  maxFood;
-
 		Grid<Food *> *foodGrid;
 
 	public:

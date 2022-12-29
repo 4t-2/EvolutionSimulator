@@ -55,6 +55,11 @@ template <typename T> class List
 			return -1;
 		}
 
+		void clear()
+		{
+			length = 0;
+		}
+
 		T get(int index)
 		{
 			return data[index];

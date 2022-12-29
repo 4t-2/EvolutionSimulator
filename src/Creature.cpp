@@ -24,6 +24,8 @@ void Creature::setup(CreatureData &creatureData)
 	// Eat
 	// Lay egg
 
+	this->gridPosition = {0, 0};
+
 	this->creatureData = creatureData;
 
 	sight = creatureData.getSight();
@@ -131,7 +133,7 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
-void Creature::updateNetwork(Grid<Food *> *foodGrid, List<Creature *> *existingCreature, agl::Vec<float, 2> worldSize)
+void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, agl::Vec<float, 2> worldSize)
 {
 	network->setInputNode(CONSTANT_INPUT, 1);
 
@@ -219,23 +221,41 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, List<Creature *> *existingC
 	float foodDistance	   = rayLength;
 	float foodRotation	   = 0;
 
-	for (int i = 0; i < existingCreature->getLength(); i++)
+	for (int x = -1; x < 2; x++)
 	{
-		if (existingCreature->get(i) == this)
+		if (gridPosition.x + x < 0 || gridPosition.x + x > (foodGrid->getSize().x - 1))
 		{
 			continue;
 		}
 
-		agl::Vec<float, 2> offset	= position - existingCreature->get(i)->position;
-		float			   distance = offset.length();
-
-		if (distance > creatureDistance)
+		for (int y = -1; y < 2; y++)
 		{
-			continue;
-		}
+			if (gridPosition.y + y < 0 || gridPosition.y + y > (foodGrid->getSize().y - 1))
+			{
+				continue;
+			}
 
-		creatureRotation = vectorAngle(offset) + rotation;
-		creatureDistance = distance;
+			List<Creature *> *existingCreatures = creatureGrid->getList({gridPosition.x + x, gridPosition.y + y});
+
+			for (int i = 0; i < existingCreatures->getLength(); i++)
+			{
+				if (existingCreatures->get(i) == this)
+				{
+					continue;
+				}
+
+				agl::Vec<float, 2> offset	= position - existingCreatures->get(i)->position;
+				float			   distance = offset.length();
+
+				if (distance > creatureDistance)
+				{
+					continue;
+				}
+
+				creatureRotation = vectorAngle(offset) + rotation;
+				creatureDistance = distance;
+			}
+		}
 	}
 
 	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / rayLength));

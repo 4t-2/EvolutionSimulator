@@ -89,6 +89,17 @@ template <typename T> class Grid
 			return gridPosition;
 		}
 
+		void clear()
+		{
+			for(int x = 0; x < size.x; x++)
+			{
+				for(int y = 0; y < size.y; y++)
+				{
+					gridData[x][y]->clear();
+				}
+			}
+		}
+
 		agl::Vec<int, 2> getSize()
 		{
 			return size;

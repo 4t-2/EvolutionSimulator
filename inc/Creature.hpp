@@ -87,7 +87,7 @@ class Creature
 		void setEnergy(float energy);
 		void setGridPosition(agl::Vec<int, 2> gridPosition);
 
-		void updateNetwork(Grid<Food *> *foodGrid, List<Creature*> *existingCreature, agl::Vec<float, 2> worldSize);
+		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature*> *creatureGrid, agl::Vec<float, 2> worldSize);
 		void updateActions();
 
 		CreatureData getCreatureData();
