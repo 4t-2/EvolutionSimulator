@@ -54,7 +54,9 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
-		creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
+		creatureData.setConnection(2, FOOD_ROTATION, LEFT_OUTPUT, 1);
+		creatureData.setConnection(3, FOOD_ROTATION, RIGHT_OUTPUT, -1);
+		creatureData.setConnection(4, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
 
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * size.x;

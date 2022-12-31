@@ -34,4 +34,8 @@
 # AGL library
 lib/AGL
 
+# cmake
+build/*
+
 *.xcf
+.cache

@@ -126,7 +126,7 @@ int main()
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, -1.5});
 
-	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 2000, 1200, 100);
+	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 1000, 1500, 100);
 
 	Creature		 *creature			= simulation.getCreatureBuffer();
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
