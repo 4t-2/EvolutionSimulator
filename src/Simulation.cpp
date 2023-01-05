@@ -43,7 +43,7 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 
 	int connections = 10;
 
-	for (int i = 0; i < 500; i++)
+	for (int i = 0; i < 100; i++)
 	{
 		Buffer buffer(EXTRA_BYTES + (connections * 3));
 		randomData(&buffer);

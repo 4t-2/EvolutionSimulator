@@ -11,5 +11,5 @@ set(CMAKE_BUILD_TYPE Debug)
 
 add_executable(EvolutionSimulator.out ${SRC} ${AGL})
 
-target_link_libraries(EvolutionSimulator.out -lX11 -lGL -lGLEW -lSOIL)
+target_link_libraries(EvolutionSimulator.out -lX11 -lGL -lGLEW -lSOIL -lfreetype)
 include_directories("/usr/include/freetype2")

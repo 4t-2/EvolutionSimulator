@@ -105,7 +105,7 @@ class Creature
 		float			   getSight();
 		float			   getSpeed();
 		float			   getSize();
-		float			   getRadius();
 		int				   getHue();
+		float			   getRadius();
 		agl::Vec<int, 2>   getGridPosition();
 };

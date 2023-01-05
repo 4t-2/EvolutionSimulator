@@ -17,20 +17,17 @@
 #define WIDTH  1920
 #define HEIGHT 1080
 
-agl::Vec<float, 3> Vec2fVec3f(agl::Vec<float, 2> vec)
-{
-	agl::Vec<float, 3> newVec;
+#define MENU_WINDOWOFFSET 10
+#define MENU_WIDTH		  400
+#define MENU_HEIGHT		  HEIGHT - (MENU_WINDOWOFFSET * 2)
+#define MENU_BORDER		  5
+#define MENU_PADDING	  10
+#define MENU_SHADOWOFFSET 0
 
-	newVec.x = vec.x;
-	newVec.y = vec.y;
-
-	return newVec;
-}
-
-agl::Vec<float, 2> Vec2iVec2f(agl::Vec<int, 2> vec)
-{
-	return {(float)vec.x, (float)vec.y};
-}
+#define NETWORK_RADIUS	150
+#define NETWORK_X		MENU_WINDOWOFFSET + (MENU_WIDTH / 2.) + MENU_SHADOWOFFSET
+#define NETWORK_Y		MENU_WINDOWOFFSET + MENU_BORDER + MENU_PADDING + NETWORK_RADIUS + MENU_SHADOWOFFSET
+#define NETWORK_PADDING 20
 
 void printConnections(CreatureData creatureData)
 {
@@ -85,10 +82,37 @@ int main()
 	agl::Texture blank;
 	blank.setBlank();
 
+	// menu shapes
+	agl::Color borderColor = {140, 140, 140};
+	agl::Color shadowColor = {70, 70, 70};
+	agl::Color bodyColor = {210, 210, 210};
+
+	agl::Rectangle infoBorder;
+	infoBorder.setTexture(&blank);
+	infoBorder.setColor({140, 140, 140});
+	infoBorder.setPosition(agl::Vec<float, 3>{MENU_WINDOWOFFSET, MENU_WINDOWOFFSET, 0.25});
+	infoBorder.setSize(agl::Vec<float, 3>{MENU_WIDTH, MENU_HEIGHT, 1});
+
+	agl::Rectangle innerShadow;
+	innerShadow.setTexture(&blank);
+
+	agl::Rectangle infoBackground;
+	infoBackground.setTexture(&blank);
+	infoBackground.setColor({210, 210, 210});
+	infoBackground.setPosition({MENU_WINDOWOFFSET + MENU_BORDER + MENU_SHADOWOFFSET, MENU_WINDOWOFFSET + MENU_BORDER + MENU_SHADOWOFFSET, 0.5});
+	infoBackground.setSize(agl::Vec<float, 3>{MENU_WIDTH - (MENU_BORDER * 2), MENU_HEIGHT - (MENU_BORDER * 2), 1});
+
+	agl::Circle networkBackground(60);
+	networkBackground.setTexture(&blank);
+	networkBackground.setColor({15, 15, 15});
+	networkBackground.setPosition(agl::Vec<float, 3>{NETWORK_X, NETWORK_Y, 1});
+	networkBackground.setSize(agl::Vec<float, 3>{NETWORK_RADIUS, NETWORK_RADIUS, 1});
+
 	agl::Circle nodeShape(10);
 	nodeShape.setTexture(&blank);
 	nodeShape.setSize(agl::Vec<float, 3>{10, 10, 0});
 	nodeShape.setPosition(agl::Vec<float, 3>{500, 500, 3});
+	nodeShape.setOffset({0, 0, 3});
 
 	agl::Rectangle connectionShape;
 	connectionShape.setTexture(&blank);
@@ -96,12 +120,7 @@ int main()
 	connectionShape.setSize(agl::Vec<float, 3>{1, 50, 2});
 	connectionShape.setOffset({0, 0, 2});
 
-	agl::Circle background(6);
-	background.setTexture(&blank);
-	background.setColor({15, 15, 15});
-	background.setPosition(agl::Vec<float, 3>{150, 150, 1});
-	background.setSize(agl::Vec<float, 3>{150, 150, 1});
-
+	// simulation entities
 	agl::Rectangle foodShape;
 	foodShape.setTexture(&foodTexture);
 	foodShape.setColor(agl::Color::Green);
@@ -125,6 +144,35 @@ int main()
 	rayShape.setColor(agl::Color::White);
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH});
 	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, -1.5});
+
+	agl::Font font;
+	font.setup("./VCR_OSD_MONO_1.001.ttf", 24);
+
+	agl::Text text;
+	text.setFont(&font);
+	text.setText("temp");
+	text.setPosition({MENU_WINDOWOFFSET + MENU_BORDER + MENU_PADDING, NETWORK_Y + NETWORK_RADIUS + MENU_PADDING, 1});
+	text.setScale(1);
+	text.setColor(agl::Color::Black);
+
+	std::string nodeNames[TOTAL_NODES];
+	nodeNames[CONSTANT_INPUT]	 = "Constant";
+	nodeNames[X_INPUT]			 = "X Position";
+	nodeNames[Y_INPUT]			 = "Y Position";
+	nodeNames[ROTATION_INPUT]	 = "Rotation";
+	nodeNames[SPEED_INPUT]		 = "Speed";
+	nodeNames[FOOD_DISTANCE]	 = "Distance To Food";
+	nodeNames[FOOD_ROTATION]	 = "Rotation To Food";
+	nodeNames[CREATURE_DISTANCE] = "Distance To Creature";
+	nodeNames[CREATURE_ROTATION] = "Rotation To Creature";
+	nodeNames[ENERGY_INPUT]		 = "Energy";
+	nodeNames[HEALTH_INPUT]		 = "Health";
+	nodeNames[LIFE_INPUT]		 = "Life Left";
+	nodeNames[FOWARD_OUTPUT]	 = "Move Foward";
+	nodeNames[RIGHT_OUTPUT]		 = "Turn Right";
+	nodeNames[LEFT_OUTPUT]		 = "Turn Left";
+	nodeNames[EAT_OUTPUT]		 = "Eat";
+	nodeNames[LAYEGG_OUTPUT]	 = "Lay Egg";
 
 	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 1000, 1500, 100);
 
@@ -184,8 +232,6 @@ int main()
 		{
 			goto skipRendering;
 		}
-
-		printf("%d\n", simulation.getExistingCreatures()->getLength());
 
 		window.clear();
 
@@ -294,10 +340,36 @@ int main()
 		window.updateMvp(guiCamera);
 
 		// draw background
-		window.drawShape(background);
-
 		if (existingCreatures->find(focusCreature) != -1)
 		{
+			text.clearText();
+			std::stringstream ss;
+
+			static int selectedID = 0;
+
+			ss << "Node - " << nodeNames[selectedID] << '\n';
+			ss << '\n';
+			ss << "Position - " << agl::Vec<int, 2>(focusCreature->getPosition()) << '\n';
+			ss << "Velocity - " << agl::Vec<int, 2>(focusCreature->getVelocity()) << '\n';
+			ss << '\n';
+			ss << "Eating - " << focusCreature->getEating() << '\n';
+			ss << "Laying Egg - " << focusCreature->getLayingEgg() << '\n';
+			ss << "Health - " << focusCreature->getHealth() << '\n';
+			ss << "Energy - " << focusCreature->getEnergy() << '\n';
+			ss << "Life left - " << focusCreature->getLifeLeft() << '\n';
+			ss << '\n';
+			ss << "Sight - " << focusCreature->getSight() << '\n';
+			ss << "Speed - " << focusCreature->getSpeed() << '\n';
+			ss << "Size - " << focusCreature->getSize() << '\n';
+			ss << "Hue - " << focusCreature->getHue() << '\n';
+
+			text.setText(ss.str());
+
+			window.drawShape(infoBorder);
+			window.drawShape(infoBackground);
+			window.drawShape(networkBackground);
+			window.drawText(text);
+
 			// draw node connections
 			for (int i = 0; i < focusCreature->getNeuralNetwork().getTotalConnections(); i++)
 			{
@@ -312,12 +384,12 @@ int main()
 				endAngle *= PI * 2;
 
 				agl::Vec<float, 2> startPosition = agl::pointOnCircle(startAngle);
-				startPosition.x					 = (startPosition.x * 100) + 150;
-				startPosition.y					 = (startPosition.y * 100) + 150;
+				startPosition.x					 = (startPosition.x * (NETWORK_RADIUS - NETWORK_PADDING)) + NETWORK_X;
+				startPosition.y					 = (startPosition.y * (NETWORK_RADIUS - NETWORK_PADDING)) + NETWORK_Y;
 
 				agl::Vec<float, 2> endPosition = agl::pointOnCircle(endAngle);
-				endPosition.x				   = (endPosition.x * 100) + 150;
-				endPosition.y				   = (endPosition.y * 100) + 150;
+				endPosition.x				   = (endPosition.x * (NETWORK_RADIUS - NETWORK_PADDING)) + NETWORK_X;
+				endPosition.y				   = (endPosition.y * (NETWORK_RADIUS - NETWORK_PADDING)) + NETWORK_Y;
 
 				agl::Vec<float, 2> offset = startPosition - endPosition;
 
@@ -351,11 +423,11 @@ int main()
 				float y = sin(angle * (3.14159 / 180));
 
 				agl::Vec<float, 2> pos;
-				pos.x = x * 100;
-				pos.y = y * 100;
+				pos.x = x * (NETWORK_RADIUS - NETWORK_PADDING);
+				pos.y = y * (NETWORK_RADIUS - NETWORK_PADDING);
 
-				pos.x += 150;
-				pos.y += 150;
+				pos.x += NETWORK_X;
+				pos.y += NETWORK_Y;
 
 				nodeShape.setPosition(pos);
 
@@ -370,8 +442,17 @@ int main()
 					nodeShape.setColor({(unsigned char)(-nodeValue * 255), 0, BASE_B_VALUE});
 				}
 
+				if ((pos - event.getPointerWindowPosition()).length() < 10)
+				{
+					selectedID = i;
+				}
+
 				window.drawShape(nodeShape);
 			}
+		}
+		else
+		{
+			focusCreature = nullptr;
 		}
 
 		window.display();
@@ -432,7 +513,7 @@ int main()
 			{
 				cameraPosition = cameraPosition - cameraOffset;
 
-				cameraOffset = startPos - Vec2iVec2f(event.getPointerWindowPosition());
+				cameraOffset = startPos - event.getPointerWindowPosition();
 				cameraOffset.x *= sizeMultiplier;
 				cameraOffset.y *= sizeMultiplier;
 
@@ -441,7 +522,7 @@ int main()
 			}
 			else // first click
 			{
-				startPos = Vec2iVec2f(event.getPointerWindowPosition());
+				startPos = event.getPointerWindowPosition();
 				b1Held	 = true;
 			}
 		}
