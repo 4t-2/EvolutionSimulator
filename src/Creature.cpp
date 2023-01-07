@@ -60,6 +60,7 @@ void Creature::setup(CreatureData &creatureData)
 void Creature::clear()
 {
 	delete network;
+	network = nullptr;
 
 	position	 = {0, 0};
 	velocity	 = {0, 0};
@@ -258,6 +259,7 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 		}
 	}
 
+
 	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / rayLength));
 	network->setInputNode(CREATURE_ROTATION, loop(-PI, PI, creatureRotation) / PI);
 
@@ -294,7 +296,7 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 	}
 
 	network->setInputNode(FOOD_DISTANCE, 1 - (foodDistance / rayLength));
-	network->setInputNode(FOOD_ROTATION, foodRotation / PI);
+	network->setInputNode(FOOD_ROTATION, loop(-PI, PI, foodRotation) / PI);
 
 	network->setInputNode(ENERGY_INPUT, energy / maxEnergy);
 	network->setInputNode(HEALTH_INPUT, health / maxHealth);

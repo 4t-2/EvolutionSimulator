@@ -6,27 +6,35 @@
 #include "Food.hpp"
 #include "Grid.hpp"
 
+class SimulationRules
+{
+	public:
+		agl::Vec<int, 2> size;
+		int startingCreatures;
+		int foodEnergy;
+		int				 maxCreatures;
+		int maxFood;
+		int maxEggs;
+};
+
 class Simulation
 {
 	private:
-		agl::Vec<float, 2> size;
+		SimulationRules simulationRules;
 
 		Creature		 *creatureBuffer;
 		List<Creature *> *existingCreatures;
-		int				  maxCreatures;
-		Grid<Creature*> *creatureGrid;
+		Grid<Creature *> *creatureGrid;
 
 		Egg			*eggBuffer;
 		List<Egg *> *existingEggs;
-		int			 maxEggs;
 
 		Food		 *foodBuffer;
 		List<Food *> *existingFood;
-		int			  maxFood;
 		Grid<Food *> *foodGrid;
 
 	public:
-		Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, int maxEggs);
+		Simulation(SimulationRules simulationRules);
 		void destroy();
 
 		void updateNetworks();

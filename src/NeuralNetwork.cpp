@@ -136,31 +136,17 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		}
 	}
 
-	// // invalidate connection to and from non existing nodes
-	// for (int i = 0; i < this->totalConnections; i++)
-	// {
-	// 	if (this->connection[i].valid)
-	// 	{
-	// 		if (this->connection[i].startNode >= totalNodes ||
-	// this->connection[i].endNode >= totalNodes)
-	// 		{
-	// 			this->connection[i].valid = false;
-	// 		}
-	// 	}
-	// }
-
-	// // invalid connections going into themself
-	// for (int i = 0; i < this->totalConnections; i++)
-	// {
-	// 	if (this->connection[i].valid)
-	// 	{
-	// 		if (this->connection[i].startNode ==
-	// this->connection[i].endNode)
-	// 		{
-	// 			this->connection[i].valid = false;
-	// 		}
-	// 	}
-	// }
+	// invalid connections going into themself
+	for (int i = 0; i < this->totalConnections; i++)
+	{
+		if (this->connection[i].valid)
+		{
+			if (this->connection[i].startNode == this->connection[i].endNode)
+			{
+				this->connection[i].valid = false;
+			}
+		}
+	}
 
 	// Invalidate looping connections
 
@@ -254,11 +240,6 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		{
 			connectedNodes++;
 		}
-	}
-
-	for (int i = 0; i < totalInputNodes; i++)
-	{
-		node[i].value = 2;
 	}
 
 	nodeCalculationOrder = new Node *[connectedNodes];

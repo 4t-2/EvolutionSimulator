@@ -153,7 +153,15 @@ int main()
 	nodeNames[EAT_OUTPUT]		 = "Eat";
 	nodeNames[LAYEGG_OUTPUT]	 = "Lay Egg";
 
-	Simulation simulation({WIDTH * 10, HEIGHT * 10}, 1000, 1500, 100);
+	SimulationRules simulationRules;
+	simulationRules.startingCreatures = 100;
+	simulationRules.maxCreatures = 1000;
+	simulationRules.foodEnergy = 60;
+	simulationRules.maxFood = 1;
+	simulationRules.size = {1000, 1000};
+	simulationRules.maxEggs = 100;
+
+	Simulation simulation(simulationRules);
 
 	Creature		 *creature			= simulation.getCreatureBuffer();
 	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
@@ -371,6 +379,11 @@ int main()
 			for (int i = 0; i < focusCreature->getNeuralNetwork().getTotalConnections(); i++)
 			{
 				Connection connection = focusCreature->getNeuralNetwork().getConnection(i);
+
+				if(!connection.valid)
+				{
+					continue;
+				}
 
 				float startAngle = connection.startNode + 1;
 				startAngle /= focusCreature->getNeuralNetwork().getTotalNodes();

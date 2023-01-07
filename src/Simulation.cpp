@@ -16,41 +16,38 @@ void randomData(Buffer *buffer)
 	return;
 }
 
-Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, int maxEggs)
+Simulation::Simulation(SimulationRules simulationRules)
 {
-	this->size		   = size;
-	this->maxCreatures = maxCreatures;
-	this->maxFood	   = maxFood;
-	this->maxEggs	   = maxEggs;
+	this->simulationRules = simulationRules;
 
 	srand(time(NULL));
 
-	creatureBuffer	  = new Creature[this->maxCreatures];
-	existingCreatures = new List<Creature *>(this->maxCreatures);
+	creatureBuffer	  = new Creature[simulationRules.maxCreatures];
+	existingCreatures = new List<Creature *>(simulationRules.maxCreatures);
 
-	eggBuffer	 = new Egg[this->maxEggs];
-	existingEggs = new List<Egg *>(this->maxEggs);
+	eggBuffer	 = new Egg[simulationRules.maxEggs];
+	existingEggs = new List<Egg *>(simulationRules.maxEggs);
 
-	foodBuffer	 = new Food[this->maxFood];
-	existingFood = new List<Food *>(this->maxFood);
+	foodBuffer	 = new Food[simulationRules.maxFood];
+	existingFood = new List<Food *>(simulationRules.maxFood);
 
 	agl::Vec<int, 2> gridSize;
-	gridSize.x = size.x / 670;
-	gridSize.y = size.y / 670;
+	gridSize.x = simulationRules.size.x / 670;
+	gridSize.y = simulationRules.size.y / 670;
 
-	foodGrid	 = new Grid<Food *>(gridSize, maxFood);
-	creatureGrid = new Grid<Creature *>(gridSize, maxFood);
+	foodGrid	 = new Grid<Food *>(gridSize, simulationRules.maxFood);
+	creatureGrid = new Grid<Creature *>(gridSize, simulationRules.maxCreatures);
 
 	int connections = 10;
 
-	for (int i = 0; i < 100; i++)
+	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
 		Buffer buffer(EXTRA_BYTES + (connections * 3));
 		randomData(&buffer);
 
-		CreatureData creatureData = this->bufferToCreatureData(buffer);
+		// CreatureData creatureData = this->bufferToCreatureData(buffer);
 
-		// CreatureData creatureData(1, 1, 1, 5);
+		CreatureData creatureData(1, 2, 1, 5, 5);
 
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
@@ -59,21 +56,21 @@ Simulation::Simulation(agl::Vec<float, 2> size, int maxCreatures, int maxFood, i
 		creatureData.setConnection(4, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
 
 		agl::Vec<float, 2> position;
-		position.x = (rand() / (float)RAND_MAX) * size.x;
-		position.y = (rand() / (float)RAND_MAX) * size.y;
+		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
+		position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
 
 		this->addCreature(creatureData, position);
 	}
 
-	for (int i = 0; i < this->maxFood; i++)
+	for (int i = 0; i < simulationRules.maxFood; i++)
 	{
 		foodBuffer[i].id = i;
 
-		this->addFood({(float)rand() / (float)RAND_MAX * size.x, //
-					   (float)rand() / (float)RAND_MAX * size.y});
+		this->addFood({(float)rand() / (float)RAND_MAX * simulationRules.size.x, //
+					   (float)rand() / (float)RAND_MAX * simulationRules.size.y});
 	}
 
-	foodBuffer->position = {((float)size.x / 2) + 100, 100};
+	foodBuffer->position = {((float)simulationRules.size.x / 2) + 100, 100};
 
 	return;
 }
@@ -149,7 +146,7 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 {
 	bool alreadyExists;
 
-	for (int i = 0; i < maxCreatures; i++)
+	for (int i = 0; i < simulationRules.maxCreatures; i++)
 	{
 		alreadyExists = false;
 
@@ -194,7 +191,7 @@ void Simulation::addEgg(CreatureData &creatureData, agl::Vec<float, 2> position)
 {
 	bool alreadyExists;
 
-	for (int i = 0; i < maxEggs; i++)
+	for (int i = 0; i < simulationRules.maxEggs; i++)
 	{
 		alreadyExists = false;
 
@@ -237,7 +234,7 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 {
 	bool alreadyExists;
 
-	for (int i = 0; i < maxFood; i++)
+	for (int i = 0; i < simulationRules.maxFood; i++)
 	{
 		alreadyExists = false;
 
@@ -254,9 +251,9 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 		{
 			existingFood->add(&foodBuffer[i]);
 			foodBuffer[i].position = position;
-			foodBuffer[i].energy   = 60;
+			foodBuffer[i].energy   = simulationRules.foodEnergy;
 
-			agl::Vec<int, 2> gridPosition = foodGrid->toGridPosition(position, size);
+			agl::Vec<int, 2> gridPosition = foodGrid->toGridPosition(position, simulationRules.size);
 
 			foodGrid->addData(gridPosition, &foodBuffer[i]);
 
@@ -271,7 +268,7 @@ void Simulation::removeFood(Food *food)
 	{
 		if (existingFood->get(i) == food)
 		{
-			agl::Vec<int, 2> gridPosition = foodGrid->toGridPosition(food->position, size);
+			agl::Vec<int, 2> gridPosition = foodGrid->toGridPosition(food->position, simulationRules.size);
 
 			foodGrid->removeData(gridPosition, food);
 			existingFood->pop(i);
@@ -284,19 +281,19 @@ void Simulation::removeFood(Food *food)
 }
 
 void threadedUpdateNetworks(List<Creature *> *existingCreatures, Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid,
-							agl::Vec<float, 2> size, int start, int end)
+							SimulationRules simulationRules, int start, int end)
 {
 	for (int i = start; i < end; i++)
 	{
-		existingCreatures->get(i)->updateNetwork(foodGrid, creatureGrid, size);
+		existingCreatures->get(i)->updateNetwork(foodGrid, creatureGrid, simulationRules.size);
 	}
 }
 
 void Simulation::updateNetworks()
 {
-	std::thread thread1(threadedUpdateNetworks, existingCreatures, foodGrid, creatureGrid, size, 0,
+	std::thread thread1(threadedUpdateNetworks, existingCreatures, foodGrid, creatureGrid, simulationRules, 0,
 						existingCreatures->getLength() / 2);
-	std::thread thread2(threadedUpdateNetworks, existingCreatures, foodGrid, creatureGrid, size,
+	std::thread thread2(threadedUpdateNetworks, existingCreatures, foodGrid, creatureGrid, simulationRules,
 						existingCreatures->getLength() / 2, existingCreatures->getLength());
 
 	thread1.join();
@@ -313,7 +310,7 @@ void Simulation::updateSimulation()
 
 		creature->updateActions();
 
-		creature->setGridPosition(foodGrid->toGridPosition(creature->getPosition(), size));
+		creature->setGridPosition(foodGrid->toGridPosition(creature->getPosition(), simulationRules.size));
 
 		creatureGrid->addData(creature->getGridPosition(), creature);
 	}
@@ -419,11 +416,11 @@ void Simulation::updateSimulation()
 	}
 
 	// adding more food
-	if (existingFood->getLength() < maxFood)
+	if (existingFood->getLength() < simulationRules.maxFood)
 	{
 		agl::Vec<float, 2> position;
-		position.x = (rand() / (float)RAND_MAX) * size.x;
-		position.y = (rand() / (float)RAND_MAX) * size.y;
+		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
+		position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
 
 		this->addFood(position);
 	}
@@ -443,7 +440,7 @@ Creature *Simulation::getCreatureBuffer()
 
 int Simulation::getMaxCreatures()
 {
-	return maxCreatures;
+	return simulationRules.maxCreatures;
 }
 
 List<Creature *> *Simulation::getExistingCreatures()
@@ -453,7 +450,7 @@ List<Creature *> *Simulation::getExistingCreatures()
 
 agl::Vec<float, 2> Simulation::getSize()
 {
-	return size;
+	return simulationRules.size;
 }
 
 List<Egg *> *Simulation::getExistingEggs()
@@ -478,5 +475,5 @@ List<Food *> *Simulation::getExistingFood()
 
 int Simulation::getMaxFood()
 {
-	return maxFood;
+	return simulationRules.maxFood;
 }
