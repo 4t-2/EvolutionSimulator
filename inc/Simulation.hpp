@@ -5,17 +5,7 @@
 #include "Egg.hpp"
 #include "Food.hpp"
 #include "Grid.hpp"
-
-class SimulationRules
-{
-	public:
-		agl::Vec<int, 2> size;
-		int startingCreatures;
-		int foodEnergy;
-		int				 maxCreatures;
-		int maxFood;
-		int maxEggs;
-};
+#include "SimulationRules.hpp"
 
 class Simulation
 {

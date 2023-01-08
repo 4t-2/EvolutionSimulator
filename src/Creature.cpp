@@ -5,7 +5,7 @@ Creature::Creature()
 	return;
 }
 
-void Creature::setup(CreatureData &creatureData)
+void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRules)
 {
 	// INPUT
 	// constant
@@ -23,6 +23,8 @@ void Creature::setup(CreatureData &creatureData)
 	// Turn left
 	// Eat
 	// Lay egg
+
+	this->simulationRules = simulationRules;
 
 	this->gridPosition = {0, 0};
 
@@ -52,6 +54,14 @@ void Creature::setup(CreatureData &creatureData)
 	this->maxLife	= 60 * 60 * size;
 
 	this->radius = 12.5 * size;
+
+	int xOffset = (roundUp(rayLength / ((float)simulationRules->size.x / simulationRules->gridResolution.x), 2) / 2);
+	int yOffset = (roundUp(rayLength / ((float)simulationRules->size.y / simulationRules->gridResolution.y), 2) / 2);
+
+	startGridOffset.x = -xOffset;
+	startGridOffset.y = -yOffset;
+	endGridOffset.x	  = xOffset;
+	endGridOffset.y	  = yOffset;
 
 	network =
 		new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, creatureData.getConnection(), creatureData.getTotalConnections());
@@ -134,12 +144,12 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
-void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, agl::Vec<float, 2> worldSize)
+void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid)
 {
 	network->setInputNode(CONSTANT_INPUT, 1);
 
-	network->setInputNode(X_INPUT, ((position.x / worldSize.x) * 2) - 1);
-	network->setInputNode(Y_INPUT, ((position.y / worldSize.y) * 2) - 1);
+	network->setInputNode(X_INPUT, ((position.x / simulationRules->size.x) * 2) - 1);
+	network->setInputNode(Y_INPUT, ((position.y / simulationRules->size.y) * 2) - 1);
 
 	network->setInputNode(ROTATION_INPUT, rotation / PI);
 
@@ -222,16 +232,16 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 	float foodDistance	   = rayLength;
 	float foodRotation	   = 0;
 
-	for (int x = -1; x < 2; x++)
+	for (int x = startGridOffset.x; x < endGridOffset.x; x++)
 	{
-		if (gridPosition.x + x < 0 || gridPosition.x + x > (foodGrid->getSize().x - 1))
+		if (gridPosition.x + x < 0 || gridPosition.x + x > (creatureGrid->getSize().x - 1))
 		{
 			continue;
 		}
 
 		for (int y = -1; y < 2; y++)
 		{
-			if (gridPosition.y + y < 0 || gridPosition.y + y > (foodGrid->getSize().y - 1))
+			if (gridPosition.y + y < 0 || gridPosition.y + y > (creatureGrid->getSize().y - 1))
 			{
 				continue;
 			}
@@ -259,18 +269,17 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 		}
 	}
 
-
 	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / rayLength));
 	network->setInputNode(CREATURE_ROTATION, loop(-PI, PI, creatureRotation) / PI);
 
-	for (int x = -1; x < 2; x++)
+	for (int x = startGridOffset.x; x < endGridOffset.x; x++)
 	{
 		if (gridPosition.x + x < 0 || gridPosition.x + x > (foodGrid->getSize().x - 1))
 		{
 			continue;
 		}
 
-		for (int y = -1; y < 2; y++)
+		for (int y = startGridOffset.x; y < endGridOffset.y; y++)
 		{
 			if (gridPosition.y + y < 0 || gridPosition.y + y > (foodGrid->getSize().y - 1))
 			{

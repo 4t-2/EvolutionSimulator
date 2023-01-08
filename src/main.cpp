@@ -155,11 +155,12 @@ int main()
 
 	SimulationRules simulationRules;
 	simulationRules.startingCreatures = 100;
-	simulationRules.maxCreatures = 1000;
+	simulationRules.maxCreatures = 2000;
 	simulationRules.foodEnergy = 60;
-	simulationRules.maxFood = 1;
-	simulationRules.size = {1000, 1000};
-	simulationRules.maxEggs = 100;
+	simulationRules.maxFood = 1500;
+	simulationRules.size = {19200, 10800};
+	simulationRules.gridResolution = {15, 15};
+	simulationRules.maxEggs = 1000;
 
 	Simulation simulation(simulationRules);
 
@@ -170,10 +171,6 @@ int main()
 	Food			 *food				= simulation.getFoodBuffer();
 
 	Creature *focusCreature;
-
-	CreatureData creatureData = creature->getCreatureData();
-
-	Buffer buffer = Simulation::creatureDataToBuffer(creatureData);
 
 	bool mHeld		= false;
 	bool b1Held		= false;

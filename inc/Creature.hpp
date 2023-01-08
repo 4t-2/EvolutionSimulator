@@ -5,6 +5,7 @@
 #include "Food.hpp"
 #include "Grid.hpp"
 #include "NeuralNetwork.hpp"
+#include "SimulationRules.hpp"
 #include "other.hpp"
 
 #define RAY_LENGTH 1000
@@ -68,6 +69,11 @@ class Creature
 
 		int hue = 0;
 
+		SimulationRules *simulationRules;
+
+		agl::Vec<int, 2> startGridOffset;
+		agl::Vec<int, 2> endGridOffset;
+
 		CreatureData creatureData;
 
 	public:
@@ -77,7 +83,7 @@ class Creature
 		Creature();
 		~Creature();
 
-		void setup(CreatureData &creatureData);
+		void setup(CreatureData &creatureData, SimulationRules *simulationRules);
 		void clear();
 
 		void setPosition(agl::Vec<float, 2> position);
@@ -87,7 +93,7 @@ class Creature
 		void setEnergy(float energy);
 		void setGridPosition(agl::Vec<int, 2> gridPosition);
 
-		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature*> *creatureGrid, agl::Vec<float, 2> worldSize);
+		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature*> *creatureGrid);
 		void updateActions();
 
 		CreatureData getCreatureData();

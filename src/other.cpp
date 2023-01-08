@@ -71,3 +71,11 @@ agl::Color hueToRGB(int hue)
 
 	return color;
 }
+
+int roundUp(float input, int period)
+{
+	float amount = input / period;
+	amount += (amount - (int)amount) > 0;
+
+	return (int)amount * period;
+}
