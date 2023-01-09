@@ -13,7 +13,7 @@ CreatureData::CreatureData(float sight, float speed, float size, int hue, int to
 	this->speed			   = speed;
 	this->size			   = size;
 	this->totalConnections = totalConnections;
-	this->hue = hue;
+	this->hue			   = hue;
 
 	connection = new Connection[totalConnections];
 
@@ -33,8 +33,8 @@ CreatureData::CreatureData(const CreatureData &creatureData)
 
 	sight = creatureData.sight;
 	speed = creatureData.speed;
-	size = creatureData.size;
-	hue = creatureData.hue;
+	size  = creatureData.size;
+	hue	  = creatureData.hue;
 }
 
 void CreatureData::operator=(CreatureData &creatureData)
@@ -50,8 +50,8 @@ void CreatureData::operator=(CreatureData &creatureData)
 
 	sight = creatureData.sight;
 	speed = creatureData.speed;
-	size = creatureData.size;
-	hue = creatureData.hue;
+	size  = creatureData.size;
+	hue	  = creatureData.hue;
 }
 
 CreatureData::~CreatureData()
@@ -68,6 +68,23 @@ void CreatureData::setConnection(int index, int startNode, int endNode, float we
 	connection[index].weight	= weight;
 
 	return;
+}
+
+void CreatureData::setSight(float sight)
+{
+	this->sight = sight;
+}
+void CreatureData::setSpeed(float speed)
+{
+	this->speed = speed;
+}
+void CreatureData::setSize(float size)
+{
+	this->size = size;
+}
+void CreatureData::setHue(int hue)
+{
+	this->hue = hue;
 }
 
 int CreatureData::getTotalConnections()

@@ -25,6 +25,11 @@ class CreatureData
 
 		void setConnection(int index, int start, int end, float weight);
 
+		void setSight(float sight);
+		void setSpeed(float speed);
+		void setSize(float size);
+		void setHue(int hue);
+
 		int			getTotalConnections();
 		Connection *getConnection();
 		float		getSight();

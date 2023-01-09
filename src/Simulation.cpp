@@ -1,5 +1,6 @@
 #include "../inc/Simulation.hpp"
 
+#include <cstdlib>
 #include <thread>
 
 void randomData(Buffer *buffer)
@@ -293,6 +294,48 @@ void Simulation::updateNetworks()
 	thread2.join();
 }
 
+void mutate(CreatureData *creatureData)
+{
+	int nonExistIndex = -1;
+
+	Connection * connection = creatureData->getConnection();
+
+	for(int i = 0; i < creatureData->getTotalConnections(); i++)
+	{
+		if(!connection[i].exists)
+		{
+			nonExistIndex = i;
+		}
+	}
+
+	int max = 3;
+
+	if(nonExistIndex == -1)
+	{
+		max = 1;
+	}
+
+	int type = (rand() / RAND_MAX) * 3; // Mutate weight, Remove connection, Add Connection, Add Node
+
+	type = 0;
+
+	if (type == 0)
+	{
+		int index = (rand() / (float)RAND_MAX) * (creatureData->getTotalConnections() - 1);
+		int start = connection[index].startNode;
+		int end	  = connection[index].endNode;
+
+		creatureData->setConnection(index, start, end, ((rand() / (float)RAND_MAX) * 2) - 1);
+	} else if(type == 1)
+	{
+		int index = (rand() / (float)RAND_MAX) * (creatureData->getTotalConnections() - 1);
+
+		connection[index].exists = false;
+	} else if(type == 2)
+	{
+	}
+}
+
 void Simulation::updateSimulation()
 {
 	creatureGrid->clear();
@@ -322,11 +365,10 @@ void Simulation::updateSimulation()
 				eggLayer->setEnergy(eggLayer->getEnergy() - (60 * eggLayer->getSize()));
 
 				CreatureData creatureData = eggLayer->getCreatureData();
-				Buffer		 buffer		  = creatureDataToBuffer(creatureData);
 
-				mutateBuffer(&buffer, 100);
+				CreatureData mutatedData = creatureData;
 
-				CreatureData mutatedData = bufferToCreatureData(buffer);
+				mutate(&mutatedData);
 
 				this->addEgg(mutatedData, eggLayer->getPosition());
 			}
