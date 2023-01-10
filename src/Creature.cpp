@@ -63,8 +63,8 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	endGridOffset.x	  = xOffset;
 	endGridOffset.y	  = yOffset;
 
-	network =
-		new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, creatureData.getConnection(), creatureData.getTotalConnections());
+	network = new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, this->creatureData.getConnection(),
+								this->creatureData.getTotalConnections());
 }
 
 void Creature::clear()

@@ -93,8 +93,6 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		node[i].id = i;
 	}
 
-	int existDiff = 0;
-
 	// set connections stored to be equal to inputted ones
 	for (int i = 0; i < totalConnections; i++)
 	{
@@ -104,8 +102,6 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 		this->connection[i].id		  = i;
 		this->connection[i].valid	  = connection[i].exists;
 	}
-
-	totalConnections -= existDiff;
 
 	// Invalidate duplicated connections
 
@@ -256,6 +252,11 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	}
 
 	connectedNodes = nodeOrder;
+
+	for(int i = 0; i < totalConnections; i++)
+	{
+		connection[i].exists = this->connection[i].valid;
+	}
 
 	return;
 }

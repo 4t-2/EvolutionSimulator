@@ -8,12 +8,13 @@
 class CreatureData
 {
 	private:
-		Connection *connection = nullptr;
-		int			totalConnections;
-		float		sight; // 0 - 2
-		float		speed; // 0 - 2
-		float		size;  // 0 - 2
-		int			hue;   // 0 - 359
+		Connection *connection = nullptr; // NOTE maybe store as List<Connection>,
+										  // would make mutation easier
+		int	  totalConnections;
+		float sight; // 0 - 2
+		float speed; // 0 - 2
+		float size;	 // 0 - 2
+		int	  hue;	 // 0 - 359
 
 	public:
 		CreatureData();

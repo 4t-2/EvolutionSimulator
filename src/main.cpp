@@ -153,6 +153,11 @@ int main()
 	nodeNames[EAT_OUTPUT]		 = "Eat";
 	nodeNames[LAYEGG_OUTPUT]	 = "Lay Egg";
 
+	for(int i  = (TOTAL_INPUT + TOTAL_OUTPUT); i < TOTAL_NODES; i++)
+	{
+		nodeNames[i] = "Hidden";
+	}
+
 	SimulationRules simulationRules;
 	simulationRules.startingCreatures = 100;
 	simulationRules.maxCreatures = 2000;

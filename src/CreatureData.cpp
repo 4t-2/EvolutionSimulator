@@ -17,12 +17,18 @@ CreatureData::CreatureData(float sight, float speed, float size, int hue, int to
 
 	connection = new Connection[totalConnections];
 
+	for (int i = 0; i < totalConnections; i++)
+	{
+		connection[i].exists = false;
+	}
+
 	return;
 }
 
 CreatureData::CreatureData(const CreatureData &creatureData)
 {
 	totalConnections = creatureData.totalConnections;
+	
 	delete[] connection;
 	connection = new Connection[totalConnections];
 
@@ -40,6 +46,7 @@ CreatureData::CreatureData(const CreatureData &creatureData)
 void CreatureData::operator=(CreatureData &creatureData)
 {
 	totalConnections = creatureData.totalConnections;
+	
 	delete[] connection;
 	connection = new Connection[totalConnections];
 
@@ -66,6 +73,7 @@ void CreatureData::setConnection(int index, int startNode, int endNode, float we
 	connection[index].startNode = startNode;
 	connection[index].endNode	= endNode;
 	connection[index].weight	= weight;
+	connection[index].exists	= true;
 
 	return;
 }
