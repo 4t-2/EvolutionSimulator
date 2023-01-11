@@ -290,118 +290,146 @@ void Simulation::updateNetworks()
 	thread2.join();
 }
 
-void mutate(CreatureData *creatureData)
+void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 {
-	int nonExistIndex = -1;
+	Buffer buf(EXTRA_BYTES);
+	buf.data[0] = 255 * (creatureData->getSight() / 2);
+	buf.data[1] = 255 * (creatureData->getSpeed() / 2);
+	buf.data[2] = 255 * (creatureData->getSize() / 2);
+	buf.data[3] = 255 * (creatureData->getHue() / 359.);
 
-	Connection *connection = creatureData->getConnection();
+	Simulation::mutateBuffer(&buf, bodyMutation);
 
-	for (int i = 0; i < creatureData->getTotalConnections(); i++)
+	creatureData->setSight((buf.data[0] * 2) / 255.);
+	creatureData->setSpeed((buf.data[1] * 2) / 255.);
+	creatureData->setSize((buf.data[2] * 2) / 255.);
+	creatureData->setHue((buf.data[3] * 359.) / 255.);
+
+	for (int i = 0; i < networkCycles; i++)
 	{
-		if (!connection[i].exists)
+		int			nonExistIndex = -1;
+		Connection *connection	  = creatureData->getConnection();
+
+		for (int i = 0; i < creatureData->getTotalConnections(); i++)
 		{
-			nonExistIndex = i;
-			break;
-		}
-	}
-
-	int max = 3;
-
-	if (nonExistIndex == -1)
-	{
-		max = 1;
-	}
-
-	int type = round((rand() / (float)RAND_MAX) * max); // Mutate weight, Remove connection, Add Node, Add Connection
-
-	printf("%d\n", type);
-
-	if (type == 0)
-	{
-		int index = round((rand() / (float)RAND_MAX) * (creatureData->getTotalConnections() - 1));
-		int start = connection[index].startNode;
-		int end	  = connection[index].endNode;
-
-		connection[index].weight = ((rand() / (float)RAND_MAX) * 2) - 1;
-	}
-	else if (type == 1)
-	{
-		int index = round((rand() / (float)RAND_MAX) * (creatureData->getTotalConnections() - 1));
-
-		connection[index].exists = false;
-	}
-	else if (type == 2)
-	{
-		int node = -1;
-
-		for (int x = (TOTAL_INPUT + TOTAL_OUTPUT); x < TOTAL_NODES; x++)
-		{
-			node = x;
-
-			for (int i = 0; i < creatureData->getTotalConnections(); i++)
+			if (!connection[i].exists)
 			{
-				if (connection[i].startNode == node || connection[i].endNode == node)
+				nonExistIndex = i;
+				break;
+			}
+		}
+
+		int max = 3;
+
+		if (nonExistIndex == -1)
+		{
+			max = 1;
+		}
+
+		int type = round((rand() / (float)RAND_MAX) * max);
+
+		// 0 - mutate weight
+		// 1 - remove connection
+		// 2 - Add node
+		// 3 - Add connection
+
+		if (type == 0)
+		{
+			int index = round((rand() / (float)RAND_MAX) * (creatureData->getTotalConnections() - 1));
+			int start = connection[index].startNode;
+			int end	  = connection[index].endNode;
+
+			connection[index].weight = ((rand() / (float)RAND_MAX) * 2) - 1;
+		}
+		else if (type == 1)
+		{
+			int index = round((rand() / (float)RAND_MAX) * (creatureData->getTotalConnections() - 1));
+
+			connection[index].exists = false;
+		}
+		else if (type == 2)
+		{
+			int node = -1;
+
+			for (int x = (TOTAL_INPUT + TOTAL_OUTPUT); x < TOTAL_NODES; x++)
+			{
+				node = x;
+
+				for (int i = 0; i < creatureData->getTotalConnections(); i++)
 				{
-					node = -1;
+					if (!connection[i].exists)
+					{
+						continue;
+					}
+
+					if (connection[i].startNode == node || connection[i].endNode == node)
+					{
+						node = -1;
+					}
+				}
+
+				if (node != -1)
+				{
+					break;
 				}
 			}
 
 			if (node != -1)
 			{
-				break;
+				int index = round((rand() / (float)RAND_MAX) * (creatureData->getTotalConnections() - 1));
+
+				connection[nonExistIndex].exists	= true;
+				connection[nonExistIndex].startNode = node;
+				connection[nonExistIndex].endNode	= connection[index].endNode;
+				connection[nonExistIndex].weight	= 1;
+
+				connection[index].endNode = node;
 			}
 		}
-
-		if (node != -1)
+		else if (type == 3)
 		{
-			int index = round((rand() / (float)RAND_MAX) * (creatureData->getTotalConnections() - 1));
+			List<int> hiddenNodes(creatureData->getTotalConnections());
 
-			connection[nonExistIndex].exists	= true;
-			connection[nonExistIndex].startNode = node;
-			connection[nonExistIndex].endNode	= connection[index].endNode;
-			connection[nonExistIndex].weight	= 1;
-
-			connection[index].endNode = node;
-		}
-	}
-	else if (type == 3)
-	{
-		List<int> hiddenNodes(creatureData->getTotalConnections());
-
-		for (int i = 0; i < creatureData->getTotalConnections(); i++)
-		{
-			if (connection[i].startNode < (TOTAL_INPUT + TOTAL_OUTPUT))
+			for (int i = 0; i < creatureData->getTotalConnections(); i++)
 			{
-				if (hiddenNodes.find(connection[i].startNode) != -1)
+				if (!connection[i].exists)
 				{
-					hiddenNodes.add(connection[i].startNode);
+					continue;
+				}
+
+				if (connection[i].startNode < (TOTAL_INPUT + TOTAL_OUTPUT))
+				{
+					if (hiddenNodes.find(connection[i].startNode) != -1)
+					{
+						hiddenNodes.add(connection[i].startNode);
+					}
 				}
 			}
-		}
 
-		int startNode = round((rand() / (float)RAND_MAX) * (TOTAL_INPUT + hiddenNodes.getLength() - 1));
-		int endNode	  = round((rand() / (float)RAND_MAX) * (TOTAL_OUTPUT + hiddenNodes.getLength() - 1));
+			int startNode = round((rand() / (float)RAND_MAX) * (TOTAL_INPUT + hiddenNodes.getLength() - 1));
+			int endNode	  = round((rand() / (float)RAND_MAX) * (TOTAL_OUTPUT + hiddenNodes.getLength() - 1));
 
-		if (startNode >= TOTAL_INPUT)
-		{
-			startNode -= TOTAL_INPUT;
-			startNode = hiddenNodes.get(startNode);
-		}
+			if (startNode >= TOTAL_INPUT)
+			{
+				startNode -= TOTAL_INPUT;
+				startNode = hiddenNodes.get(startNode);
+			}
 
-		if (endNode >= TOTAL_OUTPUT)
-		{
-			endNode -= TOTAL_OUTPUT;
-			endNode = hiddenNodes.get(startNode);
-		}
-		else
-		{
-			endNode += TOTAL_INPUT;
-		}
+			if (endNode >= TOTAL_OUTPUT)
+			{
+				endNode -= TOTAL_OUTPUT;
+				endNode = hiddenNodes.get(startNode);
+			}
+			else
+			{
+				endNode += TOTAL_INPUT;
+			}
 
-		connection[nonExistIndex].exists	= true;
-		connection[nonExistIndex].startNode = startNode;
-		connection[nonExistIndex].endNode	= endNode;
-		connection[nonExistIndex].weight	= ((rand() / (float)RAND_MAX) * 2) - 1;
+			connection[nonExistIndex].exists	= true;
+			connection[nonExistIndex].startNode = startNode;
+			connection[nonExistIndex].endNode	= endNode;
+			connection[nonExistIndex].weight	= ((rand() / (float)RAND_MAX) * 2) - 1;
+		}
 	}
 }
 
@@ -435,11 +463,9 @@ void Simulation::updateSimulation()
 
 				CreatureData creatureData = eggLayer->getCreatureData();
 
-				CreatureData mutatedData = creatureData;
+				mutate(&creatureData, 100, 1);
 
-				mutate(&mutatedData);
-
-				this->addEgg(mutatedData, eggLayer->getPosition());
+				this->addEgg(creatureData, eggLayer->getPosition());
 			}
 		}
 
@@ -520,7 +546,9 @@ void Simulation::updateSimulation()
 	}
 
 	// adding more food
-	if (existingFood->getLength() < simulationRules.maxFood)
+	int max = std::min(simulationRules.maxFood, int(simulationRules.maxFood * (200. / existingCreatures->getLength())));
+	printf("%d\n", max);
+	if (existingFood->getLength() < max)
 	{
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
