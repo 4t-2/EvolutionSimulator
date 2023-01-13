@@ -162,8 +162,8 @@ int main()
 	simulationRules.startingCreatures = 100;
 	simulationRules.maxCreatures = 2000;
 	simulationRules.foodEnergy = 60;
-	simulationRules.maxFood = 1500;
-	simulationRules.size = {19200, 10800};
+	simulationRules.maxFood = 30;
+	simulationRules.size = {1000, 1000};
 	simulationRules.gridResolution = {15, 15};
 	simulationRules.maxEggs = 1000;
 
@@ -572,8 +572,19 @@ int main()
 
 	simulation.destroy();
 
+	simulationInfo.destroy();
+	creatureInfo.destroy();
+
+	font.deleteFont();
+
+	foodTexture.deleteTexture();
+	creatureBodyTexture.deleteTexture();
+	creatureExtraTexture.deleteTexture();
+	eggTexture.deleteTexture();
 	blank.deleteTexture();
+
 	shader.deleteProgram();
+	
 	window.close();
 
 	return 0;

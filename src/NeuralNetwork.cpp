@@ -15,6 +15,11 @@ void travelBranchForLoop(Connection *connection, int id, bool *isNodeVisited, in
 	{
 		for (int i = 0; i < totalConnections; i++)
 		{
+			if(connection[i].valid == false)
+			{
+				continue;
+			}
+
 			if (connection[id].endNode == connection[i].startNode)
 			{
 				bool *isNodeVisitedBranch = new bool[totalNodes];
@@ -184,7 +189,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	{
 		if (isConnectionBase[i])
 		{
-			bool *isNodeVisited = new bool[31];
+			bool *isNodeVisited = new bool[totalNodes];
 
 			for (int i = 0; i < this->totalNodes; i++)
 			{
@@ -259,6 +264,11 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 	}
 
 	return;
+}
+
+NeuralNetwork::~NeuralNetwork()
+{
+	this->destroy();
 }
 
 void NeuralNetwork::setConnection(int connectionNumber, Connection connection)

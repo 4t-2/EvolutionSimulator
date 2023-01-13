@@ -463,7 +463,7 @@ void Simulation::updateSimulation()
 
 				CreatureData creatureData = eggLayer->getCreatureData();
 
-				mutate(&creatureData, 100, 1);
+				mutate(&creatureData, 50, 3);
 
 				this->addEgg(creatureData, eggLayer->getPosition());
 			}
@@ -547,8 +547,7 @@ void Simulation::updateSimulation()
 
 	// adding more food
 	int max = std::min(simulationRules.maxFood, int(simulationRules.maxFood * (200. / existingCreatures->getLength())));
-	printf("%d\n", max);
-	if (existingFood->getLength() < max)
+	if (existingFood->getLength() < simulationRules.maxFood)
 	{
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;

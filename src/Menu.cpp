@@ -63,6 +63,11 @@ void Menu::setText(std::string str)
 	text.setText(str);
 }
 
+void Menu::destroy()
+{
+	text.clearText();
+}
+
 agl::Rectangle *Menu::getBorderShape()
 {
 	return &borderShape;

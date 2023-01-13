@@ -35,6 +35,8 @@ class Menu
 
 		void setText(std::string str);
 
+		void destroy();
+
 		agl::Rectangle	  *getBorderShape();
 		agl::Rectangle	  *getBodyShape();
 		agl::Rectangle	  *getOuterShadowShape();
