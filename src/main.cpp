@@ -159,11 +159,11 @@ int main()
 	}
 
 	SimulationRules simulationRules;
-	simulationRules.startingCreatures = 100;
+	simulationRules.startingCreatures = 500;
 	simulationRules.maxCreatures = 2000;
 	simulationRules.foodEnergy = 60;
-	simulationRules.maxFood = 30;
-	simulationRules.size = {1000, 1000};
+	simulationRules.maxFood = 1500;
+	simulationRules.size = {10000, 10000};
 	simulationRules.gridResolution = {15, 15};
 	simulationRules.maxEggs = 1000;
 

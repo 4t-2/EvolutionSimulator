@@ -24,6 +24,8 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	// Eat
 	// Lay egg
 
+	existing = true;
+
 	this->simulationRules = simulationRules;
 
 	this->gridPosition = {0, 0};
@@ -69,9 +71,10 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 
 void Creature::clear()
 {
+	network->destroy();
 	delete network;
-	network = nullptr;
 
+	existing	 = false;
 	position	 = {0, 0};
 	velocity	 = {0, 0};
 	acceleration = {0, 0};
@@ -91,7 +94,10 @@ void Creature::clear()
 
 Creature::~Creature()
 {
-	this->clear();
+	if (existing)
+	{
+		this->clear();
+	}
 }
 
 void Creature::setPosition(agl::Vec<float, 2> position)

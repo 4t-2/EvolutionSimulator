@@ -70,6 +70,8 @@ class Creature
 
 		int hue = 0;
 
+		bool existing = false;
+
 		SimulationRules *simulationRules;
 
 		agl::Vec<int, 2> startGridOffset;

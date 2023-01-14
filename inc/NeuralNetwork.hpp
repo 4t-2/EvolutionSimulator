@@ -39,7 +39,7 @@ class NeuralNetwork
 
 	public:
 		NeuralNetwork(int totalNodes, int totalInputNodes, Connection connection[], int totalConnections);
-		~NeuralNetwork();
+		// ~NeuralNetwork();
 
 		void setConnection(int connectionNumber, Connection connection);
 		void setInputNode(int nodeNumber, float value);
