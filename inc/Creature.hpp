@@ -61,7 +61,7 @@ class Creature
 		int	  life		= 0;
 		float maxEnergy = 0;
 		float maxHealth = 0;
-		float maxLife	= 0;
+		int	  maxLife	= 0;
 
 		float maxForce	  = 0;
 		float maxRotation = 0;
@@ -96,7 +96,7 @@ class Creature
 		void setEnergy(float energy);
 		void setGridPosition(agl::Vec<int, 2> gridPosition);
 
-		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature*> *creatureGrid);
+		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid);
 		void updateActions();
 
 		CreatureData getCreatureData();
@@ -117,4 +117,7 @@ class Creature
 		int				   getHue();
 		float			   getRadius();
 		agl::Vec<int, 2>   getGridPosition();
+		float			   getMaxEnergy();
+		float			   getMaxHealth();
+		int				   getMaxLife();
 };

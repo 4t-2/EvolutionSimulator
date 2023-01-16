@@ -37,7 +37,7 @@ Simulation::Simulation(SimulationRules simulationRules)
 
 	int connections = 15;
 
-	for (int i = 0; i < 30; i++)
+	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
 		CreatureData creatureData(1, 1, 1, 0, connections);
 
@@ -457,9 +457,9 @@ void Simulation::updateSimulation()
 		{
 			Creature *eggLayer = creature;
 
-			if (eggLayer->getEnergy() > (60 * eggLayer->getSize()))
+			if (eggLayer->getEnergy() > (eggLayer->getMaxEnergy() * 0.6))
 			{
-				eggLayer->setEnergy(eggLayer->getEnergy() - (60 * eggLayer->getSize()));
+				eggLayer->setEnergy(eggLayer->getEnergy() - (eggLayer->getMaxEnergy() * 0.6));
 
 				CreatureData creatureData = eggLayer->getCreatureData();
 
@@ -527,6 +527,11 @@ void Simulation::updateSimulation()
 				this->removeFood(food);
 				x--;
 			}
+		}
+
+		if(creature->getEnergy() > creature->getMaxEnergy())
+		{
+			creature->setEnergy(creature->getMaxEnergy());
 		}
 	}
 

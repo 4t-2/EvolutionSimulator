@@ -47,13 +47,13 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->maxForce	  = 1.5 * speed;
 	this->maxRotation = 0.05 * speed;
 
-	this->energy = 50 * size;
-	this->health = 100 * size;
-	this->life	 = 60 * 60 * size;
+	this->energy = 50 * size * size;
+	this->health = 100 * size * size;
+	this->life	 = 60 * 60 * size * size;
 
-	this->maxEnergy = 100 * size;
-	this->maxHealth = 100 * size;
-	this->maxLife	= 60 * 60 * size;
+	this->maxEnergy = 100 * size * size;
+	this->maxHealth = 100 * size * size;
+	this->maxLife	= 60 * 60 * size * size;
 
 	this->radius = 12.5 * size;
 
@@ -315,7 +315,7 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 
 	network->setInputNode(ENERGY_INPUT, energy / maxEnergy);
 	network->setInputNode(HEALTH_INPUT, health / maxHealth);
-	network->setInputNode(LIFE_INPUT, life / maxLife);
+	network->setInputNode(LIFE_INPUT, (float)life / maxLife);
 
 	network->update();
 
@@ -468,4 +468,19 @@ int Creature::getHue()
 agl::Vec<int, 2> Creature::getGridPosition()
 {
 	return gridPosition;
+}
+
+float Creature::getMaxEnergy()
+{
+	return maxEnergy;
+}
+
+float Creature::getMaxHealth()
+{
+	return maxHealth;
+}
+
+int Creature::getMaxLife()
+{
+	return maxLife;
 }

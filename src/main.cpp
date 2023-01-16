@@ -153,19 +153,19 @@ int main()
 	nodeNames[EAT_OUTPUT]		 = "Eat";
 	nodeNames[LAYEGG_OUTPUT]	 = "Lay Egg";
 
-	for(int i  = (TOTAL_INPUT + TOTAL_OUTPUT); i < TOTAL_NODES; i++)
+	for (int i = (TOTAL_INPUT + TOTAL_OUTPUT); i < TOTAL_NODES; i++)
 	{
 		nodeNames[i] = "Hidden";
 	}
 
 	SimulationRules simulationRules;
-	simulationRules.startingCreatures = 500;
-	simulationRules.maxCreatures = 2000;
-	simulationRules.foodEnergy = 60;
-	simulationRules.maxFood = 1500;
-	simulationRules.size = {10000, 10000};
-	simulationRules.gridResolution = {15, 15};
-	simulationRules.maxEggs = 1000;
+	simulationRules.startingCreatures = 30;
+	simulationRules.maxCreatures	  = 2000;
+	simulationRules.foodEnergy		  = 60;
+	simulationRules.maxFood			  = 1500;
+	simulationRules.size			  = {19200, 10800};
+	simulationRules.gridResolution	  = {15, 15};
+	simulationRules.maxEggs			  = 1000;
 
 	Simulation simulation(simulationRules);
 
@@ -350,6 +350,15 @@ int main()
 
 			static int selectedID = 0;
 
+			char buf[77];
+			snprintf(buf, 77,
+					 "Health - %6.2f / %6.2f\n" //
+					 "Energy - %6.2f / %6.2f\n" //
+					 "Life Left - %5d / %5d\n"	//
+					 ,
+					 focusCreature->getHealth(), focusCreature->getMaxHealth(), focusCreature->getEnergy(),
+					 focusCreature->getMaxEnergy(), focusCreature->getLifeLeft(), focusCreature->getMaxLife());
+
 			ss << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 			ss << "Node - " << nodeNames[selectedID] << '\n';
 			ss << '\n';
@@ -358,9 +367,13 @@ int main()
 			ss << '\n';
 			ss << "Eating - " << focusCreature->getEating() << '\n';
 			ss << "Laying Egg - " << focusCreature->getLayingEgg() << '\n';
-			ss << "Health - " << focusCreature->getHealth() << '\n';
-			ss << "Energy - " << focusCreature->getEnergy() << '\n';
-			ss << "Life left - " << focusCreature->getLifeLeft() << '\n';
+			ss << '\n';
+			ss << buf;
+			// ss << "Health - " << focusCreature->getHealth() << " / " <<
+			// focusCreature->getMaxHealth() << '\n'; ss << "Energy - " <<
+			// focusCreature->getEnergy() << " / " << focusCreature->getMaxEnergy() <<
+			// '\n'; ss << "Life Left - " << focusCreature->getLifeLeft() << " / " <<
+			// focusCreature->getMaxLife() << '\n';
 			ss << '\n';
 			ss << "Sight - " << focusCreature->getSight() << '\n';
 			ss << "Speed - " << focusCreature->getSpeed() << '\n';
@@ -382,7 +395,7 @@ int main()
 			{
 				Connection connection = focusCreature->getNeuralNetwork().getConnection(i);
 
-				if(!connection.valid)
+				if (!connection.valid)
 				{
 					continue;
 				}
@@ -584,7 +597,7 @@ int main()
 	blank.deleteTexture();
 
 	shader.deleteProgram();
-	
+
 	window.close();
 
 	return 0;
