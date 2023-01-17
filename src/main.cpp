@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 #include <math.h>
 #include <unistd.h>
 
@@ -36,8 +37,35 @@ void printConnections(CreatureData creatureData)
 	return;
 }
 
+void loadRules(std::string path, SimulationRules *simulationRules)
+{
+	// read in order in .hpp
+	std::string	  buffer[9];
+	std::ifstream stream(path);
+
+	for (int i = 0; i < 9; i++)
+	{
+		std::getline(stream, buffer[i]);
+		std::getline(stream, buffer[i]);
+	}
+
+	simulationRules->size.x			   = stoi(buffer[0]);
+	simulationRules->size.y			   = stoi(buffer[1]);
+	simulationRules->gridResolution.x  = stoi(buffer[2]);
+	simulationRules->gridResolution.y  = stoi(buffer[3]);
+	simulationRules->startingCreatures = stoi(buffer[4]);
+	simulationRules->foodEnergy		   = stoi(buffer[5]);
+	simulationRules->maxCreatures	   = stoi(buffer[6]);
+	simulationRules->maxFood		   = stoi(buffer[7]);
+	simulationRules->maxEggs		   = stoi(buffer[8]);
+
+	return;
+}
+
 int main()
 {
+	printf("Starting AGL\n");
+
 	agl::RenderWindow window;
 	window.setup({WIDTH, HEIGHT}, "EvolutionSimulator");
 	window.setClearColor(CLEARCOLOR);
@@ -158,14 +186,21 @@ int main()
 		nodeNames[i] = "Hidden";
 	}
 
+	printf("loading simulation rules from sim.conf\n");
+
 	SimulationRules simulationRules;
-	simulationRules.startingCreatures = 30;
-	simulationRules.maxCreatures	  = 2000;
-	simulationRules.foodEnergy		  = 60;
-	simulationRules.maxFood			  = 1500;
-	simulationRules.size			  = {19200, 10800};
-	simulationRules.gridResolution	  = {15, 15};
-	simulationRules.maxEggs			  = 1000;
+
+	loadRules("sim.conf", &simulationRules);
+
+	std::cout << "startingCreatures - " << simulationRules.startingCreatures << '\n';
+	std::cout << "maxCreatures - " << simulationRules.maxCreatures << '\n';
+	std::cout << "foodEnergy - " << simulationRules.foodEnergy << '\n';
+	std::cout << "maxFood - " << simulationRules.maxFood << '\n';
+	std::cout << "size - " << simulationRules.size << '\n';
+	std::cout << "gridResolution - " << simulationRules.gridResolution << '\n';
+	std::cout << "maxEggs - " << simulationRules.maxEggs << '\n';
+
+	printf("starting sim\n");
 
 	Simulation simulation(simulationRules);
 
@@ -184,6 +219,8 @@ int main()
 	bool skipRender = false;
 
 	int frame = 0;
+
+	printf("entering sim loop\n");
 
 	while (!event.windowClose())
 	{

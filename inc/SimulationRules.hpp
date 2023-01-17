@@ -7,9 +7,9 @@ class SimulationRules
 	public:
 		agl::Vec<int, 2> size;
 		agl::Vec<int, 2> gridResolution;
-		int startingCreatures;
-		int foodEnergy;
+		int				 startingCreatures;
+		int				 foodEnergy;
 		int				 maxCreatures;
-		int maxFood;
-		int maxEggs;
+		int				 maxFood;
+		int				 maxEggs;
 };

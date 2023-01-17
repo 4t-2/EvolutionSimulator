@@ -8,7 +8,7 @@ file(GLOB_RECURSE AGL ./lib/AGL/src/*.cpp)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_BUILD_TYPE Debug) # default build
+set(CMAKE_BUILD_TYPE Release) # default build
 
 message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 
