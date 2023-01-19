@@ -39,3 +39,5 @@ build/*
 
 *.xcf
 .cache
+debug
+release

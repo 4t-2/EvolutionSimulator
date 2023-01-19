@@ -155,7 +155,7 @@ NeuralNetwork::NeuralNetwork(int totalNodes, int totalInputNodes, Connection con
 
 	// Invalidate looping connections
 
-	bool *isConnectionBase = new bool[this->totalConnections];
+	bool *isConnectionBase = new bool[(unsigned int)(this->totalConnections)];
 
 	for (int i = 0; i < totalConnections; i++)
 	{
