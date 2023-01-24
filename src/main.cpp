@@ -59,6 +59,8 @@ void loadRules(std::string path, SimulationRules *simulationRules)
 	simulationRules->maxFood		   = stoi(buffer[7]);
 	simulationRules->maxEggs		   = stoi(buffer[8]);
 
+	stream.close();
+
 	return;
 }
 
@@ -532,13 +534,17 @@ int main()
 
 		static float sizeMultiplier = 1;
 
+		static agl::Vec<float, 2> size;
+		size.x = window.getWindowAttributes().width;
+		size.y = window.getWindowAttributes().height;
+
 		if (event.isPointerButtonPressed(Button1Mask))
 		{
 			for (int i = 0; i < existingCreatures->getLength(); i++)
 			{
 				agl::Vec<float, 2> mouse;
-				mouse.x = ((event.getPointerWindowPosition().x - (WIDTH * .5)) * sizeMultiplier) + cameraPosition.x;
-				mouse.y = ((event.getPointerWindowPosition().y - (HEIGHT * .5)) * sizeMultiplier) + cameraPosition.y;
+				mouse.x = ((event.getPointerWindowPosition().x - (size.x * .5)) * sizeMultiplier) + cameraPosition.x;
+				mouse.y = ((event.getPointerWindowPosition().y - (size.y * .5)) * sizeMultiplier) + cameraPosition.y;
 
 				float distance = (mouse - existingCreatures->get(i)->getPosition()).length();
 
@@ -613,9 +619,15 @@ int main()
 			}
 		}
 
-		camera.setOrthographicProjection(-((WIDTH / 2.) * sizeMultiplier), ((WIDTH / 2.) * sizeMultiplier),
-										 ((HEIGHT / 2.) * sizeMultiplier), -((HEIGHT / 2.) * sizeMultiplier), 0.1, 100);
+		simulationInfo.setPosition({size.x - 260, 10});
+
+		window.setViewport(0, 0, size.x, size.y);
+
+		camera.setOrthographicProjection(-((size.x / 2.) * sizeMultiplier), ((size.x / 2.) * sizeMultiplier),
+										 ((size.y / 2.) * sizeMultiplier), -((size.y / 2.) * sizeMultiplier), 0.1, 100);
 		camera.setView({cameraPosition.x, cameraPosition.y, 50}, {cameraPosition.x, cameraPosition.y, 0}, {0, 1, 0});
+
+		guiCamera.setOrthographicProjection(0, size.x, size.y, 0, 0.1, 100);
 
 		frame++;
 	}

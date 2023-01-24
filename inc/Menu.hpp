@@ -33,6 +33,7 @@ class Menu
 	public:
 		void setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size, agl::Texture *texture, agl::Font *font);
 
+		void setPosition(agl::Vec<float, 3> position); 
 		void setText(std::string str);
 
 		void destroy();

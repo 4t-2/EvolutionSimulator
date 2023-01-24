@@ -6,55 +6,63 @@ void Menu::setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size, agl::Text
 	this->size	   = size;
 
 	outerShadowShape.setPosition(position);
+	outerShadowShape.setOffset({0, 0, 0});
 	outerShadowShape.setSize(size);
 	outerShadowShape.setTexture(texture);
 	outerShadowShape.setColor(MENU_SHADOWCOLOR);
-
-	position.z += .1;
 
 	size.x -= MENU_SHADOWSIZE;
 	size.y -= MENU_SHADOWSIZE;
 
 	borderShape.setPosition(position);
+	borderShape.setOffset({0, 0, 0.1});
 	borderShape.setSize(size);
 	borderShape.setTexture(texture);
 	borderShape.setColor(MENU_BORDERCOLOR);
-
-	position.x += MENU_BORDER;
-	position.y += MENU_BORDER;
-	position.z += .1;
 
 	size.x -= MENU_BORDER * 2;
 	size.y -= MENU_BORDER * 2;
 
 	innerShadowShape.setPosition(position);
+	innerShadowShape.setOffset({MENU_BORDER, MENU_BORDER, 0.2});
 	innerShadowShape.setSize(size);
 	innerShadowShape.setTexture(texture);
 	innerShadowShape.setColor(MENU_SHADOWCOLOR);
-
-	position.x += MENU_SHADOWSIZE;
-	position.y += MENU_SHADOWSIZE;
-	position.z += .1;
 
 	size.x -= MENU_SHADOWSIZE;
 	size.y -= MENU_SHADOWSIZE;
 
 	bodyShape.setPosition(position);
+	bodyShape.setOffset({MENU_BORDER + MENU_SHADOWSIZE, MENU_BORDER + MENU_SHADOWSIZE, 0.3});
 	bodyShape.setSize(size);
 	bodyShape.setTexture(texture);
 	bodyShape.setColor(MENU_BODYCOLOR);
 
-	position.x += MENU_PADDING;
-	position.y += MENU_PADDING;
-	position.z += 1;
+	agl::Vec<float, 3> textOffset = {MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING,
+									 MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING, 0.4};
 
 	text.setFont(font);
 	text.setColor(agl::Color::Black);
-	text.setPosition(position);
+	text.setPosition(position + textOffset);
 	text.setText(" ");
 	text.setScale(1);
 
 	return;
+}
+
+void Menu::setPosition(agl::Vec<float, 3> position)
+{
+	this->position = position;
+
+	outerShadowShape.setPosition(position);
+	borderShape.setPosition(position);
+	innerShadowShape.setPosition(position);
+	bodyShape.setPosition(position);
+
+	agl::Vec<float, 3> textOffset = {MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING,
+									 MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING, 0.4};
+
+	text.setPosition(position + textOffset);
 }
 
 void Menu::setText(std::string str)
