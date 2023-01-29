@@ -363,18 +363,33 @@ void Creature::updateActions()
 
 	rotation = loop(-PI, PI, rotation);
 
-	energy -= (sight + (abs(force * force) * (size * size * size))) / 200;
+	energy -= (sight + (force * force * size * size * size)) / 200;
 
 	life--;
-
-	float			   density		 = 2;
-	agl::Vec<float, 2> airResistance = {velocity.x / density, //
-										velocity.y / density};
 
 	acceleration.x = cos(rotation - (PI / 2)) * force;
 	acceleration.y = sin(rotation - (PI / 2)) * force;
 
-	acceleration = acceleration - airResistance;
+	// add air resistance
+
+	float dragCoeficient = .1;
+
+	float velMag = velocity.length();
+
+	agl::Vec<float, 2> velNor;
+
+	if (velMag == 0)
+	{
+		velNor = {1, 0};
+	}
+	else
+	{
+		velNor = velocity.normalize();
+	}
+
+	agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 60);
+
+	acceleration = acceleration - drag;
 
 	velocity.x += acceleration.x;
 	velocity.y += acceleration.y;
