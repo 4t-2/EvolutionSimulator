@@ -21,7 +21,7 @@
 
 #define CLEARCOLOR \
 	{              \
-		0, 0, 24   \
+		12, 12, 24   \
 	}
 
 #define NETWORK_PADDING 20
@@ -79,10 +79,11 @@ int main()
 	agl::Event event;
 	event.setWindow(window);
 
-	agl::Shader shader;
-	shader.loadFromFile("./vert.glsl", "./frag.glsl");
-	window.getShaderUniforms(shader);
-	shader.use();
+	agl::Shader simpleShader;
+	simpleShader.loadFromFile("./vert.glsl", "./frag.glsl");
+
+	agl::Shader gridShader;
+	std::cout << gridShader.loadFromFile("./gridvert.glsl", "./grid.glsl") << '\n';
 
 	agl::Camera camera;
 	camera.setOrthographicProjection(0, WIDTH, HEIGHT, 0, 0.1, 100);
@@ -110,6 +111,16 @@ int main()
 
 	agl::Font font;
 	font.setup("./VCR_OSD_MONO_1.001.ttf", 24);
+
+	agl::Rectangle background;
+	background.setTexture(&blank);
+	background.setColor(CLEARCOLOR);
+
+	float backgroundSize = 100000;
+
+	background.setSize({backgroundSize, backgroundSize});
+	background.setPosition({0, 0, 0});
+	background.setOffset({-backgroundSize / 2, -backgroundSize / 2, -10});
 
 	// menu shapes
 	Menu simulationInfo;
@@ -204,6 +215,8 @@ int main()
 
 	printf("starting sim\n");
 
+	background.setPosition(simulationRules.size * .5);
+
 	Simulation simulation(simulationRules);
 
 	Creature		 *creature			= simulation.getCreatureBuffer();
@@ -221,6 +234,8 @@ int main()
 	bool skipRender = false;
 
 	int frame = 0;
+
+	float sizeMultiplier = 1;
 
 	printf("entering sim loop\n");
 
@@ -264,6 +279,18 @@ int main()
 		window.clear();
 
 		// Simulation rendering
+
+		window.getShaderUniforms(gridShader);
+		gridShader.use();	
+
+		window.updateMvp(camera);
+
+		glUniform1f(gridShader.getUniformLocation("scale"), sizeMultiplier);
+
+		window.drawShape(background);
+
+		window.getShaderUniforms(simpleShader);
+		simpleShader.use();
 
 		window.updateMvp(camera);
 
@@ -532,8 +559,6 @@ int main()
 			focusCreature = nullptr;
 		}
 
-		static float sizeMultiplier = 1;
-
 		static agl::Vec<float, 2> size;
 		size.x = window.getWindowAttributes().width;
 		size.y = window.getWindowAttributes().height;
@@ -606,17 +631,15 @@ int main()
 
 		static float cameraSpeed = 4;
 
+		const float sizeDelta = .05;
+
 		if (event.isKeyPressed(XK_Down))
 		{
-			sizeMultiplier += .1;
+			sizeMultiplier += sizeDelta * sizeMultiplier;
 		}
 		if (event.isKeyPressed(XK_Up))
 		{
-			sizeMultiplier -= .1;
-			if (sizeMultiplier < 0)
-			{
-				sizeMultiplier = 0;
-			}
+			sizeMultiplier -= sizeDelta * sizeMultiplier;
 		}
 
 		simulationInfo.setPosition({size.x - 260, 10});
@@ -645,7 +668,8 @@ int main()
 	eggTexture.deleteTexture();
 	blank.deleteTexture();
 
-	shader.deleteProgram();
+	simpleShader.deleteProgram();
+	gridShader.deleteProgram();
 
 	window.close();
 
