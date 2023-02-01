@@ -587,8 +587,8 @@ int main()
 			for (int i = 0; i < existingCreatures->getLength(); i++)
 			{
 				agl::Vec<float, 2> mouse;
-				mouse.x = event.getPointerWindowPosition().x;
-				mouse.y = event.getPointerWindowPosition().y;
+				mouse.x = ((event.getPointerWindowPosition().x - (size.x * .5)) * sizeMultiplier) + cameraPosition.x;
+				mouse.y = ((event.getPointerWindowPosition().y - (size.y * .5)) * sizeMultiplier) + cameraPosition.y;
 
 				float distance = (mouse - existingCreatures->get(i)->getPosition()).length();
 
@@ -604,7 +604,7 @@ int main()
 		static agl::Vec<float, 2> cameraOffset;
 		static agl::Vec<float, 2> startPos;
 
-		if (event.isPointerButtonPressed(Button1Mask))
+		if (event.isPointerButtonPressed(Button2Mask))
 		{
 			if (b1Held) // holding click
 			{
@@ -619,12 +619,14 @@ int main()
 			}
 			else // first click
 			{
+				window.setCursorShape(XC_fleur);
 				startPos = event.getPointerWindowPosition();
 				b1Held	 = true;
 			}
 		}
 		else if (b1Held) // let go
 		{
+			window.setCursorShape(XC_left_ptr);
 			cameraOffset = {0, 0};
 			b1Held		 = false;
 		}
