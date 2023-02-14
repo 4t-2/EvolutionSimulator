@@ -56,5 +56,10 @@ class Simulation
 		List<Food *> *getExistingFood();
 		int			  getMaxFood();
 
+		Grid<Creature*> *getCreatureGrid()
+		{
+			return creatureGrid;
+		}
+
 		agl::Vec<float, 2> getSize();
 };

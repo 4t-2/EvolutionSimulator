@@ -245,7 +245,7 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 			continue;
 		}
 
-		for (int y = -1; y < 2; y++)
+		for (int y = -startGridOffset.x; y < endGridOffset.y; y++)
 		{
 			if (gridPosition.y + y < 0 || gridPosition.y + y > (creatureGrid->getSize().y - 1))
 			{

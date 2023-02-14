@@ -13,10 +13,10 @@ void main()
 {
     color = fragColor;
 
-	const int gridSize = 100;
+	const int gridSize = 19200/15;
 
-	if(mod(fragPos.x+(.5*scale), gridSize) < (1*scale) || mod(fragPos.y+(.5*scale), gridSize) < (1*scale))
+	if(mod(fragPos.x+(.5*scale), (19200./15.)) < (1*scale) || mod(fragPos.y+(.5*scale), (10800./15.)) < (1*scale))
 	{
-	    color = vec4(0, 0, 0, 1);
+	    color = vec4(1, 1, 0, 1);
 	}
 }

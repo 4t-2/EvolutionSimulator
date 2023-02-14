@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../lib/AGL/agl.hpp"
 
 #define MENU_BORDER		  2

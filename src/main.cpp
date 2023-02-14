@@ -21,10 +21,16 @@
 
 #define CLEARCOLOR \
 	{              \
-		12, 12, 24   \
+		12, 12, 24 \
 	}
 
 #define NETWORK_PADDING 20
+
+agl::Vec<float, 2> getCursorScenePosition(agl::Vec<float, 2> cursorWinPos, agl::Vec<float, 2> winSize, float winScale,
+										  agl::Vec<float, 2> cameraPos)
+{
+	return ((cursorWinPos - (winSize * .5)) * winScale) + cameraPos;
+}
 
 void printConnections(CreatureData creatureData)
 {
@@ -75,6 +81,8 @@ int main()
 
 	window.GLEnable(GL_ALPHA_TEST);
 	glAlphaFunc(GL_GREATER, 0.1f);
+
+	XSelectInput(window.getDisplay(), window.getWindow(), ButtonPressMask | ButtonReleaseMask);
 
 	agl::Event event;
 	event.setWindow(window);
@@ -241,9 +249,23 @@ int main()
 
 	while (!event.windowClose())
 	{
-		event.pollWindow();
-		event.pollKeyboard();
-		event.pollPointer();
+		int mouseWheelPos = 0;
+
+		event.poll([&](XEvent xev) {
+			switch (xev.type)
+			{
+				case ButtonPress:
+					if (xev.xbutton.button == 4)
+					{
+						mouseWheelPos = 1;
+					}
+					if (xev.xbutton.button == 5)
+					{
+						mouseWheelPos = -1;
+					}
+					break;
+			}
+		});
 
 		if (event.isKeyPressed(XK_m))
 		{
@@ -281,7 +303,7 @@ int main()
 		// Simulation rendering
 
 		window.getShaderUniforms(gridShader);
-		gridShader.use();	
+		gridShader.use();
 
 		window.updateMvp(camera);
 
@@ -394,12 +416,20 @@ int main()
 
 		window.updateMvp(guiCamera);
 
+		if(existingCreatures->find(focusCreature) != -1)
 		{
 			std::stringstream ss;
 
-			ss << "Creatures - " << simulation.getExistingCreatures()->getLength() << '\n';
-			ss << "Eggs - " << simulation.getExistingEggs()->getLength() << '\n';
-			ss << "Food - " << simulation.getExistingFood()->getLength();
+			agl::Vec<float, 2> size;
+			size.x = window.getWindowAttributes().width;
+			size.y = window.getWindowAttributes().height;
+
+			// ss << "Creatures - " << simulation.getExistingCreatures()->getLength()
+			// << '\n'; ss << "Eggs - " << simulation.getExistingEggs()->getLength()
+			// << '\n'; ss << "Food - " << simulation.getExistingFood()->getLength();
+
+			ss << simulation.getCreatureGrid()->toGridPosition( getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition), simulationRules.size) << '\n';
+			ss << simulation.getCreatureGrid()->toGridPosition(focusCreature->getPosition(), simulationRules.size) << '\n';
 
 			simulationInfo.setText(ss.str());
 		}
@@ -619,7 +649,7 @@ int main()
 			}
 			else // first click
 			{
-				window.setCursorShape(XC_fleur);
+				window.setCursorShape(58);
 				startPos = event.getPointerWindowPosition();
 				b1Held	 = true;
 			}
@@ -633,15 +663,39 @@ int main()
 
 		static float cameraSpeed = 4;
 
-		const float sizeDelta = .05;
+		const float sizeDelta = .2;
 
-		if (event.isKeyPressed(XK_Down))
+		if (mouseWheelPos == 1)
 		{
-			sizeMultiplier += sizeDelta * sizeMultiplier;
+			float scale = sizeDelta * sizeMultiplier;
+
+			agl::Vec<float, 2> oldPos =
+				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition);
+
+			sizeMultiplier -= scale;
+
+			agl::Vec<float, 2> newPos =
+				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition);
+
+			agl::Vec<float, 2> offset = oldPos - newPos;
+
+			cameraPosition = cameraPosition + offset;
 		}
-		if (event.isKeyPressed(XK_Up))
+		if (mouseWheelPos == -1)
 		{
-			sizeMultiplier -= sizeDelta * sizeMultiplier;
+			float scale = sizeDelta * sizeMultiplier;
+
+			agl::Vec<float, 2> oldPos =
+				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition);
+
+			sizeMultiplier += scale;
+
+			agl::Vec<float, 2> newPos =
+				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition);
+
+			agl::Vec<float, 2> offset = oldPos - newPos;
+
+			cameraPosition = cameraPosition + offset;
 		}
 
 		simulationInfo.setPosition({size.x - 260, 10});
