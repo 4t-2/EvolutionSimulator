@@ -65,8 +65,8 @@ template <typename T> class Grid
 		agl::Vec<int, 2> toGridPosition(agl::Vec<float, 2> position, agl::Vec<float, 2> worldSize)
 		{
 			agl::Vec<int, 2> gridPosition;
-			gridPosition.x = (position.x / worldSize.x) * (size.x - 1);
-			gridPosition.y = (position.y / worldSize.y) * (size.y - 1);
+			gridPosition.x = (position.x / worldSize.x) * (size.x);
+			gridPosition.y = (position.y / worldSize.y) * (size.y);
 
 			if (gridPosition.x < 0)
 			{

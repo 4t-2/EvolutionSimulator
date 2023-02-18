@@ -416,20 +416,12 @@ int main()
 
 		window.updateMvp(guiCamera);
 
-		if(existingCreatures->find(focusCreature) != -1)
 		{
 			std::stringstream ss;
 
-			agl::Vec<float, 2> size;
-			size.x = window.getWindowAttributes().width;
-			size.y = window.getWindowAttributes().height;
-
-			// ss << "Creatures - " << simulation.getExistingCreatures()->getLength()
-			// << '\n'; ss << "Eggs - " << simulation.getExistingEggs()->getLength()
-			// << '\n'; ss << "Food - " << simulation.getExistingFood()->getLength();
-
-			ss << simulation.getCreatureGrid()->toGridPosition( getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition), simulationRules.size) << '\n';
-			ss << simulation.getCreatureGrid()->toGridPosition(focusCreature->getPosition(), simulationRules.size) << '\n';
+			ss << "Creatures - " << simulation.getExistingCreatures()->getLength() << '\n';
+			ss << "Eggs - " << simulation.getExistingEggs()->getLength() << '\n';
+			ss << "Food - " << simulation.getExistingFood()->getLength();
 
 			simulationInfo.setText(ss.str());
 		}
