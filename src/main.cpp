@@ -46,10 +46,11 @@ void printConnections(CreatureData creatureData)
 void loadRules(std::string path, SimulationRules *simulationRules)
 {
 	// read in order in .hpp
-	std::string	  buffer[9];
+	int bufLength = 10;
+	std::string	  buffer[bufLength];
 	std::ifstream stream(path);
 
-	for (int i = 0; i < 9; i++)
+	for (int i = 0; i < bufLength; i++)
 	{
 		std::getline(stream, buffer[i]);
 		std::getline(stream, buffer[i]);
@@ -64,6 +65,7 @@ void loadRules(std::string path, SimulationRules *simulationRules)
 	simulationRules->maxCreatures	   = stoi(buffer[6]);
 	simulationRules->maxFood		   = stoi(buffer[7]);
 	simulationRules->maxEggs		   = stoi(buffer[8]);
+	simulationRules->preferedCreatures = stoi(buffer[9]);
 
 	stream.close();
 
@@ -220,6 +222,7 @@ int main()
 	std::cout << "size - " << simulationRules.size << '\n';
 	std::cout << "gridResolution - " << simulationRules.gridResolution << '\n';
 	std::cout << "maxEggs - " << simulationRules.maxEggs << '\n';
+	std::cout << "preferedCreatures - " << simulationRules.preferedCreatures << '\n';
 
 	printf("starting sim\n");
 

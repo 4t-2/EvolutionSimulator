@@ -529,7 +529,7 @@ void Simulation::updateSimulation()
 			}
 		}
 
-		if(creature->getEnergy() > creature->getMaxEnergy())
+		if (creature->getEnergy() > creature->getMaxEnergy())
 		{
 			creature->setEnergy(creature->getMaxEnergy());
 		}
@@ -550,8 +550,40 @@ void Simulation::updateSimulation()
 		}
 	}
 
+	static int penalty = 0;
+
+	int period = 20;
+
+	int adjustedMaxFood =
+		int(simulationRules.maxFood * ((float)simulationRules.preferedCreatures / existingCreatures->getLength()));
+
+	if (existingCreatures->getLength() > simulationRules.preferedCreatures)
+	{
+		penalty++;
+
+		if (penalty > adjustedMaxFood * period)
+		{
+			penalty = adjustedMaxFood * period;
+		}
+	}
+	else
+	{
+		penalty--;
+
+		if (penalty < 0)
+		{
+			penalty = 0;
+		}
+	}
+
+	adjustedMaxFood -= (penalty / period);
+
+	std::cout << '\n';
+	std::cout << "penalty " << penalty / period << '\n';
+	std::cout << "adjustedMaxFood " << adjustedMaxFood << '\n';
+
 	// adding more food
-	int max = std::min(simulationRules.maxFood, int(simulationRules.maxFood * (200. / existingCreatures->getLength())));
+	int max = std::min(simulationRules.maxFood, adjustedMaxFood);
 	if (existingFood->getLength() < max)
 	{
 		agl::Vec<float, 2> position;

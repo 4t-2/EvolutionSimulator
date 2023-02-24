@@ -12,4 +12,5 @@ class SimulationRules
 		int				 maxCreatures;
 		int				 maxFood;
 		int				 maxEggs;
+		int				 preferedCreatures;
 };
