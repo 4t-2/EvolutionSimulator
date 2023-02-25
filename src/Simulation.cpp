@@ -552,18 +552,20 @@ void Simulation::updateSimulation()
 
 	static int penalty = 0;
 
-	int period = 20;
+	int period = 60;
 
 	int adjustedMaxFood =
 		int(simulationRules.maxFood * ((float)simulationRules.preferedCreatures / existingCreatures->getLength()));
+
+	float penaltyBuffer = 200;
 
 	if (existingCreatures->getLength() > simulationRules.preferedCreatures)
 	{
 		penalty++;
 
-		if (penalty > adjustedMaxFood * period)
+		if (penalty > ((adjustedMaxFood + penaltyBuffer) * period))
 		{
-			penalty = adjustedMaxFood * period;
+			penalty = ((adjustedMaxFood + penaltyBuffer) * period);
 		}
 	}
 	else
@@ -577,10 +579,6 @@ void Simulation::updateSimulation()
 	}
 
 	adjustedMaxFood -= (penalty / period);
-
-	std::cout << '\n';
-	std::cout << "penalty " << penalty / period << '\n';
-	std::cout << "adjustedMaxFood " << adjustedMaxFood << '\n';
 
 	// adding more food
 	int max = std::min(simulationRules.maxFood, adjustedMaxFood);

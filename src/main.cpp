@@ -46,7 +46,7 @@ void printConnections(CreatureData creatureData)
 void loadRules(std::string path, SimulationRules *simulationRules)
 {
 	// read in order in .hpp
-	int bufLength = 10;
+	int			  bufLength = 10;
 	std::string	  buffer[bufLength];
 	std::ifstream stream(path);
 
@@ -453,8 +453,15 @@ int main()
 			ss << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 			ss << "Node - " << nodeNames[selectedID] << '\n';
 			ss << '\n';
-			ss << "Position - " << agl::Vec<int, 2>(focusCreature->getPosition()) << '\n';
-			ss << "Velocity - " << agl::Vec<int, 2>(focusCreature->getVelocity()) << '\n';
+			ss << "- Position - " << '\n';
+			ss << "X - " << focusCreature->getPosition().x << '\n';
+			ss << "Y - " << focusCreature->getPosition().y << '\n';
+			ss << "- Velocity - " << '\n';
+			ss << "X - " << focusCreature->getVelocity().x << '\n';
+			ss << "Y - " << focusCreature->getVelocity().y << '\n';
+			ss << "- Acceleration - " << '\n';
+			ss << "X - " << focusCreature->getAcceleration().x << '\n';
+			ss << "Y - " << focusCreature->getAcceleration().y << '\n';
 			ss << '\n';
 			ss << "Eating - " << focusCreature->getEating() << '\n';
 			ss << "Laying Egg - " << focusCreature->getLayingEgg() << '\n';
@@ -624,6 +631,12 @@ int main()
 					break;
 				}
 			}
+		}
+
+		if (event.isKeyPressed(XK_f))
+		{
+			simulation.addFood(
+				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition));
 		}
 
 		static agl::Vec<float, 2> cameraOffset;

@@ -384,18 +384,16 @@ void Creature::updateActions()
 	}
 	else
 	{
-		velNor = velocity.normalize();
+		velNor = velocity.normalized();
 	}
 
-	agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 60);
+	agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 1);
 
 	acceleration = acceleration - drag;
 
-	velocity.x += acceleration.x;
-	velocity.y += acceleration.y;
+	velocity = velocity + acceleration;
 
-	position.x += velocity.x;
-	position.y += velocity.y;
+	position = position + velocity;
 
 	return;
 }
