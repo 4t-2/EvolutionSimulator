@@ -13,4 +13,6 @@ class SimulationRules
 		int				 maxFood;
 		int				 maxEggs;
 		int				 preferedCreatures;
+		int				 penaltyBuffer;
+		int				 penaltyPeriod;
 };

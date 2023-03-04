@@ -46,7 +46,7 @@ void printConnections(CreatureData creatureData)
 void loadRules(std::string path, SimulationRules *simulationRules)
 {
 	// read in order in .hpp
-	int			  bufLength = 10;
+	int			  bufLength = 12;
 	std::string	  buffer[bufLength];
 	std::ifstream stream(path);
 
@@ -66,6 +66,8 @@ void loadRules(std::string path, SimulationRules *simulationRules)
 	simulationRules->maxFood		   = stoi(buffer[7]);
 	simulationRules->maxEggs		   = stoi(buffer[8]);
 	simulationRules->preferedCreatures = stoi(buffer[9]);
+	simulationRules->penaltyBuffer	   = stoi(buffer[10]);
+	simulationRules->penaltyPeriod	   = stoi(buffer[11]);
 
 	stream.close();
 
@@ -223,6 +225,8 @@ int main()
 	std::cout << "gridResolution - " << simulationRules.gridResolution << '\n';
 	std::cout << "maxEggs - " << simulationRules.maxEggs << '\n';
 	std::cout << "preferedCreatures - " << simulationRules.preferedCreatures << '\n';
+	std::cout << "penaltyBuffer- " << simulationRules.penaltyBuffer << '\n';
+	std::cout << "penaltyPeriod- " << simulationRules.penaltyPeriod << '\n';
 
 	printf("starting sim\n");
 
@@ -294,6 +298,10 @@ int main()
 		if (!event.isKeyPressed(XK_space))
 		{
 			simulation.update();
+
+			frame++;
+
+			std::cout << frame << '\n';
 		}
 
 		if (skipRender)
@@ -715,8 +723,6 @@ int main()
 		camera.setView({cameraPosition.x, cameraPosition.y, 50}, {cameraPosition.x, cameraPosition.y, 0}, {0, 1, 0});
 
 		guiCamera.setOrthographicProjection(0, size.x, size.y, 0, 0.1, 100);
-
-		frame++;
 	}
 
 	simulation.destroy();
