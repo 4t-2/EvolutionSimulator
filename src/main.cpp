@@ -92,10 +92,10 @@ int main()
 	event.setWindow(window);
 
 	agl::Shader simpleShader;
-	simpleShader.loadFromFile("./vert.glsl", "./frag.glsl");
+	simpleShader.loadFromFile("./shader/vert.glsl", "./shader/frag.glsl");
 
 	agl::Shader gridShader;
-	std::cout << gridShader.loadFromFile("./gridvert.glsl", "./grid.glsl") << '\n';
+	std::cout << gridShader.loadFromFile("./shader/gridvert.glsl", "./shader/grid.glsl") << '\n';
 
 	agl::Camera camera;
 	camera.setOrthographicProjection(0, WIDTH, HEIGHT, 0, 0.1, 100);
@@ -122,7 +122,7 @@ int main()
 	blank.setBlank();
 
 	agl::Font font;
-	font.setup("./VCR_OSD_MONO_1.001.ttf", 24);
+	font.setup("./font/VCR_OSD_MONO_1.001.ttf", 24);
 
 	agl::Rectangle background;
 	background.setTexture(&blank);
@@ -215,7 +215,7 @@ int main()
 
 	SimulationRules simulationRules;
 
-	loadRules("sim.conf", &simulationRules);
+	loadRules("./conf/sim.conf", &simulationRules);
 
 	std::cout << "startingCreatures - " << simulationRules.startingCreatures << '\n';
 	std::cout << "maxCreatures - " << simulationRules.maxCreatures << '\n';

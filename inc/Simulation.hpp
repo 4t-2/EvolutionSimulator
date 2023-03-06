@@ -23,6 +23,8 @@ class Simulation
 		List<Food *> *existingFood;
 		Grid<Food *> *foodGrid;
 
+		std::vector<int> creaturePopData;
+
 	public:
 		Simulation(SimulationRules simulationRules);
 		void destroy();

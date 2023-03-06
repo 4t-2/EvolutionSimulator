@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <thread>
 
+#include <fstream>
+
 void randomData(Buffer *buffer)
 {
 	for (int i = 0; i < buffer->size; i++)
@@ -77,6 +79,15 @@ void Simulation::destroy()
 	delete[] creatureBuffer;
 	delete[] eggBuffer;
 	delete[] foodBuffer;
+
+	std::fstream fs("./plot/cpd.txt", std::ios::out);
+
+	for (int x = 0; x < creaturePopData.size(); x++)
+	{
+		fs << x << " " << creaturePopData[x] << "\n";
+	}
+
+	fs.close();
 }
 
 Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
@@ -592,6 +603,8 @@ void Simulation::update()
 {
 	this->updateSimulation();
 	this->updateNetworks();
+
+	creaturePopData.emplace_back(existingCreatures->getLength());
 }
 
 Creature *Simulation::getCreatureBuffer()
