@@ -24,6 +24,9 @@ class Simulation
 		Grid<Food *> *foodGrid;
 
 		std::vector<int> creaturePopData;
+		std::vector<float> creatureSightData;
+		std::vector<float> creatureSpeedData;
+		std::vector<float> creatureSizeData;
 
 	public:
 		Simulation(SimulationRules simulationRules);

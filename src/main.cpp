@@ -136,7 +136,7 @@ int main()
 
 	// menu shapes
 	Menu simulationInfo;
-	simulationInfo.setup({WIDTH - 260, 10}, {250, 100}, &blank, &font);
+	simulationInfo.setup({WIDTH - 260, 10}, {250, 125}, &blank, &font);
 
 	Menu creatureInfo;
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)}, &blank, &font);
@@ -301,7 +301,7 @@ int main()
 
 			frame++;
 
-			std::cout << frame << '\n';
+			// std::cout << frame << '\n';
 		}
 
 		if (skipRender)
@@ -432,7 +432,8 @@ int main()
 
 			ss << "Creatures - " << simulation.getExistingCreatures()->getLength() << '\n';
 			ss << "Eggs - " << simulation.getExistingEggs()->getLength() << '\n';
-			ss << "Food - " << simulation.getExistingFood()->getLength();
+			ss << "Food - " << simulation.getExistingFood()->getLength() << '\n';
+			ss << "Frame - " << frame;
 
 			simulationInfo.setText(ss.str());
 		}

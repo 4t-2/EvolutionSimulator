@@ -5,6 +5,8 @@
 
 #include <fstream>
 
+#define LOGCREATUREDATA
+
 void randomData(Buffer *buffer)
 {
 	for (int i = 0; i < buffer->size; i++)
@@ -80,14 +82,23 @@ void Simulation::destroy()
 	delete[] eggBuffer;
 	delete[] foodBuffer;
 
-	std::fstream fs("./plot/cpd.txt", std::ios::out);
+	std::fstream cpd("./plot/cpd.txt", std::ios::out);
+	std::fstream csigd("./plot/csigd.txt", std::ios::out);
+	std::fstream csped("./plot/csped.txt", std::ios::out);
+	std::fstream csizd("./plot/csizd.txt", std::ios::out);
 
 	for (int x = 0; x < creaturePopData.size(); x++)
 	{
-		fs << x << " " << creaturePopData[x] << "\n";
+		cpd << x << " " << creaturePopData[x] << "\n";
+		csigd << x << " " << creatureSightData[x] << "\n";
+		csped << x << " " << creatureSpeedData[x] << "\n";
+		csizd << x << " " << creatureSizeData[x] << "\n";
 	}
 
-	fs.close();
+	cpd.close();
+	csigd.close();
+	csped.close();
+	csizd.close();
 }
 
 Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
@@ -565,6 +576,7 @@ void Simulation::updateSimulation()
 
 	int adjustedMaxFood =
 		int(simulationRules.maxFood * ((float)simulationRules.preferedCreatures / existingCreatures->getLength()));
+	adjustedMaxFood = std::min(adjustedMaxFood, simulationRules.maxFood);
 
 	if (existingCreatures->getLength() > simulationRules.preferedCreatures)
 	{
@@ -604,7 +616,24 @@ void Simulation::update()
 	this->updateSimulation();
 	this->updateNetworks();
 
+#ifdef LOGCREATUREDATA
 	creaturePopData.emplace_back(existingCreatures->getLength());
+
+	float totSight = 0;
+	float totSpeed = 0;
+	float totSize  = 0;
+
+	for (int i = 0; i < existingCreatures->getLength(); i++)
+	{
+		totSight += existingCreatures->get(i)->getSight();
+		totSpeed += existingCreatures->get(i)->getSpeed();
+		totSize += existingCreatures->get(i)->getSize();
+	}
+
+	creatureSightData.emplace_back(totSight / existingCreatures->getLength());
+	creatureSpeedData.emplace_back(totSpeed / existingCreatures->getLength());
+	creatureSizeData.emplace_back(totSize / existingCreatures->getLength());
+#endif
 }
 
 Creature *Simulation::getCreatureBuffer()
