@@ -438,11 +438,7 @@ int main()
 			simulationInfo.setText(ss.str());
 		}
 
-		window.drawShape(*simulationInfo.getOuterShadowShape());
-		window.drawShape(*simulationInfo.getBorderShape());
-		window.drawShape(*simulationInfo.getInnerShadowShape());
-		window.drawShape(*simulationInfo.getBodyShape());
-		window.drawText(*simulationInfo.getText());
+		window.draw(simulationInfo);
 
 		if (existingCreatures->find(focusCreature) != -1)
 		{
@@ -489,11 +485,8 @@ int main()
 
 			creatureInfo.setText(ss.str());
 
-			window.drawShape(*creatureInfo.getOuterShadowShape());
-			window.drawShape(*creatureInfo.getBorderShape());
-			window.drawShape(*creatureInfo.getInnerShadowShape());
-			window.drawShape(*creatureInfo.getBodyShape());
-			window.drawText(*creatureInfo.getText());
+
+			window.draw(creatureInfo);
 
 			window.drawShape(networkBackground);
 

@@ -19,7 +19,7 @@
 		210, 210, 210  \
 	}
 
-class Menu
+class Menu : public agl::Drawable
 {
 	private:
 		agl::Rectangle outerShadowShape;
@@ -37,6 +37,15 @@ class Menu
 
 		void setPosition(agl::Vec<float, 3> position); 
 		void setText(std::string str);
+
+		void drawFunction(agl::RenderWindow &window) override
+		{
+			window.drawShape(outerShadowShape);
+			window.drawShape(borderShape);
+			window.drawShape(bodyShape);
+			window.drawShape(innerShadowShape);
+			window.drawText(text);
+		}
 
 		void destroy();
 
