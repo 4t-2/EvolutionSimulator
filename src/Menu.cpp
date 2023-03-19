@@ -1,6 +1,28 @@
 #include "../inc/Menu.hpp"
 
-void Menu::setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size, agl::Texture *texture, agl::Font *font)
+Menu::Menu(agl::Texture *texture, agl::Font *font, std::vector<MenuElement> element)
+{
+	this->menuElement = element;
+
+	textElement.reserve(menuElement.size());
+
+	for(int i = 0; i < menuElement.size(); i++)
+	{
+		textElement.emplace_back(text);
+	}
+
+	outerShadowShape.setTexture(texture);
+	borderShape.setTexture(texture);
+	innerShadowShape.setTexture(texture);
+	bodyShape.setTexture(texture);
+	
+	text.setFont(font);
+	text.setColor(agl::Color::Black);
+	text.setScale(1);
+
+}
+
+void Menu::setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size)
 {
 	this->position = position;
 	this->size	   = size;
@@ -8,7 +30,6 @@ void Menu::setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size, agl::Text
 	outerShadowShape.setPosition(position);
 	outerShadowShape.setOffset({0, 0, 0});
 	outerShadowShape.setSize(size);
-	outerShadowShape.setTexture(texture);
 	outerShadowShape.setColor(MENU_SHADOWCOLOR);
 
 	size.x -= MENU_SHADOWSIZE;
@@ -17,7 +38,6 @@ void Menu::setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size, agl::Text
 	borderShape.setPosition(position);
 	borderShape.setOffset({0, 0, 0.1});
 	borderShape.setSize(size);
-	borderShape.setTexture(texture);
 	borderShape.setColor(MENU_BORDERCOLOR);
 
 	size.x -= MENU_BORDER * 2;
@@ -26,7 +46,6 @@ void Menu::setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size, agl::Text
 	innerShadowShape.setPosition(position);
 	innerShadowShape.setOffset({MENU_BORDER, MENU_BORDER, 0.2});
 	innerShadowShape.setSize(size);
-	innerShadowShape.setTexture(texture);
 	innerShadowShape.setColor(MENU_SHADOWCOLOR);
 
 	size.x -= MENU_SHADOWSIZE;
@@ -35,19 +54,14 @@ void Menu::setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size, agl::Text
 	bodyShape.setPosition(position);
 	bodyShape.setOffset({MENU_BORDER + MENU_SHADOWSIZE, MENU_BORDER + MENU_SHADOWSIZE, 0.3});
 	bodyShape.setSize(size);
-	bodyShape.setTexture(texture);
 	bodyShape.setColor(MENU_BODYCOLOR);
 
-	agl::Vec<float, 3> textOffset = {MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING,
-									 MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING, 0.4};
-
-	text.setFont(font);
-	text.setColor(agl::Color::Black);
-	text.setPosition(position + textOffset);
-	text.setText(" ");
-	text.setScale(1);
-
 	return;
+}
+
+void Menu::setElement(int i, std::string str)
+{
+	textElement[i].str = str;
 }
 
 void Menu::setPosition(agl::Vec<float, 3> position)
@@ -65,48 +79,7 @@ void Menu::setPosition(agl::Vec<float, 3> position)
 	text.setPosition(position + textOffset);
 }
 
-void Menu::setText(std::string str)
-{
-	text.clearText();
-	text.setText(str);
-}
-
 void Menu::destroy()
 {
 	text.clearText();
-}
-
-agl::Rectangle *Menu::getBorderShape()
-{
-	return &borderShape;
-}
-
-agl::Rectangle *Menu::getBodyShape()
-{
-	return &bodyShape;
-}
-
-agl::Rectangle *Menu::getOuterShadowShape()
-{
-	return &outerShadowShape;
-}
-
-agl::Rectangle *Menu::getInnerShadowShape()
-{
-	return &innerShadowShape;
-}
-
-agl::Text *Menu::getText()
-{
-	return &text;
-}
-
-agl::Vec<float, 3> Menu::getPosition()
-{
-	return position;
-}
-
-agl::Vec<float, 2> Menu::getSize()
-{
-	return size;
 }

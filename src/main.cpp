@@ -135,18 +135,18 @@ int main()
 	background.setOffset({-backgroundSize / 2, -backgroundSize / 2, -10});
 
 	// menu shapes
-	Menu simulationInfo;
-	simulationInfo.setup({WIDTH - 260, 10}, {250, 125}, &blank, &font);
+	Menu simulationInfo(&blank, &font, {TEXT, TEXT, TEXT, TEXT});
+	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 125});
 
-	Menu creatureInfo;
-	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)}, &blank, &font);
+	Menu creatureInfo(&blank, &font, {TEXT});
+	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 
 	agl::Circle networkBackground(60);
 	networkBackground.setTexture(&blank);
 	networkBackground.setColor({15, 15, 15});
 	networkBackground.setSize(agl::Vec<float, 3>{150, 150, 0});
-	networkBackground.setPosition(agl::Vec<float, 3>{creatureInfo.getPosition().x + (creatureInfo.getSize().x / 2),
-													 creatureInfo.getPosition().y + MENU_BORDER + MENU_PADDING +
+	networkBackground.setPosition(agl::Vec<float, 3>{creatureInfo.position.x + (creatureInfo.size.x / 2),
+													 creatureInfo.position.y + MENU_BORDER + MENU_PADDING +
 														 MENU_SHADOWSIZE + networkBackground.getSize().y,
 													 10});
 
@@ -428,14 +428,20 @@ int main()
 		window.updateMvp(guiCamera);
 
 		{
-			std::stringstream ss;
+			std::stringstream ss1;
+			std::stringstream ss2;
+			std::stringstream ss3;
+			std::stringstream ss4;
 
-			ss << "Creatures - " << simulation.getExistingCreatures()->getLength() << '\n';
-			ss << "Eggs - " << simulation.getExistingEggs()->getLength() << '\n';
-			ss << "Food - " << simulation.getExistingFood()->getLength() << '\n';
-			ss << "Frame - " << frame;
+			ss1 << "Creatures - " << simulation.getExistingCreatures()->getLength();
+			ss2 << "Eggs - " << simulation.getExistingEggs()->getLength();
+			ss3 << "Food - " << simulation.getExistingFood()->getLength();
+			ss4 << "Frame - " << frame;
 
-			simulationInfo.setText(ss.str());
+			simulationInfo.setElement(0, ss1.str());
+			simulationInfo.setElement(1, ss2.str());
+			simulationInfo.setElement(2, ss3.str());
+			simulationInfo.setElement(3, ss4.str());
 		}
 
 		window.draw(simulationInfo);
@@ -483,7 +489,7 @@ int main()
 			ss << "Size - " << focusCreature->getSize() << '\n';
 			ss << "Hue - " << focusCreature->getHue() << '\n';
 
-			creatureInfo.setText(ss.str());
+			creatureInfo.setElement(0, ss.str());
 
 
 			window.draw(creatureInfo);
@@ -708,7 +714,7 @@ int main()
 			cameraPosition = cameraPosition + offset;
 		}
 
-		simulationInfo.setPosition({size.x - 260, 10});
+		simulationInfo.setPosition({size.x - 260, 10, 9});
 
 		window.setViewport(0, 0, size.x, size.y);
 
