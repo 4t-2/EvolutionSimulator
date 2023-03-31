@@ -135,20 +135,19 @@ int main()
 	background.setOffset({-backgroundSize / 2, -backgroundSize / 2, -10});
 
 	// menu shapes
-	Menu simulationInfo(&blank, &font, {TEXT, TEXT, TEXT, TEXT});
+	Menu<TextElement, TextElement, TextElement, TextElement> simulationInfo(&blank, &font);
 	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 125});
 
-	Menu creatureInfo(&blank, &font, {TEXT});
+	Menu<TextElement> creatureInfo(&blank, &font);
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 
 	agl::Circle networkBackground(60);
 	networkBackground.setTexture(&blank);
 	networkBackground.setColor({15, 15, 15});
 	networkBackground.setSize(agl::Vec<float, 3>{150, 150, 0});
-	networkBackground.setPosition(agl::Vec<float, 3>{creatureInfo.position.x + (creatureInfo.size.x / 2),
-													 creatureInfo.position.y + MENU_BORDER + MENU_PADDING +
-														 MENU_SHADOWSIZE + networkBackground.getSize().y,
-													 10});
+	networkBackground.setPosition(agl::Vec<float, 3>{
+		creatureInfo.position.x + (creatureInfo.size.x / 2),
+		creatureInfo.position.y + MENU_BORDER + MENU_PADDING + MENU_SHADOWSIZE + networkBackground.getSize().y, 10});
 
 	agl::Circle nodeShape(10);
 	nodeShape.setTexture(&blank);
@@ -428,20 +427,11 @@ int main()
 		window.updateMvp(guiCamera);
 
 		{
-			std::stringstream ss1;
-			std::stringstream ss2;
-			std::stringstream ss3;
-			std::stringstream ss4;
-
-			ss1 << "Creatures - " << simulation.getExistingCreatures()->getLength();
-			ss2 << "Eggs - " << simulation.getExistingEggs()->getLength();
-			ss3 << "Food - " << simulation.getExistingFood()->getLength();
-			ss4 << "Frame - " << frame;
-
-			simulationInfo.setElement(0, ss1.str());
-			simulationInfo.setElement(1, ss2.str());
-			simulationInfo.setElement(2, ss3.str());
-			simulationInfo.setElement(3, ss4.str());
+			simulationInfo.get<0>().str =
+				"Creatures - " + std::to_string(simulation.getExistingCreatures()->getLength());
+			simulationInfo.get<1>().str = "Eggs - " + std::to_string(simulation.getExistingEggs()->getLength());
+			simulationInfo.get<2>().str = "Food - " + std::to_string(simulation.getExistingFood()->getLength());
+			simulationInfo.get<3>().str = "Frame - " + std::to_string(frame);
 		}
 
 		window.draw(simulationInfo);
@@ -489,8 +479,7 @@ int main()
 			ss << "Size - " << focusCreature->getSize() << '\n';
 			ss << "Hue - " << focusCreature->getHue() << '\n';
 
-			creatureInfo.setElement(0, ss.str());
-
+			creatureInfo.get<0>().str = ss.str();
 
 			window.draw(creatureInfo);
 

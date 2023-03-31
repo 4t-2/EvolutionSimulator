@@ -2,6 +2,8 @@
 
 #include "../lib/AGL/agl.hpp"
 
+#include <type_traits>
+
 #define MENU_BORDER		2
 #define MENU_PADDING	10
 #define MENU_SHADOWSIZE 1
@@ -26,27 +28,28 @@ enum MenuElement
 
 class TextElement : public agl::Drawable
 {
-	private:
-		agl::Text &text;
-
 	public:
-		TextElement(agl::Text &text) : text(text)
+		TextElement()
 		{
+
 		}
+
+		agl::Text *text = nullptr;
 
 		agl::Vec<float, 3> position = {0, 0, 0};
 		std::string		   str		= "null";
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
-			text.setPosition(position);
-			text.clearText();
-			text.setText(str);
-			window.drawText(text);
+			text->setPosition(position);
+			text->clearText();
+			text->setText(str);
+			window.drawText(*text);
 		}
 };
 
-class Menu : public agl::Drawable
+// template hell
+template <typename... ElementType> class Menu : public agl::Drawable
 {
 	private:
 		agl::Rectangle outerShadowShape;
@@ -56,20 +59,108 @@ class Menu : public agl::Drawable
 
 		agl::Text text;
 
-		std::vector<MenuElement> menuElement;
-		std::vector<TextElement> textElement;
+		std::tuple<ElementType...> element;
+
+		template <std::size_t... Indices> static auto make_default_tuple(std::index_sequence<Indices...>)
+		{
+			return std::make_tuple(ElementType{}...);
+		}
+
+		template <size_t i = 0>
+		typename std::enable_if<i == sizeof...(ElementType), void>::type draw(agl::RenderWindow	 &window,
+																			  agl::Vec<float, 3> &pen)
+		{
+			return;
+		}
+
+		template <size_t i = 0>
+			typename std::enable_if <
+			i<sizeof...(ElementType), void>::type draw(agl::RenderWindow &window, agl::Vec<float, 3> &pen)
+		{
+			std::get<i>(element).position = pen;
+			std::get<i>(element).text = &text;
+
+			window.draw(std::get<i>(element));
+
+			pen.y += text.getHeight();
+
+			draw<i + 1>(window, pen);
+		}
 
 	public:
 		agl::Vec<float, 3> position;
 		agl::Vec<float, 2> size;
 
-		Menu(agl::Texture *texture, agl::Font *font, std::vector<MenuElement> element);
+		Menu(agl::Texture *texture, agl::Font *font)
+			: element(make_default_tuple(std::index_sequence_for<ElementType...>{}))
 
-		void setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size);
+		{
+			outerShadowShape.setTexture(texture);
+			borderShape.setTexture(texture);
+			innerShadowShape.setTexture(texture);
+			bodyShape.setTexture(texture);
 
-		void setElement(int i, std::string str);
+			text.setFont(font);
+			text.setColor(agl::Color::Black);
+			text.setScale(1);
+		}
 
-		void setPosition(agl::Vec<float, 3> position);
+		void setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size)
+		{
+			this->position = position;
+			this->size	   = size;
+
+			outerShadowShape.setPosition(position);
+			outerShadowShape.setOffset({0, 0, 0});
+			outerShadowShape.setSize(size);
+			outerShadowShape.setColor(MENU_SHADOWCOLOR);
+
+			size.x -= MENU_SHADOWSIZE;
+			size.y -= MENU_SHADOWSIZE;
+
+			borderShape.setPosition(position);
+			borderShape.setOffset({0, 0, 0.1});
+			borderShape.setSize(size);
+			borderShape.setColor(MENU_BORDERCOLOR);
+
+			size.x -= MENU_BORDER * 2;
+			size.y -= MENU_BORDER * 2;
+
+			innerShadowShape.setPosition(position);
+			innerShadowShape.setOffset({MENU_BORDER, MENU_BORDER, 0.2});
+			innerShadowShape.setSize(size);
+			innerShadowShape.setColor(MENU_SHADOWCOLOR);
+
+			size.x -= MENU_SHADOWSIZE;
+			size.y -= MENU_SHADOWSIZE;
+
+			bodyShape.setPosition(position);
+			bodyShape.setOffset({MENU_BORDER + MENU_SHADOWSIZE, MENU_BORDER + MENU_SHADOWSIZE, 0.3});
+			bodyShape.setSize(size);
+			bodyShape.setColor(MENU_BODYCOLOR);
+
+			return;
+		}
+
+		template <int i> std::tuple_element_t<i, std::tuple<ElementType...>> &get()
+		{
+			return std::get<i>(element);
+		}
+
+		void setPosition(agl::Vec<float, 3> position)
+		{
+			this->position = position;
+
+			outerShadowShape.setPosition(position);
+			borderShape.setPosition(position);
+			innerShadowShape.setPosition(position);
+			bodyShape.setPosition(position);
+
+			agl::Vec<float, 3> textOffset = {MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING,
+											 MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING, 0.4};
+
+			text.setPosition(position + textOffset);
+		}
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
@@ -77,22 +168,16 @@ class Menu : public agl::Drawable
 									  MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING, 30};
 			pen					   = pen + position;
 
-			for (int i = 0; i < menuElement.size(); i++)
-			{
-				if (menuElement[i] == MenuElement::TEXT)
-				{
-					textElement[i].position = pen;
-					window.draw(textElement[i]);
+			draw(window, pen);
 
-					pen.y += text.getHeight();
-				}
-			}
-			
 			window.drawShape(outerShadowShape);
 			window.drawShape(borderShape);
 			window.drawShape(bodyShape);
 			window.drawShape(innerShadowShape);
 		}
 
-		void destroy();
+		void destroy()
+		{
+			text.clearText();
+		}
 };

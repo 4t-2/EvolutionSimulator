@@ -510,6 +510,7 @@ void Simulation::updateSimulation()
 				if (distance < (eatingCreature->getRadius() + eatenCreature->getRadius()))
 				{
 					eatenCreature->setHealth(eatenCreature->getHealth() - 1);
+					// creature->setEnergy(creature->getEnergy() + 2);
 				}
 			}
 		}
