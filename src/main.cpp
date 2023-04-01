@@ -10,6 +10,7 @@
 #include <ctime>
 #include <fstream>
 #include <math.h>
+#include <string>
 #include <unistd.h>
 
 #define TOTAL_FOOD 10
@@ -135,11 +136,44 @@ int main()
 	background.setOffset({-backgroundSize / 2, -backgroundSize / 2, -10});
 
 	// menu shapes
-	Menu<TextElement, TextElement, TextElement, TextElement> simulationInfo(&blank, &font);
+	Menu<ValueElement, ValueElement, ValueElement, ValueElement> simulationInfo(&blank, &font);
 	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 125});
+	simulationInfo.get<0>().label = "Creatures";
+	simulationInfo.get<1>().label = "Eggs";
+	simulationInfo.get<2>().label = "Food";
+	simulationInfo.get<3>().label = "Frame";
 
-	Menu<TextElement> creatureInfo(&blank, &font);
+	Menu<SpacerElement, ValueElement, SpacerElement, TextElement, ValueElement, ValueElement, TextElement, ValueElement, ValueElement,
+		 TextElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement, SpacerElement,
+		 ValueElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement, ValueElement,
+		 ValueElement>
+		creatureInfo(&blank, &font);
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
+
+	creatureInfo.get<0>().height = 350;
+	creatureInfo.get<1>().label = "Node";
+
+	creatureInfo.get<3>().str	 = "- Position -";
+	creatureInfo.get<4>().label	 = "X";
+	creatureInfo.get<5>().label	 = "Y";
+	creatureInfo.get<6>().str	 = "- Velocity -";
+	creatureInfo.get<7>().label	 = "X";
+	creatureInfo.get<8>().label	 = "Y";
+	creatureInfo.get<9>().str	 = "- Acceleration -";
+	creatureInfo.get<10>().label	 = "X";
+	creatureInfo.get<11>().label = "Y";
+
+	creatureInfo.get<13>().label = "Eating";
+	creatureInfo.get<14>().label = "Laying Egg";
+
+	creatureInfo.get<16>().label = "Health";
+	creatureInfo.get<17>().label = "Energy";
+	creatureInfo.get<18>().label = "Life Left";
+
+	creatureInfo.get<20>().label = "Sight";
+	creatureInfo.get<21>().label = "Speed";
+	creatureInfo.get<22>().label = "Size";
+	creatureInfo.get<23>().label = "Hue";
 
 	agl::Circle networkBackground(60);
 	networkBackground.setTexture(&blank);
@@ -427,59 +461,77 @@ int main()
 		window.updateMvp(guiCamera);
 
 		{
-			simulationInfo.get<0>().str =
-				"Creatures - " + std::to_string(simulation.getExistingCreatures()->getLength());
-			simulationInfo.get<1>().str = "Eggs - " + std::to_string(simulation.getExistingEggs()->getLength());
-			simulationInfo.get<2>().str = "Food - " + std::to_string(simulation.getExistingFood()->getLength());
-			simulationInfo.get<3>().str = "Frame - " + std::to_string(frame);
+			simulationInfo.get<0>().value = std::to_string(simulation.getExistingCreatures()->getLength());
+			simulationInfo.get<1>().value = std::to_string(simulation.getExistingEggs()->getLength());
+			simulationInfo.get<2>().value = std::to_string(simulation.getExistingFood()->getLength());
+			simulationInfo.get<3>().value = std::to_string(frame);
 		}
 
 		window.draw(simulationInfo);
 
 		if (existingCreatures->find(focusCreature) != -1)
 		{
-			std::stringstream ss;
-
+			// std::stringstream ss;
+			//
 			static int selectedID = 0;
+			//
+			// char buf[77];
+			// snprintf(buf, 77,
+			// 		 "Health - %6.2f / %6.2f\n" //
+			// 		 "Energy - %6.2f / %6.2f\n" //
+			// 		 "Life Left - %5d / %5d\n"	//
+			// 		 ,
+			// 		 focusCreature->getHealth(),
+			// focusCreature->getMaxHealth(), focusCreature->getEnergy(),
+			// 		 focusCreature->getMaxEnergy(),
+			// focusCreature->getLifeLeft(), focusCreature->getMaxLife());
+			//
+			// ss << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+			// ss << "Node - " << nodeNames[selectedID] << '\n';
+			// ss << '\n';
+			// ss << "- Position - " << '\n';
+			// ss << "X - " << focusCreature->getPosition().x << '\n';
+			// ss << "Y - " << focusCreature->getPosition().y << '\n';
+			// ss << "- Velocity - " << '\n';
+			// ss << "X - " << focusCreature->getVelocity().x << '\n';
+			// ss << "Y - " << focusCreature->getVelocity().y << '\n';
+			// ss << "- Acceleration - " << '\n';
+			// ss << "X - " << focusCreature->getAcceleration().x << '\n';
+			// ss << "Y - " << focusCreature->getAcceleration().y << '\n';
+			// ss << '\n';
+			// ss << "Eating - " << focusCreature->getEating() << '\n';
+			// ss << "Laying Egg - " << focusCreature->getLayingEgg() << '\n';
+			// ss << '\n';
+			// ss << buf;
+			// // ss << "Health - " << focusCreature->getHealth() << " / " <<
+			// // focusCreature->getMaxHealth() << '\n'; ss << "Energy - " <<
+			// // focusCreature->getEnergy() << " / " << focusCreature->getMaxEnergy()
+			// <<
+			// // '\n'; ss << "Life Left - " << focusCreature->getLifeLeft() << " / "
+			// <<
+			// // focusCreature->getMaxLife() << '\n';
+			// ss << '\n';
+			// ss << "Sight - " << focusCreature->getSight() << '\n';
+			// ss << "Speed - " << focusCreature->getSpeed() << '\n';
+			// ss << "Size - " << focusCreature->getSize() << '\n';
+			// ss << "Hue - " << focusCreature->getHue() << '\n';
 
-			char buf[77];
-			snprintf(buf, 77,
-					 "Health - %6.2f / %6.2f\n" //
-					 "Energy - %6.2f / %6.2f\n" //
-					 "Life Left - %5d / %5d\n"	//
-					 ,
-					 focusCreature->getHealth(), focusCreature->getMaxHealth(), focusCreature->getEnergy(),
-					 focusCreature->getMaxEnergy(), focusCreature->getLifeLeft(), focusCreature->getMaxLife());
-
-			ss << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-			ss << "Node - " << nodeNames[selectedID] << '\n';
-			ss << '\n';
-			ss << "- Position - " << '\n';
-			ss << "X - " << focusCreature->getPosition().x << '\n';
-			ss << "Y - " << focusCreature->getPosition().y << '\n';
-			ss << "- Velocity - " << '\n';
-			ss << "X - " << focusCreature->getVelocity().x << '\n';
-			ss << "Y - " << focusCreature->getVelocity().y << '\n';
-			ss << "- Acceleration - " << '\n';
-			ss << "X - " << focusCreature->getAcceleration().x << '\n';
-			ss << "Y - " << focusCreature->getAcceleration().y << '\n';
-			ss << '\n';
-			ss << "Eating - " << focusCreature->getEating() << '\n';
-			ss << "Laying Egg - " << focusCreature->getLayingEgg() << '\n';
-			ss << '\n';
-			ss << buf;
-			// ss << "Health - " << focusCreature->getHealth() << " / " <<
-			// focusCreature->getMaxHealth() << '\n'; ss << "Energy - " <<
-			// focusCreature->getEnergy() << " / " << focusCreature->getMaxEnergy() <<
-			// '\n'; ss << "Life Left - " << focusCreature->getLifeLeft() << " / " <<
-			// focusCreature->getMaxLife() << '\n';
-			ss << '\n';
-			ss << "Sight - " << focusCreature->getSight() << '\n';
-			ss << "Speed - " << focusCreature->getSpeed() << '\n';
-			ss << "Size - " << focusCreature->getSize() << '\n';
-			ss << "Hue - " << focusCreature->getHue() << '\n';
-
-			creatureInfo.get<0>().str = ss.str();
+			creatureInfo.get<1>().value	 = nodeNames[selectedID];
+			creatureInfo.get<4>().value	 = std::to_string(focusCreature->getPosition().x);
+			creatureInfo.get<5>().value	 = std::to_string(focusCreature->getPosition().y);
+			creatureInfo.get<7>().value	 = std::to_string(focusCreature->getVelocity().x);
+			creatureInfo.get<8>().value	 = std::to_string(focusCreature->getVelocity().y);
+			creatureInfo.get<10>().value	 = std::to_string(focusCreature->getAcceleration().x);
+			creatureInfo.get<11>().value = std::to_string(focusCreature->getAcceleration().y);
+			creatureInfo.get<13>().value = std::to_string(focusCreature->getEating());
+			creatureInfo.get<14>().value = std::to_string(focusCreature->getLayingEgg());
+			creatureInfo.get<16>().value = std::to_string(focusCreature->getHealth());
+			creatureInfo.get<17>().value = std::to_string(focusCreature->getEnergy());
+			creatureInfo.get<18>().value = std::to_string(focusCreature->getLifeLeft());
+			creatureInfo.get<20>().value = std::to_string(focusCreature->getSight());
+			creatureInfo.get<21>().value = std::to_string(focusCreature->getSpeed());
+			creatureInfo.get<22>().value = std::to_string(focusCreature->getSize());
+			creatureInfo.get<23>().value = std::to_string(focusCreature->getHue());
 
 			window.draw(creatureInfo);
 

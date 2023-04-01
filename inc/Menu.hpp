@@ -21,30 +21,75 @@
 		210, 210, 210  \
 	}
 
-enum MenuElement
-{
-	TEXT = 0,
-};
-
-class TextElement : public agl::Drawable
+class MenuElement : public agl::Drawable
 {
 	public:
-		TextElement()
-		{
-
-		}
-
-		agl::Text *text = nullptr;
-
 		agl::Vec<float, 3> position = {0, 0, 0};
-		std::string		   str		= "null";
+		float			   height	= 0;
+		agl::Text		  *text		= nullptr;
+		agl::Rectangle	  *rect		= nullptr;
+
+		void init(agl::Text *text, agl::Rectangle *rect);
+		// void drawFunction(agl::RenderWindow &window);
+};
+
+class TextElement : public MenuElement
+{
+	public:
+		std::string str = "null";
+
+		void init(agl::Text *text, agl::Rectangle *rect)
+		{
+			this->text = text;
+			this->rect = rect;
+
+			height = text->getHeight() * text->getScale();
+		}
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
 			text->setPosition(position);
 			text->clearText();
 			text->setText(str);
+
 			window.drawText(*text);
+		}
+};
+
+class ValueElement : public MenuElement
+{
+	public:
+		std::string label = "null";
+		std::string value = "null";
+
+		void init(agl::Text *text, agl::Rectangle *rect)
+		{
+			this->text = text;
+			this->rect = rect;
+
+			height = text->getHeight() * text->getScale();
+		}
+
+		void drawFunction(agl::RenderWindow &window) override
+		{
+			text->setPosition(position);
+			text->clearText();
+			text->setText(label + " - " + value);
+
+			window.drawText(*text);
+		}
+};
+
+class SpacerElement : public MenuElement
+{
+	public:
+		void init(agl::Text *text, agl::Rectangle *rect)
+		{
+			height = text->getHeight() * text->getScale();
+		}
+
+		void drawFunction(agl::RenderWindow &window) override
+		{
 		}
 };
 
@@ -57,9 +102,22 @@ template <typename... ElementType> class Menu : public agl::Drawable
 		agl::Rectangle bodyShape;
 		agl::Rectangle innerShadowShape;
 
-		agl::Text text;
+		agl::Text	   text;
+		agl::Rectangle rect;
 
 		std::tuple<ElementType...> element;
+
+		template <size_t i = 0> typename std::enable_if<i == sizeof...(ElementType), void>::type initTuple()
+		{
+			return;
+		}
+
+		template <size_t i = 0> typename std::enable_if < i<sizeof...(ElementType), void>::type initTuple()
+		{
+			std::get<i>(element).init(&text, &rect);
+
+			initTuple<i + 1>();
+		}
 
 		template <std::size_t... Indices> static auto make_default_tuple(std::index_sequence<Indices...>)
 		{
@@ -78,11 +136,10 @@ template <typename... ElementType> class Menu : public agl::Drawable
 			i<sizeof...(ElementType), void>::type draw(agl::RenderWindow &window, agl::Vec<float, 3> &pen)
 		{
 			std::get<i>(element).position = pen;
-			std::get<i>(element).text = &text;
 
 			window.draw(std::get<i>(element));
 
-			pen.y += text.getHeight();
+			pen.y += std::get<i>(element).height;
 
 			draw<i + 1>(window, pen);
 		}
@@ -103,6 +160,8 @@ template <typename... ElementType> class Menu : public agl::Drawable
 			text.setFont(font);
 			text.setColor(agl::Color::Black);
 			text.setScale(1);
+
+			initTuple();
 		}
 
 		void setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size)
