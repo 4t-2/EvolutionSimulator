@@ -8,6 +8,9 @@
 #define MENU_PADDING	10
 #define MENU_SHADOWSIZE 1
 
+#define MENU_BORDERTHICKNESS (float)6
+#define MENU_DECORATIONHEIGHT (float)(4 + (MENU_BORDERTHICKNESS * 4))
+
 #define MENU_BORDERCOLOR \
 	{                    \
 		140, 140, 140    \
@@ -97,10 +100,24 @@ class SpacerElement : public MenuElement
 template <typename... ElementType> class Menu : public agl::Drawable
 {
 	private:
-		agl::Rectangle outerShadowShape;
-		agl::Rectangle borderShape;
-		agl::Rectangle bodyShape;
-		agl::Rectangle innerShadowShape;
+		// agl::Rectangle outerShadowShape;
+		// agl::Rectangle borderShape;
+		// agl::Rectangle bodyShape;
+		// agl::Rectangle innerShadowShape;
+
+		agl::Texture border;
+
+		agl::Rectangle body;
+
+		agl::Rectangle upBorder;
+		agl::Rectangle downBorder;
+		agl::Rectangle leftBorder;
+		agl::Rectangle rightBorder;
+
+		agl::Rectangle tlCorner;
+		agl::Rectangle blCorner;
+		agl::Rectangle trCorner;
+		agl::Rectangle brCorner;
 
 		agl::Text	   text;
 		agl::Rectangle rect;
@@ -152,10 +169,60 @@ template <typename... ElementType> class Menu : public agl::Drawable
 			: element(make_default_tuple(std::index_sequence_for<ElementType...>{}))
 
 		{
-			outerShadowShape.setTexture(texture);
-			borderShape.setTexture(texture);
-			innerShadowShape.setTexture(texture);
-			bodyShape.setTexture(texture);
+			// left
+			// right
+			// up
+			// down
+			// tr
+			// br
+			// tl
+			// bl
+			border.loadFromFile("img/border.png");
+
+			body.setTexture(texture);
+			body.setColor(agl::Color::White);
+
+			leftBorder.setTexture(&border);
+			leftBorder.setSize({MENU_BORDERTHICKNESS, 1});
+			leftBorder.setTextureTranslation({0, 0});
+			leftBorder.setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
+
+			rightBorder.setTexture(&border);
+			rightBorder.setSize({MENU_BORDERTHICKNESS, 1});
+			rightBorder.setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 1});
+			rightBorder.setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
+
+			upBorder.setTexture(&border);
+			upBorder.setSize({MENU_BORDERTHICKNESS, 1});
+			upBorder.setRotation({0, 0, 90});
+			upBorder.setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 2});
+			upBorder.setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
+
+			downBorder.setTexture(&border);
+			downBorder.setSize({MENU_BORDERTHICKNESS, 1});
+			downBorder.setRotation({0, 0, 90});
+			downBorder.setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 3});
+			downBorder.setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
+
+			trCorner.setTexture(&border);
+			trCorner.setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
+			trCorner.setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 4});
+			trCorner.setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
+
+			brCorner.setTexture(&border);
+			brCorner.setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
+			brCorner.setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 3});
+			brCorner.setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
+
+			tlCorner.setTexture(&border);
+			tlCorner.setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
+			tlCorner.setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 2});
+			tlCorner.setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
+
+			blCorner.setTexture(&border);
+			blCorner.setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
+			blCorner.setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT)});
+			blCorner.setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
 
 			text.setFont(font);
 			text.setColor(agl::Color::Black);
@@ -169,34 +236,24 @@ template <typename... ElementType> class Menu : public agl::Drawable
 			this->position = position;
 			this->size	   = size;
 
-			outerShadowShape.setPosition(position);
-			outerShadowShape.setOffset({0, 0, 0});
-			outerShadowShape.setSize(size);
-			outerShadowShape.setColor(MENU_SHADOWCOLOR);
+			body.setPosition(position);
+			body.setSize(size);
 
-			size.x -= MENU_SHADOWSIZE;
-			size.y -= MENU_SHADOWSIZE;
+			position.z += .1;
+			leftBorder.setSize({MENU_BORDERTHICKNESS, size.y});
+			leftBorder.setPosition(position);
+			rightBorder.setSize({MENU_BORDERTHICKNESS, size.y});
+			rightBorder.setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, 0});
+			upBorder.setPosition(position + agl::Vec<float, 2>{0, MENU_BORDERTHICKNESS});
+			upBorder.setSize({MENU_BORDERTHICKNESS, size.x});
+			downBorder.setPosition(position + agl::Vec<float, 2>{0, size.y});
+			downBorder.setSize({MENU_BORDERTHICKNESS, size.x});
 
-			borderShape.setPosition(position);
-			borderShape.setOffset({0, 0, 0.1});
-			borderShape.setSize(size);
-			borderShape.setColor(MENU_BORDERCOLOR);
-
-			size.x -= MENU_BORDER * 2;
-			size.y -= MENU_BORDER * 2;
-
-			innerShadowShape.setPosition(position);
-			innerShadowShape.setOffset({MENU_BORDER, MENU_BORDER, 0.2});
-			innerShadowShape.setSize(size);
-			innerShadowShape.setColor(MENU_SHADOWCOLOR);
-
-			size.x -= MENU_SHADOWSIZE;
-			size.y -= MENU_SHADOWSIZE;
-
-			bodyShape.setPosition(position);
-			bodyShape.setOffset({MENU_BORDER + MENU_SHADOWSIZE, MENU_BORDER + MENU_SHADOWSIZE, 0.3});
-			bodyShape.setSize(size);
-			bodyShape.setColor(MENU_BODYCOLOR);
+			position.z += .1;
+			trCorner.setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, 0});
+			tlCorner.setPosition(position);
+			brCorner.setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, size.y - MENU_BORDERTHICKNESS});
+			blCorner.setPosition(position + agl::Vec<float, 2>{0, size.y - MENU_BORDERTHICKNESS});
 
 			return;
 		}
@@ -210,15 +267,11 @@ template <typename... ElementType> class Menu : public agl::Drawable
 		{
 			this->position = position;
 
-			outerShadowShape.setPosition(position);
-			borderShape.setPosition(position);
-			innerShadowShape.setPosition(position);
-			bodyShape.setPosition(position);
-
 			agl::Vec<float, 3> textOffset = {MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING,
 											 MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING, 0.4};
 
 			text.setPosition(position + textOffset);
+			body.setPosition(position);
 		}
 
 		void drawFunction(agl::RenderWindow &window) override
@@ -227,16 +280,25 @@ template <typename... ElementType> class Menu : public agl::Drawable
 									  MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING, 30};
 			pen					   = pen + position;
 
-			draw(window, pen);
+			window.drawShape(body);
+			
+			window.drawShape(leftBorder);
+			window.drawShape(rightBorder);
+			window.drawShape(upBorder);
+			window.drawShape(downBorder);
 
-			window.drawShape(outerShadowShape);
-			window.drawShape(borderShape);
-			window.drawShape(bodyShape);
-			window.drawShape(innerShadowShape);
+			window.drawShape(trCorner);
+			window.drawShape(brCorner);
+			window.drawShape(tlCorner);
+			window.drawShape(blCorner);
+
+
+			draw(window, pen);
 		}
 
 		void destroy()
 		{
 			text.clearText();
+			border.deleteTexture();
 		}
 };

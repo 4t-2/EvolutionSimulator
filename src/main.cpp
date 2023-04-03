@@ -84,8 +84,8 @@ int main()
 	window.setClearColor(CLEARCOLOR);
 	window.setFPS(60);
 
-	window.GLEnable(GL_ALPHA_TEST);
-	glAlphaFunc(GL_GREATER, 0.1f);
+	// window.GLEnable(GL_ALPHA_TEST);
+	// glAlphaFunc(GL_GREATER, 0.1f);
 
 	XSelectInput(window.getDisplay(), window.getWindow(), ButtonPressMask | ButtonReleaseMask);
 
