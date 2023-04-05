@@ -1,11 +1,18 @@
 #pragma once
 
 #include "../lib/AGL/agl.hpp"
+#include "../lib/PHY/fastphys.hpp"
 
-class Food
+class Food : public phy::Circle
 {
 	public:
-		int id;
-		agl::Vec<float, 2> position;
+		Food() : phy::Circle(*(agl::Circle *)0)
+		{
+		}
+
+		float mass	 = 1;
+		float radius = 5;
+
+		int	  id;
 		float energy;
 };

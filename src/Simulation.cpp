@@ -7,6 +7,8 @@
 
 #define LOGCREATUREDATA
 
+#define THREADS 2
+
 void randomData(Buffer *buffer)
 {
 	for (int i = 0; i < buffer->size; i++)
@@ -58,7 +60,7 @@ Simulation::Simulation(SimulationRules simulationRules)
 		this->addCreature(creatureData, position);
 	}
 
-	for (int i = 0; i < simulationRules.maxFood; i++)
+	for (int i = 0; i < 0; i++)
 	{
 		foodBuffer[i].id = i;
 
@@ -301,7 +303,7 @@ void threadedUpdateNetworks(List<Creature *> *existingCreatures, Grid<Food *> *f
 	}
 }
 
-void Simulation::updateNetworks()
+void Simulation::threadableUpdate()
 {
 	std::thread thread1(threadedUpdateNetworks, existingCreatures, foodGrid, creatureGrid, 0,
 						existingCreatures->getLength() / 2);
@@ -455,8 +457,71 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	}
 }
 
+void correctPosition(phy::Circle &circle, phy::Circle &otherCircle)
+{
+	agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
+
+	float circleDistance = circleOffset.length();
+
+	float circleOverlap = (otherCircle.radius + circle.radius) - circleDistance;
+
+	if (circleOverlap > 0)
+	{
+		agl::Vec<float, 2> offsetNormal = circleOffset.normalized();
+		agl::Vec<float, 2> pushback		= offsetNormal * circleOverlap;
+
+		float actingMass = circle.mass > otherCircle.mass ? otherCircle.mass : circle.mass;
+
+		circle.posOffset -= pushback * (otherCircle.mass / (circle.mass + otherCircle.mass));
+		otherCircle.posOffset += pushback * (circle.mass / (circle.mass + otherCircle.mass));
+
+		circle.force -= pushback * actingMass;
+		otherCircle.force += pushback * actingMass;
+	}
+}
+
 void Simulation::updateSimulation()
 {
+	// threaded physics update
+
+	// food - all
+
+	// creature - all
+
+	// threaded network update
+
+	// {
+	// 	std::thread **thread = new std::thread *[THREADS];
+	//
+	// 	{
+	// 		int i = 0;
+	//
+	// 		for (i = 0; i < THREADS - 1; i++)
+	// 		{
+	// 			int start = (existingCreatures->getLength() / THREADS) * i;
+	// 			int end	  = (existingCreatures->getLength() / THREADS) * (i + 1) - 1;
+	//
+	// 			thread[i] =
+	// 				new std::thread(threadedUpdateNetworks, existingCreatures, foodGrid, creatureGrid, start, end);
+	// 		}
+	//
+	// 		int start = (existingCreatures->getLength() / THREADS) * i;
+	// 		int end	  = existingCreatures->getLength() - 1;
+	//
+	// 		thread[i] = new std::thread(threadedUpdateNetworks, existingCreatures, foodGrid, creatureGrid, start, end);
+	// 	}
+	//
+	// 	for (int i = 0; i < THREADS; i++)
+	// 	{
+	// 		thread[i]->join();
+	// 		delete thread[i];
+	// 	}
+	//
+	// 	delete[] thread;
+	// }
+
+	// everything else
+
 	creatureGrid->clear();
 
 	for (int i = 0; i < existingCreatures->getLength(); i++)
@@ -465,14 +530,51 @@ void Simulation::updateSimulation()
 
 		creature->updateActions();
 
-		creature->setGridPosition(foodGrid->toGridPosition(creature->getPosition(), simulationRules.size));
+		creature->setGridPosition(foodGrid->toGridPosition(creature->position, simulationRules.size));
 
 		creatureGrid->addData(creature->getGridPosition(), creature);
+	}
+
+	foodGrid->clear();
+
+	for (int i = 0; i < existingFood->getLength(); i++)
+	{
+		Food *food = existingFood->get(i);
+
+		food->update();
+
+		phy::Circle &circle = *existingFood->get(i);
+
+		float dragCoeficient = .1;
+
+		float velMag = circle.velocity.length();
+
+		agl::Vec<float, 2> velNor;
+
+		if (velMag == 0)
+		{
+			velNor = {1, 0};
+		}
+		else
+		{
+			velNor = circle.velocity.normalized();
+		}
+
+		agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 1);
+
+		circle.force -= drag;
+
+		foodGrid->addData(foodGrid->toGridPosition(food->position, simulationRules.size), food);
 	}
 
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
 		Creature *creature = existingCreatures->get(i);
+
+		for (int x = i + 1; x < existingCreatures->getLength(); x++)
+		{
+			correctPosition(*creature, *existingCreatures->get(x));
+		}
 
 		// egg laying
 		if (creature->getLayingEgg())
@@ -487,7 +589,7 @@ void Simulation::updateSimulation()
 
 				mutate(&creatureData, 50, 3);
 
-				this->addEgg(creatureData, eggLayer->getPosition());
+				this->addEgg(creatureData, eggLayer->position);
 			}
 		}
 
@@ -505,7 +607,7 @@ void Simulation::updateSimulation()
 					continue;
 				}
 
-				float distance = (eatenCreature->getPosition() - eatingCreature->getPosition()).length();
+				float distance = (eatenCreature->position - eatingCreature->position).length();
 
 				if (distance < (eatingCreature->getRadius() + eatenCreature->getRadius()))
 				{
@@ -541,14 +643,17 @@ void Simulation::updateSimulation()
 		{
 			Food *food = foodList->get(x);
 
-			agl::Vec<float, 2> offset = creature->getPosition() - food->position;
+			agl::Vec<float, 2> offset = creature->position - food->position;
+
+			correctPosition(*creature, *food);
 
 			if (offset.length() < (creature->getRadius() + 10) && creature->getEating())
 			{
-				creature->setEnergy(creature->getEnergy() + food->energy);
-
-				this->removeFood(food);
-				x--;
+				// creature->setEnergy(creature->getEnergy() +
+				// food->energy);
+				//
+				// this->removeFood(food);
+				// x--;
 			}
 		}
 
@@ -614,8 +719,8 @@ void Simulation::updateSimulation()
 
 void Simulation::update()
 {
+	this->threadableUpdate();
 	this->updateSimulation();
-	this->updateNetworks();
 
 #ifdef LOGCREATUREDATA
 	creaturePopData.emplace_back(existingCreatures->getLength());

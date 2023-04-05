@@ -34,17 +34,12 @@
 #define EAT_OUTPUT	  (TOTAL_INPUT + 3)
 #define LAYEGG_OUTPUT (TOTAL_INPUT + 4)
 
-class Creature
+class Creature : public phy::Circle
 {
 	private:
-		agl::Vec<float, 2> position		= {0, 0};
-		agl::Vec<float, 2> velocity		= {0, 0};
-		agl::Vec<float, 2> acceleration = {0, 0};
 		float			   rotation		= 0;
 
 		agl::Vec<int, 2> gridPosition = {0, 0};
-
-		float radius = 0;
 
 		NeuralNetwork *network = nullptr;
 
@@ -102,9 +97,6 @@ class Creature
 		CreatureData getCreatureData();
 
 		NeuralNetwork	   getNeuralNetwork();
-		agl::Vec<float, 2> getPosition();
-		agl::Vec<float, 2> getVelocity();
-		agl::Vec<float, 2> getAcceleration();
 		float			   getRotation();
 		bool			   getEating();
 		bool			   getLayingEgg();

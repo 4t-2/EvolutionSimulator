@@ -32,7 +32,7 @@ class Simulation
 		Simulation(SimulationRules simulationRules);
 		void destroy();
 
-		void updateNetworks();
+		void threadableUpdate();
 		void updateSimulation();
 		void update();
 

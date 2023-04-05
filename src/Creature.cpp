@@ -1,7 +1,8 @@
 #include "../inc/Creature.hpp"
 
-Creature::Creature()
+Creature::Creature() : phy::Circle(*(agl::Circle *)0)
 {
+	mass = 1;
 	return;
 }
 
@@ -74,20 +75,20 @@ void Creature::clear()
 	network->destroy();
 	delete network;
 
-	existing	 = false;
-	position	 = {0, 0};
-	velocity	 = {0, 0};
-	acceleration = {0, 0};
-	rotation	 = 0;
-	radius		 = 0;
-	network		 = nullptr;
-	eating		 = false;
-	layingEgg	 = false;
-	sight		 = 0;
-	speed		 = 0;
-	size		 = 0;
-	energy		 = 0;
-	health		 = 0;
+	existing  = false;
+	position  = {0, 0};
+	velocity  = {0, 0};
+	force	  = {0, 0};
+	rotation  = 0;
+	radius	  = 0;
+	network	  = nullptr;
+	eating	  = false;
+	layingEgg = false;
+	sight	  = 0;
+	speed	  = 0;
+	size	  = 0;
+	energy	  = 0;
+	health	  = 0;
 
 	return;
 }
@@ -324,13 +325,11 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 
 void Creature::updateActions()
 {
-	acceleration = {0, 0};
-
-	float force = 0;
+	float moveForce = 0;
 
 	if (network->getNode(FOWARD_OUTPUT).value > 0)
 	{
-		force += network->getNode(FOWARD_OUTPUT).value * maxForce;
+		moveForce += network->getNode(FOWARD_OUTPUT).value * maxForce;
 	}
 
 	if (network->getNode(RIGHT_OUTPUT).value > 0)
@@ -363,12 +362,12 @@ void Creature::updateActions()
 
 	rotation = loop(-PI, PI, rotation);
 
-	energy -= (sight + (force * force * size * size * size)) / 200;
+	energy -= (sight + (moveForce * moveForce * size * size * size)) / 200;
 
 	life--;
 
-	acceleration.x = cos(rotation - (PI / 2)) * force;
-	acceleration.y = sin(rotation - (PI / 2)) * force;
+	force.x = cos(rotation - (PI / 2)) * moveForce;
+	force.y = sin(rotation - (PI / 2)) * moveForce;
 
 	// add air resistance
 
@@ -389,11 +388,9 @@ void Creature::updateActions()
 
 	agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 1);
 
-	acceleration = acceleration - drag;
+	force = force - drag;
 
-	velocity = velocity + acceleration;
-
-	position = position + velocity;
+	this->update();
 
 	return;
 }
@@ -406,21 +403,6 @@ CreatureData Creature::getCreatureData()
 NeuralNetwork Creature::getNeuralNetwork()
 {
 	return *network;
-}
-
-agl::Vec<float, 2> Creature::getPosition()
-{
-	return position;
-}
-
-agl::Vec<float, 2> Creature::getVelocity()
-{
-	return velocity;
-}
-
-agl::Vec<float, 2> Creature::getAcceleration()
-{
-	return acceleration;
 }
 
 float Creature::getRotation()

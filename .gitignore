@@ -45,3 +45,4 @@ release
 bin/plot/*
 !bin/plot/img.p
 bin/img/border.png.bak
+lib/PHY

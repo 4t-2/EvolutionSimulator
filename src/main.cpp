@@ -84,6 +84,8 @@ int main()
 	window.setClearColor(CLEARCOLOR);
 	window.setFPS(60);
 
+	glDisable(GL_DEPTH_TEST);
+
 	// window.GLEnable(GL_ALPHA_TEST);
 	// glAlphaFunc(GL_GREATER, 0.1f);
 
@@ -133,7 +135,7 @@ int main()
 
 	background.setSize({backgroundSize, backgroundSize});
 	background.setPosition({0, 0, 0});
-	background.setOffset({-backgroundSize / 2, -backgroundSize / 2, -10});
+	background.setOffset({-backgroundSize / 2, -backgroundSize / 2, -40});
 
 	// menu shapes
 	Menu<ValueElement, ValueElement, ValueElement, ValueElement> simulationInfo(&blank, &font);
@@ -200,25 +202,25 @@ int main()
 	foodShape.setTexture(&foodTexture);
 	foodShape.setColor(agl::Color::Green);
 	foodShape.setSize(agl::Vec<float, 3>{-10, -10, 0});
-	foodShape.setOffset({5, 5, -3});
+	foodShape.setOffset({5, 5, 30});
 
 	agl::Rectangle creatureShape;
 	creatureShape.setTexture(&creatureBodyTexture);
 	creatureShape.setColor(agl::Color::White);
 	creatureShape.setSize(agl::Vec<float, 3>{25, 60, 0});
-	creatureShape.setOffset(agl::Vec<float, 3>{-12.5, -12.5, -1});
+	creatureShape.setOffset(agl::Vec<float, 3>{-12.5, -12.5, 30});
 
 	agl::Rectangle eggShape;
 	eggShape.setTexture(&eggTexture);
 	eggShape.setColor(agl::Color::White);
 	eggShape.setSize(agl::Vec<float, 3>{15, 15, 0});
-	eggShape.setOffset({7.5, 7.5, -2});
+	eggShape.setOffset({7.5, 7.5, 30});
 
 	agl::Rectangle rayShape;
 	rayShape.setTexture(&blank);
 	rayShape.setColor(agl::Color::White);
 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH});
-	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, -1.5});
+	rayShape.setOffset(agl::Vec<float, 3>{-0.5, 0, 0});
 
 	std::string nodeNames[TOTAL_NODES];
 	nodeNames[CONSTANT_INPUT]	 = "Constant";
@@ -263,7 +265,7 @@ int main()
 
 	printf("starting sim\n");
 
-	background.setPosition(simulationRules.size * .5);
+	// background.setPosition(simulationRules.size * .5);
 
 	Simulation simulation(simulationRules);
 
@@ -336,6 +338,8 @@ int main()
 
 			// std::cout << frame << '\n';
 		}
+		
+		agl::Vec<float, 3> zOffset = {0, 0, 0};
 
 		if (skipRender)
 		{
@@ -360,14 +364,64 @@ int main()
 
 		window.updateMvp(camera);
 
+		// Draw food
+		for (int i = 0; i < simulation.getExistingFood()->getLength(); i++)
+		{
+			foodShape.setColor(agl::Color::Green);
+
+			agl::Vec<float, 2> position = simulation.getExistingFood()->get(i)->position;
+			foodShape.setPosition(zOffset + position);
+			window.drawShape(foodShape);
+		}
+
+		// draw eggs
+		for (int i = 0; i < existingEggs->getLength(); i++)
+		{
+			eggShape.setPosition(zOffset + existingEggs->get(i)->getPosition());
+			window.drawShape(eggShape);
+		}
+
+		// draw rays
+		if (existingCreatures->find(focusCreature) != -1)
+		{
+			{
+				float angleOffset = focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value * 180;
+				angleOffset += 180;
+
+				float weight = focusCreature->getNeuralNetwork().getNode(CREATURE_DISTANCE).value;
+
+				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
+				rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH * focusCreature->getSight()});
+				rayShape.setPosition(focusCreature->position);
+				rayShape.setRotation(
+					agl::Vec<float, 3>{0, 0, angleOffset - agl::radianToDegree(focusCreature->getRotation())});
+				window.drawShape(rayShape);
+			}
+
+			{
+				float angleOffset = focusCreature->getNeuralNetwork().getNode(FOOD_ROTATION).value * 180;
+				angleOffset += 180;
+
+				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->getRotation());
+
+				float weight = focusCreature->getNeuralNetwork().getNode(FOOD_DISTANCE).value;
+
+				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
+
+				rayShape.setPosition(focusCreature->position);
+				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
+				window.drawShape(rayShape);
+			}
+		}
+
 		// draw creature
 		for (int i = 0; i < existingCreatures->getLength(); i++)
 		{
-			creatureShape.setPosition(existingCreatures->get(i)->getPosition());
+			creatureShape.setPosition(zOffset + existingCreatures->get(i)->position);
 			creatureShape.setRotation(
 				agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(i)->getRotation() * 180 / PI)});
 
-			float speed = existingCreatures->get(i)->getVelocity().length() / 10;
+			float speed = existingCreatures->get(i)->position.length() / 10;
 
 			creatureShape.setTexture(&creatureBodyTexture);
 
@@ -406,56 +460,7 @@ int main()
 
 			window.drawShape(creatureShape);
 		}
-		// Draw food
-		for (int i = 0; i < simulation.getExistingFood()->getLength(); i++)
-		{
-			foodShape.setColor(agl::Color::Green);
-
-			agl::Vec<float, 2> position = simulation.getExistingFood()->get(i)->position;
-			foodShape.setPosition(agl::Vec<float, 2>{position.x, position.y});
-			window.drawShape(foodShape);
-		}
-
-		// draw eggs
-		for (int i = 0; i < existingEggs->getLength(); i++)
-		{
-			eggShape.setPosition(existingEggs->get(i)->getPosition());
-			window.drawShape(eggShape);
-		}
-
-		// draw rays
-		if (existingCreatures->find(focusCreature) != -1)
-		{
-			{
-				float angleOffset = focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value * 180;
-				angleOffset += 180;
-
-				float weight = focusCreature->getNeuralNetwork().getNode(CREATURE_DISTANCE).value;
-
-				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-				rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH * focusCreature->getSight()});
-				rayShape.setPosition(focusCreature->getPosition());
-				rayShape.setRotation(
-					agl::Vec<float, 3>{0, 0, angleOffset - agl::radianToDegree(focusCreature->getRotation())});
-				window.drawShape(rayShape);
-			}
-
-			{
-				float angleOffset = focusCreature->getNeuralNetwork().getNode(FOOD_ROTATION).value * 180;
-				angleOffset += 180;
-
-				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->getRotation());
-
-				float weight = focusCreature->getNeuralNetwork().getNode(FOOD_DISTANCE).value;
-
-				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-
-				rayShape.setPosition(focusCreature->getPosition());
-				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
-				window.drawShape(rayShape);
-			}
-		}
-
+		
 		// gui rendering
 
 		window.updateMvp(guiCamera);
@@ -517,12 +522,12 @@ int main()
 			// ss << "Hue - " << focusCreature->getHue() << '\n';
 
 			creatureInfo.get<1>().value	 = nodeNames[selectedID];
-			creatureInfo.get<4>().value	 = std::to_string(focusCreature->getPosition().x);
-			creatureInfo.get<5>().value	 = std::to_string(focusCreature->getPosition().y);
-			creatureInfo.get<7>().value	 = std::to_string(focusCreature->getVelocity().x);
-			creatureInfo.get<8>().value	 = std::to_string(focusCreature->getVelocity().y);
-			creatureInfo.get<10>().value	 = std::to_string(focusCreature->getAcceleration().x);
-			creatureInfo.get<11>().value = std::to_string(focusCreature->getAcceleration().y);
+			creatureInfo.get<4>().value	 = std::to_string(focusCreature->position.x);
+			creatureInfo.get<5>().value	 = std::to_string(focusCreature->position.y);
+			creatureInfo.get<7>().value	 = std::to_string(focusCreature->velocity.x);
+			creatureInfo.get<8>().value	 = std::to_string(focusCreature->velocity.y);
+			creatureInfo.get<10>().value	 = std::to_string(focusCreature->force.x / focusCreature->mass);
+			creatureInfo.get<11>().value = std::to_string(focusCreature->force.y / focusCreature->mass);
 			creatureInfo.get<13>().value = std::to_string(focusCreature->getEating());
 			creatureInfo.get<14>().value = std::to_string(focusCreature->getLayingEgg());
 			creatureInfo.get<16>().value = std::to_string(focusCreature->getHealth());
@@ -652,7 +657,7 @@ int main()
 				mouse.x = ((event.getPointerWindowPosition().x - (size.x * .5)) * sizeMultiplier) + cameraPosition.x;
 				mouse.y = ((event.getPointerWindowPosition().y - (size.y * .5)) * sizeMultiplier) + cameraPosition.y;
 
-				float distance = (mouse - existingCreatures->get(i)->getPosition()).length();
+				float distance = (mouse - existingCreatures->get(i)->position).length();
 
 				if (distance < existingCreatures->get(i)->getRadius())
 				{
@@ -671,7 +676,7 @@ int main()
 				mouse.x = ((event.getPointerWindowPosition().x - (size.x * .5)) * sizeMultiplier) + cameraPosition.x;
 				mouse.y = ((event.getPointerWindowPosition().y - (size.y * .5)) * sizeMultiplier) + cameraPosition.y;
 
-				float distance = (mouse - existingCreatures->get(i)->getPosition()).length();
+				float distance = (mouse - existingCreatures->get(i)->position).length();
 
 				if (distance < existingCreatures->get(i)->getRadius())
 				{

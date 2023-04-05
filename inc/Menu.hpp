@@ -236,24 +236,13 @@ template <typename... ElementType> class Menu : public agl::Drawable
 			this->position = position;
 			this->size	   = size;
 
-			body.setPosition(position);
+			this->setPosition(position);
+
 			body.setSize(size);
-
-			position.z += .1;
 			leftBorder.setSize({MENU_BORDERTHICKNESS, size.y});
-			leftBorder.setPosition(position);
 			rightBorder.setSize({MENU_BORDERTHICKNESS, size.y});
-			rightBorder.setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, 0});
-			upBorder.setPosition(position + agl::Vec<float, 2>{0, MENU_BORDERTHICKNESS});
 			upBorder.setSize({MENU_BORDERTHICKNESS, size.x});
-			downBorder.setPosition(position + agl::Vec<float, 2>{0, size.y});
 			downBorder.setSize({MENU_BORDERTHICKNESS, size.x});
-
-			position.z += .1;
-			trCorner.setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, 0});
-			tlCorner.setPosition(position);
-			brCorner.setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, size.y - MENU_BORDERTHICKNESS});
-			blCorner.setPosition(position + agl::Vec<float, 2>{0, size.y - MENU_BORDERTHICKNESS});
 
 			return;
 		}
@@ -267,17 +256,22 @@ template <typename... ElementType> class Menu : public agl::Drawable
 		{
 			this->position = position;
 
-			agl::Vec<float, 3> textOffset = {MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING,
-											 MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING, 0.4};
-
-			text.setPosition(position + textOffset);
 			body.setPosition(position);
+			leftBorder.setPosition(position);
+			rightBorder.setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, 0});
+			upBorder.setPosition(position + agl::Vec<float, 2>{0, MENU_BORDERTHICKNESS});
+			downBorder.setPosition(position + agl::Vec<float, 2>{0, size.y});
+			trCorner.setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, 0});
+			tlCorner.setPosition(position);
+			brCorner.setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, size.y - MENU_BORDERTHICKNESS});
+			blCorner.setPosition(position + agl::Vec<float, 2>{0, size.y - MENU_BORDERTHICKNESS});
+
 		}
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
-			agl::Vec<float, 3> pen = {MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING,
-									  MENU_BORDER + MENU_SHADOWSIZE + MENU_PADDING, 30};
+			agl::Vec<float, 3> pen = {MENU_BORDERTHICKNESS + MENU_PADDING,
+									  MENU_BORDERTHICKNESS + MENU_PADDING};
 			pen					   = pen + position;
 
 			window.drawShape(body);
