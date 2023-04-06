@@ -9,9 +9,9 @@ class SimulationRules
 		agl::Vec<int, 2> gridResolution;
 		int				 startingCreatures;
 		int				 foodEnergy;
-		int				 maxCreatures;
+		unsigned int	 maxCreatures;
 		int				 maxFood;
-		int				 maxEggs;
+		unsigned int	 maxEggs;
 		int				 preferedCreatures;
 		int				 penaltyBuffer;
 		int				 penaltyPeriod;

@@ -12,6 +12,7 @@
 #include <math.h>
 #include <string>
 #include <unistd.h>
+#include <chrono>
 
 #define TOTAL_FOOD 10
 
@@ -26,6 +27,13 @@
 	}
 
 #define NETWORK_PADDING 20
+
+int getMillisecond()
+{
+	auto timepoint = std::chrono::system_clock::now().time_since_epoch();
+	return std::chrono::duration_cast<std::chrono::milliseconds>(timepoint).count();
+}
+
 
 agl::Vec<float, 2> getCursorScenePosition(agl::Vec<float, 2> cursorWinPos, agl::Vec<float, 2> winSize, float winScale,
 										  agl::Vec<float, 2> cameraPos)
@@ -82,7 +90,7 @@ int main()
 	agl::RenderWindow window;
 	window.setup({WIDTH, HEIGHT}, "EvolutionSimulator");
 	window.setClearColor(CLEARCOLOR);
-	window.setFPS(60);
+	// window.setFPS(60);
 
 	glDisable(GL_DEPTH_TEST);
 
@@ -138,12 +146,13 @@ int main()
 	background.setOffset({-backgroundSize / 2, -backgroundSize / 2, -40});
 
 	// menu shapes
-	Menu<ValueElement, ValueElement, ValueElement, ValueElement> simulationInfo(&blank, &font);
-	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 125});
+	Menu<ValueElement, ValueElement, ValueElement, ValueElement, ValueElement> simulationInfo(&blank, &font);
+	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 150});
 	simulationInfo.get<0>().label = "Creatures";
 	simulationInfo.get<1>().label = "Eggs";
 	simulationInfo.get<2>().label = "Food";
 	simulationInfo.get<3>().label = "Frame";
+	simulationInfo.get<4>().label = "FPS";
 
 	Menu<SpacerElement, ValueElement, SpacerElement, TextElement, ValueElement, ValueElement, TextElement, ValueElement, ValueElement,
 		 TextElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement, SpacerElement,
@@ -291,6 +300,9 @@ int main()
 
 	while (!event.windowClose())
 	{
+		static int milliDiff = 0;
+		int start = getMillisecond();
+
 		int mouseWheelPos = 0;
 
 		event.poll([&](XEvent xev) {
@@ -470,57 +482,15 @@ int main()
 			simulationInfo.get<1>().value = std::to_string(simulation.getExistingEggs()->getLength());
 			simulationInfo.get<2>().value = std::to_string(simulation.getExistingFood()->getLength());
 			simulationInfo.get<3>().value = std::to_string(frame);
+			simulationInfo.get<4>().value = std::to_string(1000. / milliDiff);
 		}
 
 		window.draw(simulationInfo);
 
 		if (existingCreatures->find(focusCreature) != -1)
 		{
-			// std::stringstream ss;
-			//
 			static int selectedID = 0;
-			//
-			// char buf[77];
-			// snprintf(buf, 77,
-			// 		 "Health - %6.2f / %6.2f\n" //
-			// 		 "Energy - %6.2f / %6.2f\n" //
-			// 		 "Life Left - %5d / %5d\n"	//
-			// 		 ,
-			// 		 focusCreature->getHealth(),
-			// focusCreature->getMaxHealth(), focusCreature->getEnergy(),
-			// 		 focusCreature->getMaxEnergy(),
-			// focusCreature->getLifeLeft(), focusCreature->getMaxLife());
-			//
-			// ss << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-			// ss << "Node - " << nodeNames[selectedID] << '\n';
-			// ss << '\n';
-			// ss << "- Position - " << '\n';
-			// ss << "X - " << focusCreature->getPosition().x << '\n';
-			// ss << "Y - " << focusCreature->getPosition().y << '\n';
-			// ss << "- Velocity - " << '\n';
-			// ss << "X - " << focusCreature->getVelocity().x << '\n';
-			// ss << "Y - " << focusCreature->getVelocity().y << '\n';
-			// ss << "- Acceleration - " << '\n';
-			// ss << "X - " << focusCreature->getAcceleration().x << '\n';
-			// ss << "Y - " << focusCreature->getAcceleration().y << '\n';
-			// ss << '\n';
-			// ss << "Eating - " << focusCreature->getEating() << '\n';
-			// ss << "Laying Egg - " << focusCreature->getLayingEgg() << '\n';
-			// ss << '\n';
-			// ss << buf;
-			// // ss << "Health - " << focusCreature->getHealth() << " / " <<
-			// // focusCreature->getMaxHealth() << '\n'; ss << "Energy - " <<
-			// // focusCreature->getEnergy() << " / " << focusCreature->getMaxEnergy()
-			// <<
-			// // '\n'; ss << "Life Left - " << focusCreature->getLifeLeft() << " / "
-			// <<
-			// // focusCreature->getMaxLife() << '\n';
-			// ss << '\n';
-			// ss << "Sight - " << focusCreature->getSight() << '\n';
-			// ss << "Speed - " << focusCreature->getSpeed() << '\n';
-			// ss << "Size - " << focusCreature->getSize() << '\n';
-			// ss << "Hue - " << focusCreature->getHue() << '\n';
-
+		
 			creatureInfo.get<1>().value	 = nodeNames[selectedID];
 			creatureInfo.get<4>().value	 = std::to_string(focusCreature->position.x);
 			creatureInfo.get<5>().value	 = std::to_string(focusCreature->position.y);
@@ -769,6 +739,8 @@ int main()
 		camera.setView({cameraPosition.x, cameraPosition.y, 50}, {cameraPosition.x, cameraPosition.y, 0}, {0, 1, 0});
 
 		guiCamera.setOrthographicProjection(0, size.x, size.y, 0, 0.1, 100);
+
+		milliDiff =  getMillisecond() - start;
 	}
 
 	simulation.destroy();

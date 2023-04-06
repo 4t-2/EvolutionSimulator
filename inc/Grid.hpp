@@ -89,11 +89,38 @@ template <typename T> class Grid
 			return gridPosition;
 		}
 
+		void updateElements(agl::Vec<int, 2> gridPosition, agl::Vec<int, 2> startGridOffset,
+						agl::Vec<int, 2> endGridOffset, std::function<void(T element)> lambda)
+		{
+			for (int x = startGridOffset.x; x <= endGridOffset.x; x++)
+			{
+				if (gridPosition.x + x < 0 || gridPosition.x + x > (this->getSize().x - 1))
+				{
+					continue;
+				}
+
+				for (int y = startGridOffset.y; y <= endGridOffset.y; y++)
+				{
+					if (gridPosition.y + y < 0 || gridPosition.y + y > (this->getSize().y - 1))
+					{
+						continue;
+					}
+
+					List<T> *list = this->getList({gridPosition.x + x, gridPosition.y + y});
+
+					for (int i = 0; i < list->getLength(); i++)
+					{
+						lambda(list->get(i));
+					}
+				}
+			}
+		}
+
 		void clear()
 		{
-			for(int x = 0; x < size.x; x++)
+			for (int x = 0; x < size.x; x++)
 			{
-				for(int y = 0; y < size.y; y++)
+				for (int y = 0; y < size.y; y++)
 				{
 					gridData[x][y]->clear();
 				}

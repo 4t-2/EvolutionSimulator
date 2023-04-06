@@ -69,14 +69,11 @@ class Creature : public phy::Circle
 
 		SimulationRules *simulationRules;
 
-		agl::Vec<int, 2> startGridOffset;
-		agl::Vec<int, 2> endGridOffset;
-
 		CreatureData creatureData;
 
 	public:
-		float closest;
-		float closestAngle;
+		agl::Vec<int, 2> startGridOffset;
+		agl::Vec<int, 2> endGridOffset;
 
 		Creature();
 		~Creature();

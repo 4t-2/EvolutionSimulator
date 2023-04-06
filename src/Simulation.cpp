@@ -43,15 +43,15 @@ Simulation::Simulation(SimulationRules simulationRules)
 
 	int connections = 15;
 
-	for (int i = 0; i < simulationRules.startingCreatures; i++)
+	for (int i = 0; i < simulationRules.startingCreatures/2; i++)
 	{
-		CreatureData creatureData(1, 1, 1, 0, connections);
+		CreatureData creatureData(1, .5, 1, 0, connections);
 
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
 		creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
-		// creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, 1);
-		// creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -1);
+		creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, 1);
+		creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -1);
 
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
@@ -60,7 +60,24 @@ Simulation::Simulation(SimulationRules simulationRules)
 		this->addCreature(creatureData, position);
 	}
 
-	for (int i = 0; i < 0; i++)
+	for (int i = 0; i < simulationRules.startingCreatures/2; i++)
+	{
+		CreatureData creatureData(1, 2, 1, 60, connections);
+
+		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
+		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
+		creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
+		creatureData.setConnection(3, CREATURE_ROTATION, LEFT_OUTPUT, 1);
+		creatureData.setConnection(4, CREATURE_ROTATION, RIGHT_OUTPUT, -1);
+
+		agl::Vec<float, 2> position;
+		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
+		position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
+
+		this->addCreature(creatureData, position);
+	}
+
+	for (int i = 0; i < simulationRules.maxFood; i++)
 	{
 		foodBuffer[i].id = i;
 
@@ -480,45 +497,116 @@ void correctPosition(phy::Circle &circle, phy::Circle &otherCircle)
 	}
 }
 
+void multithreadedRecurse(int size, std::function<void(int i)> lambda)
+{
+	auto recurse = [&lambda](int start, int end) {
+		for (int i = start; i <= end; i++)
+		{
+			lambda(i);
+		}
+	};
+
+	std::thread **thread = new std::thread *[THREADS];
+
+	int i = 0;
+
+	for (i = 0; i < THREADS - 1; i++)
+	{
+		int start = (size / THREADS) * i;
+		int end	  = (size / THREADS) * (i + 1) - 1;
+
+		thread[i] = new std::thread(recurse, start, end);
+	}
+
+	int start = (size / THREADS) * i;
+	int end	  = size - 1;
+
+	thread[i] = new std::thread(recurse, start, end);
+
+	for (int i = 0; i < THREADS; i++)
+	{
+		thread[i]->join();
+		delete thread[i];
+	}
+
+	delete[] thread;
+}
+
+agl::Vec<int, 2> indexToPosition(int i, agl::Vec<int, 2> size)
+{
+	return {i % size.x, i / size.x};
+}
+
+template <typename T, typename U> void updatePhysics(agl::Vec<int, 2> gridPosition, Grid<T> *Tgrid, Grid<U> *Ugrid)
+{
+	List<T> *Tlist = Tgrid->getList(gridPosition);
+	List<U> *Ulist = Ugrid->getList(gridPosition);
+
+	for (int x = 0; x < Tlist->getLength(); x++)
+	{
+		T t = Tlist->get(x);
+
+		for (int y = 0; y < Ulist->getLength(); y++)
+		{
+			U u = Ulist->get(y);
+
+			correctPosition(*t, *u);
+		}
+
+		Ugrid->updateElements(gridPosition, {1, 1}, {1, 1}, [&](U u) { correctPosition(*t, *u); });
+		Ugrid->updateElements(gridPosition, {1, 0}, {1, 0}, [&](U u) { correctPosition(*t, *u); });
+		Ugrid->updateElements(gridPosition, {0, 1}, {0, 1}, [&](U u) { correctPosition(*t, *u); });
+	}
+}
+
+template <typename T> void updatePhysics(agl::Vec<int, 2> gridPosition, Grid<T> *Tgrid)
+{
+	List<T> *list = Tgrid->getList(gridPosition);
+
+	for (int x = 0; x < list->getLength(); x++)
+	{
+		T t1 = list->get(x);
+
+		for (int y = x + 1; y < list->getLength(); y++)
+		{
+			correctPosition(*list->get(x), *list->get(y));
+		}
+
+		Tgrid->updateElements(gridPosition, {1, 1}, {1, 1}, [&](T t2) { correctPosition(*t1, *t2); });
+		Tgrid->updateElements(gridPosition, {1, 0}, {1, 0}, [&](T t2) { correctPosition(*t1, *t2); });
+		Tgrid->updateElements(gridPosition, {0, 1}, {0, 1}, [&](T t2) { correctPosition(*t1, *t2); });
+	}
+}
+
 void Simulation::updateSimulation()
 {
-	// threaded physics update
+	multithreadedRecurse(creatureGrid->getSize().x, [&](int x) {
+		if (x % 2 == 0)
+		{
+			return;
+		}
 
-	// food - all
+		for (int y = 0; y < creatureGrid->getSize().y; y++)
+		{
+			updatePhysics(agl::Vec<int, 2>{x, y}, creatureGrid);
+			updatePhysics(agl::Vec<int, 2>{x, y}, creatureGrid, foodGrid);
+			updatePhysics(agl::Vec<int, 2>{x, y}, foodGrid);
+		}
+	});
 
-	// creature - all
+	multithreadedRecurse(creatureGrid->getSize().x, [&](int x) {
+		if (x % 2 != 0)
+		{
+			return;
+		}
 
-	// threaded network update
-
-	// {
-	// 	std::thread **thread = new std::thread *[THREADS];
-	//
-	// 	{
-	// 		int i = 0;
-	//
-	// 		for (i = 0; i < THREADS - 1; i++)
-	// 		{
-	// 			int start = (existingCreatures->getLength() / THREADS) * i;
-	// 			int end	  = (existingCreatures->getLength() / THREADS) * (i + 1) - 1;
-	//
-	// 			thread[i] =
-	// 				new std::thread(threadedUpdateNetworks, existingCreatures, foodGrid, creatureGrid, start, end);
-	// 		}
-	//
-	// 		int start = (existingCreatures->getLength() / THREADS) * i;
-	// 		int end	  = existingCreatures->getLength() - 1;
-	//
-	// 		thread[i] = new std::thread(threadedUpdateNetworks, existingCreatures, foodGrid, creatureGrid, start, end);
-	// 	}
-	//
-	// 	for (int i = 0; i < THREADS; i++)
-	// 	{
-	// 		thread[i]->join();
-	// 		delete thread[i];
-	// 	}
-	//
-	// 	delete[] thread;
-	// }
+		for (int y = 0; y < creatureGrid->getSize().y; y++)
+		{
+			updatePhysics(agl::Vec<int, 2>{x, y}, creatureGrid);
+			updatePhysics(agl::Vec<int, 2>{x, y}, creatureGrid, foodGrid);
+			updatePhysics(agl::Vec<int, 2>{x, y}, foodGrid);
+		}
+	});
 
 	// everything else
 
@@ -541,8 +629,6 @@ void Simulation::updateSimulation()
 	{
 		Food *food = existingFood->get(i);
 
-		food->update();
-
 		phy::Circle &circle = *existingFood->get(i);
 
 		float dragCoeficient = .1;
@@ -564,17 +650,14 @@ void Simulation::updateSimulation()
 
 		circle.force -= drag;
 
+		food->update();
+
 		foodGrid->addData(foodGrid->toGridPosition(food->position, simulationRules.size), food);
 	}
 
 	for (int i = 0; i < existingCreatures->getLength(); i++)
 	{
 		Creature *creature = existingCreatures->get(i);
-
-		for (int x = i + 1; x < existingCreatures->getLength(); x++)
-		{
-			correctPosition(*creature, *existingCreatures->get(x));
-		}
 
 		// egg laying
 		if (creature->getLayingEgg())
@@ -611,7 +694,7 @@ void Simulation::updateSimulation()
 
 				if (distance < (eatingCreature->getRadius() + eatenCreature->getRadius()))
 				{
-					eatenCreature->setHealth(eatenCreature->getHealth() - 1);
+					// eatenCreature->setHealth(eatenCreature->getHealth() - 1);
 					// creature->setEnergy(creature->getEnergy() + 2);
 				}
 			}
@@ -644,8 +727,6 @@ void Simulation::updateSimulation()
 			Food *food = foodList->get(x);
 
 			agl::Vec<float, 2> offset = creature->position - food->position;
-
-			correctPosition(*creature, *food);
 
 			if (offset.length() < (creature->getRadius() + 10) && creature->getEating())
 			{
@@ -715,11 +796,16 @@ void Simulation::updateSimulation()
 
 		this->addFood(position);
 	}
+
+	// threaded network update
+
+	multithreadedRecurse(existingCreatures->getLength(),
+						 [&](int i) { existingCreatures->get(i)->updateNetwork(foodGrid, creatureGrid); });
 }
 
 void Simulation::update()
 {
-	this->threadableUpdate();
+	// this->threadableUpdate();
 	this->updateSimulation();
 
 #ifdef LOGCREATUREDATA
