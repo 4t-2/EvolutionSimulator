@@ -17,6 +17,9 @@ class CreatureData
 		int	  hue;	 // 0 - 359
 
 	public:
+		float eggCost;
+		float preference; // 1 = plant, -1 = meat
+
 		CreatureData();
 		CreatureData(float sight, float speed, float size, int hue, int totalConnections);
 		CreatureData(const CreatureData &creatureData);

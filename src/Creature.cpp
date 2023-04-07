@@ -48,7 +48,6 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->maxForce	  = 1.5 * speed;
 	this->maxRotation = 0.05 * speed;
 
-	this->energy = 50 * size * size;
 	this->health = 100 * size * size;
 	this->life	 = 60 * 60 * size * size;
 
@@ -57,6 +56,8 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->maxLife	= 60 * 60 * size * size;
 
 	this->radius = 12.5 * size;
+
+	this->energy = creatureData.eggCost * .8;
 
 	int xOffset = (roundUp(rayLength / ((float)simulationRules->size.x / simulationRules->gridResolution.x), 2) / 2);
 	int yOffset = (roundUp(rayLength / ((float)simulationRules->size.y / simulationRules->gridResolution.y), 2) / 2);

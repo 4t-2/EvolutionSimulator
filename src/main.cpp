@@ -5,6 +5,7 @@
 
 #include <X11/X.h>
 #include <cctype>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -12,7 +13,6 @@
 #include <math.h>
 #include <string>
 #include <unistd.h>
-#include <chrono>
 
 #define TOTAL_FOOD 10
 
@@ -33,7 +33,6 @@ int getMillisecond()
 	auto timepoint = std::chrono::system_clock::now().time_since_epoch();
 	return std::chrono::duration_cast<std::chrono::milliseconds>(timepoint).count();
 }
-
 
 agl::Vec<float, 2> getCursorScenePosition(agl::Vec<float, 2> cursorWinPos, agl::Vec<float, 2> winSize, float winScale,
 										  agl::Vec<float, 2> cameraPos)
@@ -154,15 +153,15 @@ int main()
 	simulationInfo.get<3>().label = "Frame";
 	simulationInfo.get<4>().label = "FPS";
 
-	Menu<SpacerElement, ValueElement, SpacerElement, TextElement, ValueElement, ValueElement, TextElement, ValueElement, ValueElement,
-		 TextElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement, SpacerElement,
-		 ValueElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement, ValueElement,
-		 ValueElement>
+	Menu<SpacerElement, ValueElement, SpacerElement, TextElement, ValueElement, ValueElement, TextElement, ValueElement,
+		 ValueElement, TextElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement,
+		 SpacerElement, ValueElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement,
+		 ValueElement, ValueElement, TextElement>
 		creatureInfo(&blank, &font);
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 
 	creatureInfo.get<0>().height = 350;
-	creatureInfo.get<1>().label = "Node";
+	creatureInfo.get<1>().label	 = "Node";
 
 	creatureInfo.get<3>().str	 = "- Position -";
 	creatureInfo.get<4>().label	 = "X";
@@ -171,7 +170,7 @@ int main()
 	creatureInfo.get<7>().label	 = "X";
 	creatureInfo.get<8>().label	 = "Y";
 	creatureInfo.get<9>().str	 = "- Acceleration -";
-	creatureInfo.get<10>().label	 = "X";
+	creatureInfo.get<10>().label = "X";
 	creatureInfo.get<11>().label = "Y";
 
 	creatureInfo.get<13>().label = "Eating";
@@ -185,6 +184,8 @@ int main()
 	creatureInfo.get<21>().label = "Speed";
 	creatureInfo.get<22>().label = "Size";
 	creatureInfo.get<23>().label = "Hue";
+
+	creatureInfo.get<24>().str = "";
 
 	agl::Circle networkBackground(60);
 	networkBackground.setTexture(&blank);
@@ -301,7 +302,7 @@ int main()
 	while (!event.windowClose())
 	{
 		static int milliDiff = 0;
-		int start = getMillisecond();
+		int		   start	 = getMillisecond();
 
 		int mouseWheelPos = 0;
 
@@ -350,7 +351,7 @@ int main()
 
 			// std::cout << frame << '\n';
 		}
-		
+
 		agl::Vec<float, 3> zOffset = {0, 0, 0};
 
 		if (skipRender)
@@ -472,7 +473,7 @@ int main()
 
 			window.drawShape(creatureShape);
 		}
-		
+
 		// gui rendering
 
 		window.updateMvp(guiCamera);
@@ -490,13 +491,13 @@ int main()
 		if (existingCreatures->find(focusCreature) != -1)
 		{
 			static int selectedID = 0;
-		
+
 			creatureInfo.get<1>().value	 = nodeNames[selectedID];
 			creatureInfo.get<4>().value	 = std::to_string(focusCreature->position.x);
 			creatureInfo.get<5>().value	 = std::to_string(focusCreature->position.y);
 			creatureInfo.get<7>().value	 = std::to_string(focusCreature->velocity.x);
 			creatureInfo.get<8>().value	 = std::to_string(focusCreature->velocity.y);
-			creatureInfo.get<10>().value	 = std::to_string(focusCreature->force.x / focusCreature->mass);
+			creatureInfo.get<10>().value = std::to_string(focusCreature->force.x / focusCreature->mass);
 			creatureInfo.get<11>().value = std::to_string(focusCreature->force.y / focusCreature->mass);
 			creatureInfo.get<13>().value = std::to_string(focusCreature->getEating());
 			creatureInfo.get<14>().value = std::to_string(focusCreature->getLayingEgg());
@@ -507,6 +508,7 @@ int main()
 			creatureInfo.get<21>().value = std::to_string(focusCreature->getSpeed());
 			creatureInfo.get<22>().value = std::to_string(focusCreature->getSize());
 			creatureInfo.get<23>().value = std::to_string(focusCreature->getHue());
+			creatureInfo.get<24>().str = std::to_string(focusCreature->getCreatureData().preference);
 
 			window.draw(creatureInfo);
 
@@ -740,7 +742,7 @@ int main()
 
 		guiCamera.setOrthographicProjection(0, size.x, size.y, 0, 0.1, 100);
 
-		milliDiff =  getMillisecond() - start;
+		milliDiff = getMillisecond() - start;
 	}
 
 	simulation.destroy();

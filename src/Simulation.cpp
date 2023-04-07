@@ -43,15 +43,17 @@ Simulation::Simulation(SimulationRules simulationRules)
 
 	int connections = 15;
 
-	for (int i = 0; i < simulationRules.startingCreatures/2; i++)
+	for (int i = 0; i < simulationRules.startingCreatures * .75; i++)
 	{
 		CreatureData creatureData(1, .5, 1, 0, connections);
 
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
 		creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
-		creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, 1);
-		creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -1);
+		// creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, 1);
+		// creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -1);
+
+		creatureData.preference = 1;
 
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
@@ -60,9 +62,9 @@ Simulation::Simulation(SimulationRules simulationRules)
 		this->addCreature(creatureData, position);
 	}
 
-	for (int i = 0; i < simulationRules.startingCreatures/2; i++)
+	for (int i = 0; i < simulationRules.startingCreatures * .25; i++)
 	{
-		CreatureData creatureData(1, 2, 1, 60, connections);
+		CreatureData creatureData(1, 1, 1, 60, connections);
 
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
@@ -70,6 +72,7 @@ Simulation::Simulation(SimulationRules simulationRules)
 		creatureData.setConnection(3, CREATURE_ROTATION, LEFT_OUTPUT, 1);
 		creatureData.setConnection(4, CREATURE_ROTATION, RIGHT_OUTPUT, -1);
 
+		creatureData.preference = -1;
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
 		position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
@@ -670,6 +673,8 @@ void Simulation::updateSimulation()
 
 				CreatureData creatureData = eggLayer->getCreatureData();
 
+				creatureData.eggCost = eggLayer->getMaxEnergy() * .6;
+
 				mutate(&creatureData, 50, 3);
 
 				this->addEgg(creatureData, eggLayer->position);
@@ -692,10 +697,12 @@ void Simulation::updateSimulation()
 
 				float distance = (eatenCreature->position - eatingCreature->position).length();
 
-				if (distance < (eatingCreature->getRadius() + eatenCreature->getRadius()))
+				if (distance < (eatingCreature->getRadius() + eatenCreature->getRadius()) &&
+					eatenCreature->getHealth() > 0)
 				{
-					// eatenCreature->setHealth(eatenCreature->getHealth() - 1);
-					// creature->setEnergy(creature->getEnergy() + 2);
+					eatenCreature->setHealth(eatenCreature->getHealth() - 2);
+					creature->setEnergy(creature->getEnergy() +
+										std::max(0., 1. * creature->getCreatureData().preference * -1.));
 				}
 			}
 		}
@@ -730,11 +737,12 @@ void Simulation::updateSimulation()
 
 			if (offset.length() < (creature->getRadius() + 10) && creature->getEating())
 			{
-				// creature->setEnergy(creature->getEnergy() +
-				// food->energy);
-				//
-				// this->removeFood(food);
-				// x--;
+				creature->setEnergy(
+					creature->getEnergy() +
+					std::max((float)0., (float)(food->energy * creature->getCreatureData().preference)));
+
+				this->removeFood(food);
+				x--;
 			}
 		}
 
