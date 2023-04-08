@@ -6,6 +6,9 @@
 #include "Food.hpp"
 #include "Grid.hpp"
 #include "SimulationRules.hpp"
+#include "Meat.hpp"
+
+#define MAXMEAT 2000
 
 class Simulation
 {
@@ -29,6 +32,10 @@ class Simulation
 		std::vector<float> creatureSizeData;
 
 	public:
+		Meat *meatBuffer;
+		List<Meat *> *existingMeat;
+		Grid<Meat*> *meatGrid;
+
 		Simulation(SimulationRules simulationRules);
 		void destroy();
 
@@ -48,6 +55,10 @@ class Simulation
 
 		void addFood(agl::Vec<float, 2> position);
 		void removeFood(Food *food);
+
+		void addMeat(agl::Vec<float, 2> position);
+		void addMeat(agl::Vec<float, 2> position, float energy);
+		void removeMeat(Meat *meat);
 
 		Creature		 *getCreatureBuffer();
 		List<Creature *> *getExistingCreatures();

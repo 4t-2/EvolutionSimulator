@@ -14,4 +14,5 @@ class Food : public phy::Circle
 
 		int	  id;
 		float energy;
+		bool exists = true;
 };

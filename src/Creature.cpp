@@ -152,7 +152,7 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
-void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid)
+void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat*> *meatGrid)
 {
 	network->setInputNode(CONSTANT_INPUT, 1);
 
@@ -277,6 +277,25 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 	network->setInputNode(FOOD_DISTANCE, 1 - (foodDistance / rayLength));
 	network->setInputNode(FOOD_ROTATION, loop(-PI, PI, foodRotation) / PI);
 
+	float meatDistance = rayLength;
+	float meatRotation = 0;
+
+	meatGrid->updateElements(gridPosition, startGridOffset, endGridOffset, [&](Meat *meat) {
+		agl::Vec<float, 2> offset	= position - meat->position;
+		float			   distance = offset.length();
+
+		if (distance > meatDistance)
+		{
+			return;
+		}
+
+		meatRotation = vectorAngle(offset) + rotation;
+		meatDistance = distance;
+	});
+
+	network->setInputNode(MEAT_DISTANCE, 1 - (meatDistance / rayLength));
+	network->setInputNode(MEAT_ROTATION, loop(-PI, PI, meatRotation) / PI);
+
 	network->setInputNode(ENERGY_INPUT, energy / maxEnergy);
 	network->setInputNode(HEALTH_INPUT, health / maxHealth);
 	network->setInputNode(LIFE_INPUT, (float)life / maxLife);
@@ -325,7 +344,7 @@ void Creature::updateActions()
 
 	rotation = loop(-PI, PI, rotation);
 
-	energy -= (sight + (moveForce * moveForce * size * size * size)) / 200;
+	energy -= (sight + (moveForce * moveForce * size * size * size)) / 300;
 
 	life--;
 

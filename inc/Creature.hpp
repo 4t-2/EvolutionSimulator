@@ -4,13 +4,14 @@
 #include "CreatureData.hpp"
 #include "Food.hpp"
 #include "Grid.hpp"
+#include "Meat.hpp"
 #include "NeuralNetwork.hpp"
 #include "SimulationRules.hpp"
 #include "other.hpp"
 
 #define RAY_LENGTH 1000
 
-#define TOTAL_INPUT	 12
+#define TOTAL_INPUT	 14
 #define TOTAL_OUTPUT 5
 #define TOTAL_HIDDEN 4
 #define TOTAL_NODES	 (TOTAL_INPUT + TOTAL_OUTPUT + TOTAL_HIDDEN)
@@ -27,6 +28,8 @@
 #define ENERGY_INPUT	  9
 #define HEALTH_INPUT	  10
 #define LIFE_INPUT		  11
+#define MEAT_DISTANCE 12
+#define MEAT_ROTATION 13
 
 #define FOWARD_OUTPUT (TOTAL_INPUT + 0)
 #define RIGHT_OUTPUT  (TOTAL_INPUT + 1)
@@ -88,7 +91,7 @@ class Creature : public phy::Circle
 		void setEnergy(float energy);
 		void setGridPosition(agl::Vec<int, 2> gridPosition);
 
-		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid);
+		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat *> *meatGrid);
 		void updateActions();
 
 		CreatureData getCreatureData();

@@ -128,6 +128,9 @@ int main()
 	agl::Texture eggTexture;
 	eggTexture.loadFromFile("./img/egg.png");
 
+	agl::Texture meatTexture;
+	meatTexture.loadFromFile("./img/meat.png");
+
 	agl::Texture blank;
 	blank.setBlank();
 
@@ -226,6 +229,12 @@ int main()
 	eggShape.setSize(agl::Vec<float, 3>{15, 15, 0});
 	eggShape.setOffset({7.5, 7.5, 30});
 
+	agl::Rectangle meatShape;
+	meatShape.setTexture(&meatTexture);
+	meatShape.setColor(agl::Color::White);
+	meatShape.setSize(agl::Vec<float, 3>{-10, -10, 0});
+	meatShape.setOffset({5, 5, 30});
+
 	agl::Rectangle rayShape;
 	rayShape.setTexture(&blank);
 	rayShape.setColor(agl::Color::White);
@@ -250,6 +259,8 @@ int main()
 	nodeNames[LEFT_OUTPUT]		 = "Turn Left";
 	nodeNames[EAT_OUTPUT]		 = "Eat";
 	nodeNames[LAYEGG_OUTPUT]	 = "Lay Egg";
+	nodeNames[MEAT_ROTATION]	 = "Rotation To Meat";
+	nodeNames[MEAT_DISTANCE]	 = "Distance To Meat";
 
 	for (int i = (TOTAL_INPUT + TOTAL_OUTPUT); i < TOTAL_NODES; i++)
 	{
@@ -330,7 +341,20 @@ int main()
 		{
 			mHeld = false;
 
-			existingCreatures->pop(0);
+			CreatureData creatureData(1, 1, 1, 60, 15);
+
+			creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
+			creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
+			creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
+			creatureData.setConnection(3, CREATURE_ROTATION, LEFT_OUTPUT, 1);
+			creatureData.setConnection(4, CREATURE_ROTATION, RIGHT_OUTPUT, -1);
+
+			creatureData.preference = -1;
+			agl::Vec<float, 2> position;
+			position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
+			position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
+
+			simulation.addCreature(creatureData, position);
 		}
 
 		if (event.isKeyPressed(XK_Return))
@@ -351,8 +375,6 @@ int main()
 
 			// std::cout << frame << '\n';
 		}
-
-		agl::Vec<float, 3> zOffset = {0, 0, 0};
 
 		if (skipRender)
 		{
@@ -380,17 +402,21 @@ int main()
 		// Draw food
 		for (int i = 0; i < simulation.getExistingFood()->getLength(); i++)
 		{
-			foodShape.setColor(agl::Color::Green);
-
 			agl::Vec<float, 2> position = simulation.getExistingFood()->get(i)->position;
-			foodShape.setPosition(zOffset + position);
+			foodShape.setPosition(position);
 			window.drawShape(foodShape);
+		}
+
+		for (int i = 0; i < simulation.existingMeat->getLength(); i++)
+		{
+			meatShape.setPosition(simulation.existingMeat->get(i)->position);
+			window.drawShape(meatShape);
 		}
 
 		// draw eggs
 		for (int i = 0; i < existingEggs->getLength(); i++)
 		{
-			eggShape.setPosition(zOffset + existingEggs->get(i)->getPosition());
+			eggShape.setPosition(existingEggs->get(i)->getPosition());
 			window.drawShape(eggShape);
 		}
 
@@ -401,16 +427,16 @@ int main()
 				float angleOffset = focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value * 180;
 				angleOffset += 180;
 
+				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->getRotation());
+
 				float weight = focusCreature->getNeuralNetwork().getNode(CREATURE_DISTANCE).value;
 
 				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-				rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH * focusCreature->getSight()});
+
 				rayShape.setPosition(focusCreature->position);
-				rayShape.setRotation(
-					agl::Vec<float, 3>{0, 0, angleOffset - agl::radianToDegree(focusCreature->getRotation())});
+				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
 				window.drawShape(rayShape);
 			}
-
 			{
 				float angleOffset = focusCreature->getNeuralNetwork().getNode(FOOD_ROTATION).value * 180;
 				angleOffset += 180;
@@ -425,12 +451,26 @@ int main()
 				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
 				window.drawShape(rayShape);
 			}
+			{
+				float angleOffset = focusCreature->getNeuralNetwork().getNode(MEAT_ROTATION).value * 180;
+				angleOffset += 180;
+
+				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->getRotation());
+
+				float weight = focusCreature->getNeuralNetwork().getNode(MEAT_DISTANCE).value;
+
+				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
+
+				rayShape.setPosition(focusCreature->position);
+				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
+				window.drawShape(rayShape);
+			}
 		}
 
 		// draw creature
 		for (int i = 0; i < existingCreatures->getLength(); i++)
 		{
-			creatureShape.setPosition(zOffset + existingCreatures->get(i)->position);
+			creatureShape.setPosition(existingCreatures->get(i)->position);
 			creatureShape.setRotation(
 				agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(i)->getRotation() * 180 / PI)});
 
@@ -453,7 +493,18 @@ int main()
 
 			creatureShape.setTextureTranslation({float(1. / 3.) * textureFrame, 0});
 
+			if(event.isKeyPressed(XK_z))
+			{
+				if(existingCreatures->get(i)->getCreatureData().preference > 0)
+				{
+					creatureShape.setColor(agl::Color::Blue);
+				} else  {
+					creatureShape.setColor(agl::Color::Yellow);
+				}
+			} else
+			{
 			creatureShape.setColor(hueToRGB(existingCreatures->get(i)->getHue()));
+			}
 
 			float size = existingCreatures->get(i)->getSize();
 
@@ -508,7 +559,7 @@ int main()
 			creatureInfo.get<21>().value = std::to_string(focusCreature->getSpeed());
 			creatureInfo.get<22>().value = std::to_string(focusCreature->getSize());
 			creatureInfo.get<23>().value = std::to_string(focusCreature->getHue());
-			creatureInfo.get<24>().str = std::to_string(focusCreature->getCreatureData().preference);
+			creatureInfo.get<24>().str	 = std::to_string(focusCreature->getCreatureData().preference);
 
 			window.draw(creatureInfo);
 
@@ -652,6 +703,7 @@ int main()
 
 				if (distance < existingCreatures->get(i)->getRadius())
 				{
+					simulation.addMeat(existingCreatures->get(i)->position);
 					existingCreatures->pop(i);
 
 					break;
@@ -662,6 +714,12 @@ int main()
 		if (event.isKeyPressed(XK_f))
 		{
 			simulation.addFood(
+				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition));
+		}
+
+		if (event.isKeyPressed(XK_d))
+		{
+			simulation.addMeat(
 				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition));
 		}
 
