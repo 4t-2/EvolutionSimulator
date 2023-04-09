@@ -5,11 +5,12 @@
 template <typename T> class Grid
 {
 	private:
-		agl::Vec<int, 2> size	  = {0, 0};
 		List<T>		  ***gridData = nullptr;
 		int				 max	  = 0;
 
 	public:
+		agl::Vec<int, 2> size	  = {0, 0};
+		
 		Grid(agl::Vec<int, 2> size, int max)
 		{
 			this->size = size;
@@ -94,21 +95,21 @@ template <typename T> class Grid
 		{
 			for (int x = startGridOffset.x; x <= endGridOffset.x; x++)
 			{
-				if (gridPosition.x + x < 0 || gridPosition.x + x > (this->getSize().x - 1))
+				if (gridPosition.x + x < 0 || gridPosition.x + x > (this->size.x - 1))
 				{
 					continue;
 				}
 
 				for (int y = startGridOffset.y; y <= endGridOffset.y; y++)
 				{
-					if (gridPosition.y + y < 0 || gridPosition.y + y > (this->getSize().y - 1))
+					if (gridPosition.y + y < 0 || gridPosition.y + y > (this->size.y - 1))
 					{
 						continue;
 					}
 
 					List<T> *list = this->getList({gridPosition.x + x, gridPosition.y + y});
 
-					for (int i = 0; i < list->getLength(); i++)
+					for (int i = 0; i < list->length; i++)
 					{
 						lambda(list->get(i));
 					}
@@ -125,10 +126,5 @@ template <typename T> class Grid
 					gridData[x][y]->clear();
 				}
 			}
-		}
-
-		agl::Vec<int, 2> getSize()
-		{
-			return size;
 		}
 };

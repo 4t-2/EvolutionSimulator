@@ -39,7 +39,7 @@
 
 class Creature : public phy::Circle
 {
-	private:
+	public:
 		float			   rotation		= 0;
 
 		agl::Vec<int, 2> gridPosition = {0, 0};
@@ -74,7 +74,6 @@ class Creature : public phy::Circle
 
 		CreatureData creatureData;
 
-	public:
 		agl::Vec<int, 2> startGridOffset;
 		agl::Vec<int, 2> endGridOffset;
 
@@ -84,32 +83,6 @@ class Creature : public phy::Circle
 		void setup(CreatureData &creatureData, SimulationRules *simulationRules);
 		void clear();
 
-		void setPosition(agl::Vec<float, 2> position);
-		void setVelocity(agl::Vec<float, 2> velocity);
-		void setRotation(float rotation);
-		void setHealth(float health);
-		void setEnergy(float energy);
-		void setGridPosition(agl::Vec<int, 2> gridPosition);
-
 		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat *> *meatGrid);
 		void updateActions();
-
-		CreatureData getCreatureData();
-
-		NeuralNetwork	   getNeuralNetwork();
-		float			   getRotation();
-		bool			   getEating();
-		bool			   getLayingEgg();
-		float			   getHealth();
-		float			   getEnergy();
-		int				   getLifeLeft();
-		float			   getSight();
-		float			   getSpeed();
-		float			   getSize();
-		int				   getHue();
-		float			   getRadius();
-		agl::Vec<int, 2>   getGridPosition();
-		float			   getMaxEnergy();
-		float			   getMaxHealth();
-		int				   getMaxLife();
 };

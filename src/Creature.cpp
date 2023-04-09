@@ -33,11 +33,11 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 
 	this->creatureData = creatureData;
 
-	sight = creatureData.getSight();
-	speed = creatureData.getSpeed();
-	size  = creatureData.getSize();
+	sight = creatureData.sight;
+	speed = creatureData.speed;
+	size  = creatureData.size;
 
-	hue = creatureData.getHue();
+	hue = creatureData.hue;
 
 	// sight = 1;
 	// speed = 1;
@@ -67,8 +67,8 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	endGridOffset.x	  = xOffset;
 	endGridOffset.y	  = yOffset;
 
-	network = new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, this->creatureData.getConnection(),
-								this->creatureData.getTotalConnections());
+	network = new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, this->creatureData.connection,
+								this->creatureData.totalConnections);
 }
 
 void Creature::clear()
@@ -100,51 +100,6 @@ Creature::~Creature()
 	{
 		this->clear();
 	}
-}
-
-void Creature::setPosition(agl::Vec<float, 2> position)
-{
-	this->position = position;
-
-	return;
-}
-
-void Creature::setVelocity(agl::Vec<float, 2> velocity)
-{
-	this->velocity = velocity;
-
-	return;
-}
-
-void Creature::setRotation(float rotation)
-{
-	this->rotation = rotation;
-
-	return;
-}
-
-void Creature::setHealth(float health)
-{
-	this->health = health;
-
-	return;
-}
-
-void Creature::setEnergy(float energy)
-{
-	this->energy = energy;
-
-	return;
-}
-
-void Creature::setGridPosition(agl::Vec<int, 2> gridPosition)
-{
-	this->gridPosition = gridPosition;
-}
-
-bool isVisible()
-{
-	return false;
 }
 
 float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
@@ -375,89 +330,4 @@ void Creature::updateActions()
 	this->update();
 
 	return;
-}
-
-CreatureData Creature::getCreatureData()
-{
-	return creatureData;
-}
-
-NeuralNetwork Creature::getNeuralNetwork()
-{
-	return *network;
-}
-
-float Creature::getRotation()
-{
-	return rotation;
-}
-
-bool Creature::getEating()
-{
-	return eating;
-}
-
-bool Creature::getLayingEgg()
-{
-	return layingEgg;
-}
-
-float Creature::getHealth()
-{
-	return health;
-}
-
-float Creature::getEnergy()
-{
-	return energy;
-}
-
-int Creature::getLifeLeft()
-{
-	return life;
-}
-
-float Creature::getSight()
-{
-	return sight;
-}
-
-float Creature::getSpeed()
-{
-	return speed;
-}
-
-float Creature::getSize()
-{
-	return size;
-}
-
-float Creature::getRadius()
-{
-	return radius;
-}
-
-int Creature::getHue()
-{
-	return hue;
-}
-
-agl::Vec<int, 2> Creature::getGridPosition()
-{
-	return gridPosition;
-}
-
-float Creature::getMaxEnergy()
-{
-	return maxEnergy;
-}
-
-float Creature::getMaxHealth()
-{
-	return maxHealth;
-}
-
-int Creature::getMaxLife()
-{
-	return maxLife;
 }

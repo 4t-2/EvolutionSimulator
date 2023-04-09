@@ -3,10 +3,11 @@
 template <typename T> class List
 {
 	private:
-		int length = 0;
 		T	*data;
 
 	public:
+		int length = 0;
+		
 		List(int max)
 		{
 			data = new T[max];
@@ -63,10 +64,5 @@ template <typename T> class List
 		T get(int index)
 		{
 			return data[index];
-		}
-
-		int	 getLength()
-		{
-			return length;
 		}
 };

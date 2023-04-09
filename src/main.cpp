@@ -42,10 +42,10 @@ agl::Vec<float, 2> getCursorScenePosition(agl::Vec<float, 2> cursorWinPos, agl::
 
 void printConnections(CreatureData creatureData)
 {
-	for (int i = 0; i < creatureData.getTotalConnections(); i++)
+	for (int i = 0; i < creatureData.totalConnections; i++)
 	{
-		printf("connection %d going from %d to %d with weight %f\n", i, creatureData.getConnection()[i].startNode,
-			   creatureData.getConnection()[i].endNode, creatureData.getConnection()[i].weight);
+		printf("connection %d going from %d to %d with weight %f\n", i, creatureData.connection[i].startNode,
+			   creatureData.connection[i].endNode, creatureData.connection[i].weight);
 	}
 
 	return;
@@ -290,11 +290,11 @@ int main()
 
 	Simulation simulation(simulationRules);
 
-	Creature		 *creature			= simulation.getCreatureBuffer();
-	List<Creature *> *existingCreatures = simulation.getExistingCreatures();
-	Egg				 *egg				= simulation.getEggBuffer();
-	List<Egg *>		 *existingEggs		= simulation.getExistingEggs();
-	Food			 *food				= simulation.getFoodBuffer();
+	Creature		 *creature			= simulation.creatureBuffer;
+	List<Creature *> *existingCreatures = simulation.existingCreatures;
+	Egg				 *egg				= simulation.eggBuffer;
+	List<Egg *>		 *existingEggs		= simulation.existingEggs;
+	Food			 *food				= simulation.foodBuffer;
 
 	Creature *focusCreature;
 
@@ -400,23 +400,23 @@ int main()
 		window.updateMvp(camera);
 
 		// Draw food
-		for (int i = 0; i < simulation.getExistingFood()->getLength(); i++)
+		for (int i = 0; i < simulation.existingFood->length; i++)
 		{
-			agl::Vec<float, 2> position = simulation.getExistingFood()->get(i)->position;
+			agl::Vec<float, 2> position = simulation.existingFood->get(i)->position;
 			foodShape.setPosition(position);
 			window.drawShape(foodShape);
 		}
 
-		for (int i = 0; i < simulation.existingMeat->getLength(); i++)
+		for (int i = 0; i < simulation.existingMeat->length; i++)
 		{
 			meatShape.setPosition(simulation.existingMeat->get(i)->position);
 			window.drawShape(meatShape);
 		}
 
 		// draw eggs
-		for (int i = 0; i < existingEggs->getLength(); i++)
+		for (int i = 0; i < existingEggs->length; i++)
 		{
-			eggShape.setPosition(existingEggs->get(i)->getPosition());
+			eggShape.setPosition(existingEggs->get(i)->position);
 			window.drawShape(eggShape);
 		}
 
@@ -424,12 +424,12 @@ int main()
 		if (existingCreatures->find(focusCreature) != -1)
 		{
 			{
-				float angleOffset = focusCreature->getNeuralNetwork().getNode(CREATURE_ROTATION).value * 180;
+				float angleOffset = focusCreature->network->getNode(CREATURE_ROTATION).value * 180;
 				angleOffset += 180;
 
-				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->getRotation());
+				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->rotation);
 
-				float weight = focusCreature->getNeuralNetwork().getNode(CREATURE_DISTANCE).value;
+				float weight = focusCreature->network->getNode(CREATURE_DISTANCE).value;
 
 				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
 
@@ -438,12 +438,12 @@ int main()
 				window.drawShape(rayShape);
 			}
 			{
-				float angleOffset = focusCreature->getNeuralNetwork().getNode(FOOD_ROTATION).value * 180;
+				float angleOffset = focusCreature->network->getNode(FOOD_ROTATION).value * 180;
 				angleOffset += 180;
 
-				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->getRotation());
+				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->rotation);
 
-				float weight = focusCreature->getNeuralNetwork().getNode(FOOD_DISTANCE).value;
+				float weight = focusCreature->network->getNode(FOOD_DISTANCE).value;
 
 				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
 
@@ -452,12 +452,12 @@ int main()
 				window.drawShape(rayShape);
 			}
 			{
-				float angleOffset = focusCreature->getNeuralNetwork().getNode(MEAT_ROTATION).value * 180;
+				float angleOffset = focusCreature->network->getNode(MEAT_ROTATION).value * 180;
 				angleOffset += 180;
 
-				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->getRotation());
+				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->rotation);
 
-				float weight = focusCreature->getNeuralNetwork().getNode(MEAT_DISTANCE).value;
+				float weight = focusCreature->network->getNode(MEAT_DISTANCE).value;
 
 				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
 
@@ -468,11 +468,11 @@ int main()
 		}
 
 		// draw creature
-		for (int i = 0; i < existingCreatures->getLength(); i++)
+		for (int i = 0; i < existingCreatures->length; i++)
 		{
 			creatureShape.setPosition(existingCreatures->get(i)->position);
 			creatureShape.setRotation(
-				agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(i)->getRotation() * 180 / PI)});
+				agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(i)->rotation * 180 / PI)});
 
 			float speed = existingCreatures->get(i)->position.length() / 10;
 
@@ -495,7 +495,7 @@ int main()
 
 			if(event.isKeyPressed(XK_z))
 			{
-				if(existingCreatures->get(i)->getCreatureData().preference > 0)
+				if(existingCreatures->get(i)->creatureData.preference > 0)
 				{
 					creatureShape.setColor(agl::Color::Blue);
 				} else  {
@@ -503,10 +503,10 @@ int main()
 				}
 			} else
 			{
-			creatureShape.setColor(hueToRGB(existingCreatures->get(i)->getHue()));
+			creatureShape.setColor(hueToRGB(existingCreatures->get(i)->hue));
 			}
 
-			float size = existingCreatures->get(i)->getSize();
+			float size = existingCreatures->get(i)->size;
 
 			creatureShape.setSize(agl::Vec<float, 3>{25 * size, 60 * size, 0});
 			creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -1});
@@ -530,9 +530,9 @@ int main()
 		window.updateMvp(guiCamera);
 
 		{
-			simulationInfo.get<0>().value = std::to_string(simulation.getExistingCreatures()->getLength());
-			simulationInfo.get<1>().value = std::to_string(simulation.getExistingEggs()->getLength());
-			simulationInfo.get<2>().value = std::to_string(simulation.getExistingFood()->getLength());
+			simulationInfo.get<0>().value = std::to_string(simulation.existingCreatures->length);
+			simulationInfo.get<1>().value = std::to_string(simulation.existingEggs->length);
+			simulationInfo.get<2>().value = std::to_string(simulation.existingFood->length);
 			simulationInfo.get<3>().value = std::to_string(frame);
 			simulationInfo.get<4>().value = std::to_string(1000. / milliDiff);
 		}
@@ -550,25 +550,25 @@ int main()
 			creatureInfo.get<8>().value	 = std::to_string(focusCreature->velocity.y);
 			creatureInfo.get<10>().value = std::to_string(focusCreature->force.x / focusCreature->mass);
 			creatureInfo.get<11>().value = std::to_string(focusCreature->force.y / focusCreature->mass);
-			creatureInfo.get<13>().value = std::to_string(focusCreature->getEating());
-			creatureInfo.get<14>().value = std::to_string(focusCreature->getLayingEgg());
-			creatureInfo.get<16>().value = std::to_string(focusCreature->getHealth());
-			creatureInfo.get<17>().value = std::to_string(focusCreature->getEnergy());
-			creatureInfo.get<18>().value = std::to_string(focusCreature->getLifeLeft());
-			creatureInfo.get<20>().value = std::to_string(focusCreature->getSight());
-			creatureInfo.get<21>().value = std::to_string(focusCreature->getSpeed());
-			creatureInfo.get<22>().value = std::to_string(focusCreature->getSize());
-			creatureInfo.get<23>().value = std::to_string(focusCreature->getHue());
-			creatureInfo.get<24>().str	 = std::to_string(focusCreature->getCreatureData().preference);
+			creatureInfo.get<13>().value = std::to_string(focusCreature->eating);
+			creatureInfo.get<14>().value = std::to_string(focusCreature->layingEgg);
+			creatureInfo.get<16>().value = std::to_string(focusCreature->health);
+			creatureInfo.get<17>().value = std::to_string(focusCreature->energy);
+			creatureInfo.get<18>().value = std::to_string(focusCreature->life);
+			creatureInfo.get<20>().value = std::to_string(focusCreature->sight);
+			creatureInfo.get<21>().value = std::to_string(focusCreature->speed);
+			creatureInfo.get<22>().value = std::to_string(focusCreature->size);
+			creatureInfo.get<23>().value = std::to_string(focusCreature->hue);
+			creatureInfo.get<24>().str	 = std::to_string(focusCreature->creatureData.preference);
 
 			window.draw(creatureInfo);
 
 			window.drawShape(networkBackground);
 
 			// draw node connections
-			for (int i = 0; i < focusCreature->getNeuralNetwork().getTotalConnections(); i++)
+			for (int i = 0; i < focusCreature->network->getTotalConnections(); i++)
 			{
-				Connection connection = focusCreature->getNeuralNetwork().getConnection(i);
+				Connection connection = focusCreature->network->getConnection(i);
 
 				if (!connection.valid)
 				{
@@ -576,11 +576,11 @@ int main()
 				}
 
 				float startAngle = connection.startNode + 1;
-				startAngle /= focusCreature->getNeuralNetwork().getTotalNodes();
+				startAngle /= focusCreature->network->getTotalNodes();
 				startAngle *= PI * 2;
 
 				float endAngle = connection.endNode + 1;
-				endAngle /= focusCreature->getNeuralNetwork().getTotalNodes();
+				endAngle /= focusCreature->network->getTotalNodes();
 				endAngle *= PI * 2;
 
 				agl::Vec<float, 2> startPosition = agl::pointOnCircle(startAngle);
@@ -618,10 +618,10 @@ int main()
 
 			// draw nodes
 			for (int i = 0;
-				 i < existingCreatures->get(existingCreatures->find(focusCreature))->getNeuralNetwork().getTotalNodes();
+				 i < existingCreatures->get(existingCreatures->find(focusCreature))->network->getTotalNodes();
 				 i++)
 			{
-				float angle = (360. / focusCreature->getNeuralNetwork().getTotalNodes()) * (i + 1);
+				float angle = (360. / focusCreature->network->getTotalNodes()) * (i + 1);
 
 				float x = cos(angle * (3.14159 / 180));
 				float y = sin(angle * (3.14159 / 180));
@@ -635,7 +635,7 @@ int main()
 
 				nodeShape.setPosition(pos);
 
-				float nodeValue = focusCreature->getNeuralNetwork().getNode(i).value;
+				float nodeValue = focusCreature->network->getNode(i).value;
 
 				if (nodeValue > 0)
 				{
@@ -674,7 +674,7 @@ int main()
 
 		if (event.isPointerButtonPressed(Button1Mask))
 		{
-			for (int i = 0; i < existingCreatures->getLength(); i++)
+			for (int i = 0; i < existingCreatures->length; i++)
 			{
 				agl::Vec<float, 2> mouse;
 				mouse.x = ((event.getPointerWindowPosition().x - (size.x * .5)) * sizeMultiplier) + cameraPosition.x;
@@ -682,7 +682,7 @@ int main()
 
 				float distance = (mouse - existingCreatures->get(i)->position).length();
 
-				if (distance < existingCreatures->get(i)->getRadius())
+				if (distance < existingCreatures->get(i)->radius)
 				{
 					focusCreature = existingCreatures->get(i);
 
@@ -693,7 +693,7 @@ int main()
 
 		if (event.isPointerButtonPressed(Button3Mask))
 		{
-			for (int i = 0; i < existingCreatures->getLength(); i++)
+			for (int i = 0; i < existingCreatures->length; i++)
 			{
 				agl::Vec<float, 2> mouse;
 				mouse.x = ((event.getPointerWindowPosition().x - (size.x * .5)) * sizeMultiplier) + cameraPosition.x;
@@ -701,7 +701,7 @@ int main()
 
 				float distance = (mouse - existingCreatures->get(i)->position).length();
 
-				if (distance < existingCreatures->get(i)->getRadius())
+				if (distance < existingCreatures->get(i)->radius)
 				{
 					simulation.addMeat(existingCreatures->get(i)->position);
 					existingCreatures->pop(i);

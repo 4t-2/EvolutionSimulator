@@ -7,7 +7,7 @@
 
 class CreatureData
 {
-	private:
+	public:
 		Connection *connection = nullptr; // NOTE maybe store as List<Connection>,
 										  // would make mutation easier
 		int	  totalConnections;
@@ -16,7 +16,6 @@ class CreatureData
 		float size;	 // 0 - 2
 		int	  hue;	 // 0 - 359
 
-	public:
 		float eggCost;
 		float preference; // 1 = plant, -1 = meat
 
@@ -28,16 +27,4 @@ class CreatureData
 		void operator=(CreatureData &creatureData);
 
 		void setConnection(int index, int start, int end, float weight);
-
-		void setSight(float sight);
-		void setSpeed(float speed);
-		void setSize(float size);
-		void setHue(int hue);
-
-		int			getTotalConnections();
-		Connection *getConnection();
-		float		getSight();
-		float		getSpeed();
-		float		getSize();
-		int			getHue();
 };

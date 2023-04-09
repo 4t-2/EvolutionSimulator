@@ -12,7 +12,7 @@
 
 class Simulation
 {
-	private:
+	public:
 		SimulationRules simulationRules;
 
 		Creature		 *creatureBuffer;
@@ -31,7 +31,6 @@ class Simulation
 		std::vector<float> creatureSpeedData;
 		std::vector<float> creatureSizeData;
 
-	public:
 		Meat *meatBuffer;
 		List<Meat *> *existingMeat;
 		Grid<Meat*> *meatGrid;
@@ -59,23 +58,4 @@ class Simulation
 		void addMeat(agl::Vec<float, 2> position);
 		void addMeat(agl::Vec<float, 2> position, float energy);
 		void removeMeat(Meat *meat);
-
-		Creature		 *getCreatureBuffer();
-		List<Creature *> *getExistingCreatures();
-		int				  getMaxCreatures();
-
-		Egg			*getEggBuffer();
-		List<Egg *> *getExistingEggs();
-		int			 getMaxEggs();
-
-		Food		 *getFoodBuffer();
-		List<Food *> *getExistingFood();
-		int			  getMaxFood();
-
-		Grid<Creature*> *getCreatureGrid()
-		{
-			return creatureGrid;
-		}
-
-		agl::Vec<float, 2> getSize();
 };
