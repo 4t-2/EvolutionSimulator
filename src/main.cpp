@@ -105,7 +105,7 @@ int main()
 	simpleShader.loadFromFile("./shader/vert.glsl", "./shader/frag.glsl");
 
 	agl::Shader gridShader;
-	std::cout << gridShader.loadFromFile("./shader/gridvert.glsl", "./shader/grid.glsl") << '\n';
+	gridShader.loadFromFile("./shader/gridvert.glsl", "./shader/grid.glsl");
 
 	agl::Camera camera;
 	camera.setOrthographicProjection(0, WIDTH, HEIGHT, 0, 0.1, 100);
@@ -148,7 +148,7 @@ int main()
 	background.setOffset({-backgroundSize / 2, -backgroundSize / 2, -40});
 
 	// menu shapes
-	Menu<ValueElement, ValueElement, ValueElement, ValueElement, ValueElement> simulationInfo(&blank, &font);
+	Menu<ValueElement, ValueElement, ValueElement, ValueElement, ValueElement> simulationInfo(&blank, &font, &event);
 	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 150});
 	simulationInfo.get<0>().label = "Creatures";
 	simulationInfo.get<1>().label = "Eggs";
@@ -160,7 +160,7 @@ int main()
 		 ValueElement, TextElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement,
 		 SpacerElement, ValueElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement,
 		 ValueElement, ValueElement, TextElement>
-		creatureInfo(&blank, &font);
+		creatureInfo(&blank, &font, &event);
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 
 	creatureInfo.get<0>().height = 350;
@@ -189,6 +189,25 @@ int main()
 	creatureInfo.get<23>().label = "Hue";
 
 	creatureInfo.get<24>().str = "";
+
+	Menu<ButtonElement, ButtonElement, ButtonElement, ButtonElement> actionMenu(&blank, &font, &event);
+	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {150, 140});
+	actionMenu.get<0>().label = "Food";
+	actionMenu.get<0>().width = 150 - 16 * 2;
+	actionMenu.get<1>().label = "Meat";
+	actionMenu.get<1>().width = 150 - 16 * 2;
+	actionMenu.get<2>().label = "Select";
+	actionMenu.get<2>().width = 150 - 16 * 2;
+	actionMenu.get<3>().label = "Kill";
+	actionMenu.get<3>().width = 150 - 16 * 2;
+
+	Menu<TextElement, ButtonElement, ButtonElement> quitMenu(&blank, &font, &event);
+	quitMenu.setup({0, 0}, {150, 115});
+	quitMenu.get<0>().str	= "Quit?";
+	quitMenu.get<1>().label = "Confirm";
+	quitMenu.get<1>().width = 150 - 16 * 2;
+	quitMenu.get<2>().label = "Cancel";
+	quitMenu.get<2>().width = 150 - 16 * 2;
 
 	agl::Circle networkBackground(60);
 	networkBackground.setTexture(&blank);
@@ -309,6 +328,8 @@ int main()
 	float sizeMultiplier = 1;
 
 	printf("entering sim loop\n");
+
+	bool quiting = false;
 
 	while (!event.windowClose())
 	{
@@ -471,8 +492,7 @@ int main()
 		for (int i = 0; i < existingCreatures->length; i++)
 		{
 			creatureShape.setPosition(existingCreatures->get(i)->position);
-			creatureShape.setRotation(
-				agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(i)->rotation * 180 / PI)});
+			creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(i)->rotation * 180 / PI)});
 
 			float speed = existingCreatures->get(i)->position.length() / 10;
 
@@ -493,17 +513,20 @@ int main()
 
 			creatureShape.setTextureTranslation({float(1. / 3.) * textureFrame, 0});
 
-			if(event.isKeyPressed(XK_z))
+			if (event.isKeyPressed(XK_z))
 			{
-				if(existingCreatures->get(i)->creatureData.preference > 0)
+				if (existingCreatures->get(i)->creatureData.preference > 0)
 				{
 					creatureShape.setColor(agl::Color::Blue);
-				} else  {
+				}
+				else
+				{
 					creatureShape.setColor(agl::Color::Yellow);
 				}
-			} else
+			}
+			else
 			{
-			creatureShape.setColor(hueToRGB(existingCreatures->get(i)->hue));
+				creatureShape.setColor(hueToRGB(existingCreatures->get(i)->hue));
 			}
 
 			float size = existingCreatures->get(i)->size;
@@ -539,6 +562,13 @@ int main()
 
 		window.draw(simulationInfo);
 
+		window.draw(actionMenu);
+
+		if (quiting)
+		{
+			window.draw(quitMenu);
+		}
+
 		if (existingCreatures->find(focusCreature) != -1)
 		{
 			static int selectedID = 0;
@@ -562,7 +592,6 @@ int main()
 			creatureInfo.get<24>().str	 = std::to_string(focusCreature->creatureData.preference);
 
 			window.draw(creatureInfo);
-
 			window.drawShape(networkBackground);
 
 			// draw node connections
@@ -618,8 +647,7 @@ int main()
 
 			// draw nodes
 			for (int i = 0;
-				 i < existingCreatures->get(existingCreatures->find(focusCreature))->network->getTotalNodes();
-				 i++)
+				 i < existingCreatures->get(existingCreatures->find(focusCreature))->network->getTotalNodes(); i++)
 			{
 				float angle = (360. / focusCreature->network->getTotalNodes()) * (i + 1);
 
@@ -663,65 +691,91 @@ int main()
 
 	skipRendering:;
 
+		// quit?
+
+		if (quitMenu.get<1>().state)
+		{
+			window.close();
+			break;
+		}
+		if (quitMenu.get<2>().state)
+		{
+			quiting					= false;
+			quitMenu.get<2>().state = false;
+		}
+
+		// input
+
 		if (event.isKeyPressed(XK_r))
 		{
 			focusCreature = nullptr;
 		}
 
-		static agl::Vec<float, 2> size;
-		size.x = window.getWindowAttributes().width;
-		size.y = window.getWindowAttributes().height;
+		if (event.isKeyPressed(XK_Escape))
+		{
+			quiting = true;
+		}
+
+		static agl::Vec<float, 2> windowSize;
+		windowSize.x = window.getWindowAttributes().width;
+		windowSize.y = window.getWindowAttributes().height;
 
 		if (event.isPointerButtonPressed(Button1Mask))
 		{
-			for (int i = 0; i < existingCreatures->length; i++)
+			if (actionMenu.get<0>().state) // add food
 			{
-				agl::Vec<float, 2> mouse;
-				mouse.x = ((event.getPointerWindowPosition().x - (size.x * .5)) * sizeMultiplier) + cameraPosition.x;
-				mouse.y = ((event.getPointerWindowPosition().y - (size.y * .5)) * sizeMultiplier) + cameraPosition.y;
-
-				float distance = (mouse - existingCreatures->get(i)->position).length();
-
-				if (distance < existingCreatures->get(i)->radius)
+				simulation.addFood(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
+														  cameraPosition));
+			}
+			if (actionMenu.get<1>().state) // add meat
+			{
+				simulation.addMeat(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
+														  cameraPosition));
+			}
+			if (actionMenu.get<2>().state) // select creature
+			{
+				for (int i = 0; i < existingCreatures->length; i++)
 				{
-					focusCreature = existingCreatures->get(i);
+					agl::Vec<float, 2> mouse;
+					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
+							  cameraPosition.x;
+					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
+							  cameraPosition.y;
 
-					break;
+					float distance = (mouse - existingCreatures->get(i)->position).length();
+
+					if (distance < existingCreatures->get(i)->radius)
+					{
+						focusCreature = existingCreatures->get(i);
+
+						break;
+					}
+				}
+			}
+			if (actionMenu.get<3>().state) // kill creature
+			{
+				for (int i = 0; i < existingCreatures->length; i++)
+				{
+					agl::Vec<float, 2> mouse;
+					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
+							  cameraPosition.x;
+					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
+							  cameraPosition.y;
+
+					float distance = (mouse - existingCreatures->get(i)->position).length();
+
+					if (distance < existingCreatures->get(i)->radius)
+					{
+						simulation.addMeat(existingCreatures->get(i)->position);
+						existingCreatures->pop(i);
+
+						break;
+					}
 				}
 			}
 		}
 
-		if (event.isPointerButtonPressed(Button3Mask))
-		{
-			for (int i = 0; i < existingCreatures->length; i++)
-			{
-				agl::Vec<float, 2> mouse;
-				mouse.x = ((event.getPointerWindowPosition().x - (size.x * .5)) * sizeMultiplier) + cameraPosition.x;
-				mouse.y = ((event.getPointerWindowPosition().y - (size.y * .5)) * sizeMultiplier) + cameraPosition.y;
-
-				float distance = (mouse - existingCreatures->get(i)->position).length();
-
-				if (distance < existingCreatures->get(i)->radius)
-				{
-					simulation.addMeat(existingCreatures->get(i)->position);
-					existingCreatures->pop(i);
-
-					break;
-				}
-			}
-		}
-
-		if (event.isKeyPressed(XK_f))
-		{
-			simulation.addFood(
-				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition));
-		}
-
-		if (event.isKeyPressed(XK_d))
-		{
-			simulation.addMeat(
-				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition));
-		}
+		// camera movement
 
 		static agl::Vec<float, 2> cameraOffset;
 		static agl::Vec<float, 2> startPos;
@@ -762,12 +816,12 @@ int main()
 			float scale = sizeDelta * sizeMultiplier;
 
 			agl::Vec<float, 2> oldPos =
-				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition);
+				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
 
 			sizeMultiplier -= scale;
 
 			agl::Vec<float, 2> newPos =
-				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition);
+				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
 
 			agl::Vec<float, 2> offset = oldPos - newPos;
 
@@ -778,27 +832,30 @@ int main()
 			float scale = sizeDelta * sizeMultiplier;
 
 			agl::Vec<float, 2> oldPos =
-				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition);
+				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
 
 			sizeMultiplier += scale;
 
 			agl::Vec<float, 2> newPos =
-				getCursorScenePosition(event.getPointerWindowPosition(), size, sizeMultiplier, cameraPosition);
+				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
 
 			agl::Vec<float, 2> offset = oldPos - newPos;
 
 			cameraPosition = cameraPosition + offset;
 		}
 
-		simulationInfo.setPosition({size.x - 260, 10, 9});
+		simulationInfo.setPosition({windowSize.x - 260, 10, 9});
+		actionMenu.setPosition({windowSize.x - 160, 10 + 160, 9});
+		quitMenu.setPosition({(windowSize.x - quitMenu.size.x) / 2, (windowSize.y - quitMenu.size.y) / 2});
 
-		window.setViewport(0, 0, size.x, size.y);
+		window.setViewport(0, 0, windowSize.x, windowSize.y);
 
-		camera.setOrthographicProjection(-((size.x / 2.) * sizeMultiplier), ((size.x / 2.) * sizeMultiplier),
-										 ((size.y / 2.) * sizeMultiplier), -((size.y / 2.) * sizeMultiplier), 0.1, 100);
+		camera.setOrthographicProjection(-((windowSize.x / 2.) * sizeMultiplier),
+										 ((windowSize.x / 2.) * sizeMultiplier), ((windowSize.y / 2.) * sizeMultiplier),
+										 -((windowSize.y / 2.) * sizeMultiplier), 0.1, 100);
 		camera.setView({cameraPosition.x, cameraPosition.y, 50}, {cameraPosition.x, cameraPosition.y, 0}, {0, 1, 0});
 
-		guiCamera.setOrthographicProjection(0, size.x, size.y, 0, 0.1, 100);
+		guiCamera.setOrthographicProjection(0, windowSize.x, windowSize.y, 0, 0.1, 100);
 
 		milliDiff = getMillisecond() - start;
 	}
@@ -819,7 +876,10 @@ int main()
 	simpleShader.deleteProgram();
 	gridShader.deleteProgram();
 
-	window.close();
+	if (!quiting)
+	{
+		window.close();
+	}
 
 	return 0;
 }
