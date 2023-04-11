@@ -148,23 +148,20 @@ int main()
 	background.setOffset({-backgroundSize / 2, -backgroundSize / 2, -40});
 
 	// menu shapes
-	Menu<ValueElement, ValueElement, ValueElement, ValueElement, ValueElement> simulationInfo(&blank, &font, &event);
-	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 150});
-	simulationInfo.get<0>().label = "Creatures";
-	simulationInfo.get<1>().label = "Eggs";
-	simulationInfo.get<2>().label = "Food";
-	simulationInfo.get<3>().label = "Frame";
-	simulationInfo.get<4>().label = "FPS";
+	Menu<ValueElement<int>, ValueElement<int>, ValueElement<int>, ValueElement<int>, ValueElement<int>,
+		 ValueElement<float>>
+		simulationInfo(&blank, &font, &event);
+	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 175});
 
-	Menu<SpacerElement, ValueElement, SpacerElement, TextElement, ValueElement, ValueElement, TextElement, ValueElement,
-		 ValueElement, TextElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement,
-		 SpacerElement, ValueElement, ValueElement, ValueElement, SpacerElement, ValueElement, ValueElement,
-		 ValueElement, ValueElement, TextElement>
+	Menu<SpacerElement, ValueElement<std::string>, SpacerElement, TextElement, ValueElement<float>, ValueElement<float>,
+		 TextElement, ValueElement<float>, ValueElement<float>, TextElement, ValueElement<float>, ValueElement<float>,
+		 SpacerElement, ValueElement<bool>, ValueElement<bool>, SpacerElement, ValueElement<float>, ValueElement<float>,
+		 ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>, ValueElement<float>,
+		 ValueElement<int>>
 		creatureInfo(&blank, &font, &event);
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 
 	creatureInfo.get<0>().height = 350;
-	creatureInfo.get<1>().label	 = "Node";
 
 	creatureInfo.get<3>().str	 = "- Position -";
 	creatureInfo.get<4>().label	 = "X";
@@ -172,7 +169,7 @@ int main()
 	creatureInfo.get<6>().str	 = "- Velocity -";
 	creatureInfo.get<7>().label	 = "X";
 	creatureInfo.get<8>().label	 = "Y";
-	creatureInfo.get<9>().str	 = "- Acceleration -";
+	creatureInfo.get<9>().str	 = "- Force -";
 	creatureInfo.get<10>().label = "X";
 	creatureInfo.get<11>().label = "Y";
 
@@ -187,8 +184,6 @@ int main()
 	creatureInfo.get<21>().label = "Speed";
 	creatureInfo.get<22>().label = "Size";
 	creatureInfo.get<23>().label = "Hue";
-
-	creatureInfo.get<24>().str = "";
 
 	Menu<ButtonElement, ButtonElement, ButtonElement, ButtonElement> actionMenu(&blank, &font, &event);
 	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {150, 140});
@@ -315,15 +310,56 @@ int main()
 	List<Egg *>		 *existingEggs		= simulation.existingEggs;
 	Food			 *food				= simulation.foodBuffer;
 
-	Creature *focusCreature;
+	Creature   *focusCreature = nullptr;
+	int			frame = 0;
+	float		fps	  = 0;
+	std::string nodeName;
+
+	struct 
+	{
+		agl::Vec<float, 2> position;
+		agl::Vec<float, 2> velocity;
+		agl::Vec<float, 2> force;
+		bool eating;
+		bool layingEgg;
+		float health;
+		float energy;
+		int life;
+		float sight;
+		float speed;
+		float size;
+		int hue;
+	} focusInfo;
+
+	simulationInfo.get<0>() = {"Creatures", &simulation.existingCreatures->length};
+	simulationInfo.get<1>() = {"Eggs", &simulation.existingEggs->length};
+	simulationInfo.get<2>() = {"Food", &simulation.existingFood->length};
+	simulationInfo.get<3>() = {"Meat", &simulation.existingMeat->length};
+	simulationInfo.get<4>() = {"Frame", &frame};
+	simulationInfo.get<5>() = {"FPS", &fps};
+
+	creatureInfo.get<1>()		 = {"Node", &nodeName};
+	creatureInfo.get<4>()		 = {"X", &focusInfo.position.x};
+	creatureInfo.get<5>() = {"Y", &focusInfo.position.y};
+	creatureInfo.get<7>()= {"X", &focusInfo.velocity.x};
+	creatureInfo.get<8>()= {"Y", &focusInfo.velocity.y};
+	creatureInfo.get<10>() = {"X", &focusInfo.force.x};
+	creatureInfo.get<11>() = {"Y", &focusInfo.force.y};
+	creatureInfo.get<13>() = { "Eating", &focusInfo.eating};
+	creatureInfo.get<14>() = { "Laying Egg", &focusInfo.layingEgg};
+	creatureInfo.get<16>() = { "Health", &focusInfo.health};
+	creatureInfo.get<17>() = { "Energy", &focusInfo.energy};
+	creatureInfo.get<18>() = { "Life Life", &focusInfo.life};
+	creatureInfo.get<20>() = { "Sight", &focusInfo.sight};
+	creatureInfo.get<21>() = { "Speed", &focusInfo.speed};
+	creatureInfo.get<22>() = { "Size", &focusInfo.size};
+	creatureInfo.get<23>() = { "Hue", &focusInfo.hue};
 
 	bool mHeld		= false;
 	bool b1Held		= false;
 	bool ReturnHeld = false;
 
 	bool skipRender = false;
-
-	int frame = 0;
 
 	float sizeMultiplier = 1;
 
@@ -550,15 +586,9 @@ int main()
 
 		// gui rendering
 
-		window.updateMvp(guiCamera);
+		fps = (1000. / milliDiff);
 
-		{
-			simulationInfo.get<0>().value = std::to_string(simulation.existingCreatures->length);
-			simulationInfo.get<1>().value = std::to_string(simulation.existingEggs->length);
-			simulationInfo.get<2>().value = std::to_string(simulation.existingFood->length);
-			simulationInfo.get<3>().value = std::to_string(frame);
-			simulationInfo.get<4>().value = std::to_string(1000. / milliDiff);
-		}
+		window.updateMvp(guiCamera);
 
 		window.draw(simulationInfo);
 
@@ -572,24 +602,20 @@ int main()
 		if (existingCreatures->find(focusCreature) != -1)
 		{
 			static int selectedID = 0;
+			nodeName			  = nodeNames[selectedID];
 
-			creatureInfo.get<1>().value	 = nodeNames[selectedID];
-			creatureInfo.get<4>().value	 = std::to_string(focusCreature->position.x);
-			creatureInfo.get<5>().value	 = std::to_string(focusCreature->position.y);
-			creatureInfo.get<7>().value	 = std::to_string(focusCreature->velocity.x);
-			creatureInfo.get<8>().value	 = std::to_string(focusCreature->velocity.y);
-			creatureInfo.get<10>().value = std::to_string(focusCreature->force.x / focusCreature->mass);
-			creatureInfo.get<11>().value = std::to_string(focusCreature->force.y / focusCreature->mass);
-			creatureInfo.get<13>().value = std::to_string(focusCreature->eating);
-			creatureInfo.get<14>().value = std::to_string(focusCreature->layingEgg);
-			creatureInfo.get<16>().value = std::to_string(focusCreature->health);
-			creatureInfo.get<17>().value = std::to_string(focusCreature->energy);
-			creatureInfo.get<18>().value = std::to_string(focusCreature->life);
-			creatureInfo.get<20>().value = std::to_string(focusCreature->sight);
-			creatureInfo.get<21>().value = std::to_string(focusCreature->speed);
-			creatureInfo.get<22>().value = std::to_string(focusCreature->size);
-			creatureInfo.get<23>().value = std::to_string(focusCreature->hue);
-			creatureInfo.get<24>().str	 = std::to_string(focusCreature->creatureData.preference);
+			focusInfo.position = focusCreature->position;
+			focusInfo.velocity = focusCreature->velocity;
+			focusInfo.force = focusCreature->force;
+			focusInfo.eating = focusCreature->eating;
+			focusInfo.layingEgg = focusCreature->layingEgg;
+			focusInfo.health = focusCreature->health;
+			focusInfo.energy = focusCreature->energy;
+			focusInfo.life = focusCreature->life;
+			focusInfo.sight = focusCreature->sight;
+			focusInfo.speed = focusCreature->speed;
+			focusInfo.size = focusCreature->size;
+			focusInfo.hue = focusCreature->hue;
 
 			window.draw(creatureInfo);
 			window.drawShape(networkBackground);
@@ -722,6 +748,24 @@ int main()
 
 		if (event.isPointerButtonPressed(Button1Mask))
 		{
+			if (pointInArea(event.getPointerWindowPosition(), simulationInfo.position, simulationInfo.size))
+			{
+				goto endif;
+			}
+			if (pointInArea(event.getPointerWindowPosition(), actionMenu.position, actionMenu.size))
+			{
+				goto endif;
+			}
+			if (focusCreature != nullptr &&
+				pointInArea(event.getPointerWindowPosition(), creatureInfo.position, creatureInfo.size))
+			{
+				goto endif;
+			}
+			if (quiting && pointInArea(event.getPointerWindowPosition(), quitMenu.position, quitMenu.size))
+			{
+				goto endif;
+			}
+
 			if (actionMenu.get<0>().state) // add food
 			{
 				simulation.addFood(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
@@ -773,6 +817,8 @@ int main()
 					}
 				}
 			}
+
+		endif:;
 		}
 
 		// camera movement
@@ -845,7 +891,7 @@ int main()
 		}
 
 		simulationInfo.setPosition({windowSize.x - 260, 10, 9});
-		actionMenu.setPosition({windowSize.x - 160, 10 + 160, 9});
+		actionMenu.setPosition({windowSize.x - 160, simulationInfo.position.y + simulationInfo.size.y + 10, 9});
 		quitMenu.setPosition({(windowSize.x - quitMenu.size.x) / 2, (windowSize.y - quitMenu.size.y) / 2});
 
 		window.setViewport(0, 0, windowSize.x, windowSize.y);

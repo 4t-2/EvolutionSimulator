@@ -26,6 +26,28 @@
 		210, 210, 210  \
 	}
 
+inline bool pointInArea(agl::Vec<float, 2> point, agl::Vec<float, 2> position, agl::Vec<float, 2> size)
+{
+	if (point.x < position.x)
+	{
+		return false;
+	}
+	if (point.x > position.x + size.x)
+	{
+		return false;
+	}
+	if (point.y < position.y)
+	{
+		return false;
+	}
+	if (point.y > position.y + size.y)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 class MenuElement : public agl::Drawable
 {
 	public:
@@ -66,17 +88,53 @@ class TextElement : public MenuElement
 		}
 };
 
+template<typename T>
+inline std::string toString(T value)
+{
+	return std::to_string(value);
+}
+
+template<>
+inline std::string toString<std::string>(std::string value)
+{
+	return value;
+}
+
+template<typename T>
 class ValueElement : public MenuElement
 {
 	public:
 		std::string label = "null";
-		std::string value = "null";
+		T *value = nullptr;
+
+		ValueElement()
+		{
+
+		}
+			
+		ValueElement(std::string label, T*value)
+		{
+			this->label = label;
+			this->value = value;
+		}
+
+		ValueElement(ValueElement const &valueElement)
+		{
+			this->label = valueElement.label;
+			this->value = valueElement.value;
+		}
+
+		void operator=(ValueElement valueElement)
+		{
+			this->label = valueElement.label;
+			this->value = valueElement.value;
+		}
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
 			text->setPosition(position);
 			text->clearText();
-			text->setText(label + " - " + value);
+			text->setText(label + " - " + toString(*value));
 
 			window.drawText(*text);
 		}
@@ -111,42 +169,27 @@ class ButtonElement : public MenuElement
 			height = text->getHeight() * text->getScale() + MENU_BORDEREDGE * 2;
 		}
 
-		bool pointInArea(agl::Vec<float, 2> point)
+		bool pointInButton(agl::Vec<float, 2> point)
 		{
-			if (point.x < position.x)
-			{
-				return false;
-			}
-			if (point.x > position.x + width)
-			{
-				return false;
-			}
-			if (point.y < position.y)
-			{
-				return false;
-			}
-			if (point.y > position.y + height)
-			{
-				return false;
-			}
-
-			return true;
+			return pointInArea(point, position, {width, height});
 		}
 
 		void drawFunction(agl::RenderWindow &window)
 		{
 			// update button (toggle)
 
-			if (this->pointInArea(event->getPointerWindowPosition()))
+			if (this->pointInButton(event->getPointerWindowPosition()))
 			{
 				if (event->isPointerButtonPressed(Button1Mask))
 				{
-					if(!mouseHeld)
+					if (!mouseHeld)
 					{
 						state = !state;
 					}
 					mouseHeld = true;
-				} else {
+				}
+				else
+				{
 					mouseHeld = false;
 				}
 			}
