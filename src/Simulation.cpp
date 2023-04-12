@@ -12,6 +12,8 @@
 #define MAXENERGYLOSS 0.
 #define LEACHENERGY	  1
 #define DAMAGE		  3
+#define FOODENERGY	  1
+#define MEATENERGY	  .2
 
 void randomData(Buffer *buffer)
 {
@@ -53,7 +55,7 @@ Simulation::Simulation(SimulationRules simulationRules)
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
-		CreatureData creatureData(1, .5, 1, 0, connections);
+		CreatureData creatureData(1, 1, 1, 0, connections);
 
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
@@ -313,6 +315,7 @@ void Simulation::removeFood(Food *food)
 
 void Simulation::addMeat(agl::Vec<float, 2> position, float energy)
 {
+	return;
 	bool alreadyExists;
 
 	for (int i = 0; i < MAXMEAT; i++)
@@ -778,8 +781,12 @@ void Simulation::updateSimulation()
 
 										 if (offset.length() < (eatingCreature->radius + food->radius + EATRADIUS))
 										 {
-											 creature->energy += std::max(
-												 (float)0., (float)(food->energy * creature->creatureData.preference));
+											float energy = FOODENERGY * creature->preference;
+
+											 creature->energyDensity =
+												 ((creature->biomass * creature->energyDensity) + (25 * energy)) /
+												 (creature->biomass + 25);
+											 creature->biomass += 50;
 
 											 food->exists = false;
 											 this->removeFood(food);
@@ -805,8 +812,8 @@ void Simulation::updateSimulation()
 
 					if (offset.length() < (eatingCreature->radius + meat->radius + EATRADIUS))
 					{
-						creature->energy +=
-							std::max((float)0., (float)(meat->energy * creature->creatureData.preference * -1));
+						// creature->energy +=
+						// 	std::max((float)0., (float)(meat->energy * creature->creatureData.preference * -1));
 
 						meat->exists = false;
 						this->removeMeat(meat);
@@ -867,6 +874,10 @@ void Simulation::updateSimulation()
 		{
 			creature->energy = creature->maxEnergy;
 		}
+		if (creature->biomass > creature->maxBiomass)
+		{
+			creature->biomass = creature->maxBiomass;
+		}
 	}
 
 	// egg hatching
@@ -912,8 +923,8 @@ void Simulation::updateSimulation()
 	adjustedMaxFood -= (penalty / simulationRules.penaltyPeriod);
 
 	// adding more food
-	// int max = std::min(simulationRules.maxFood, adjustedMaxFood);
-	int max = simulationRules.maxFood;
+	int max = std::min(simulationRules.maxFood, adjustedMaxFood);
+	// int max = simulationRules.maxFood;
 	if (existingFood->length < max)
 	{
 		agl::Vec<float, 2> position;

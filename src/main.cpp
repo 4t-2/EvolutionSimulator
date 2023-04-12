@@ -157,33 +157,18 @@ int main()
 		 TextElement, ValueElement<float>, ValueElement<float>, TextElement, ValueElement<float>, ValueElement<float>,
 		 SpacerElement, ValueElement<bool>, ValueElement<bool>, SpacerElement, ValueElement<float>, ValueElement<float>,
 		 ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>, ValueElement<float>,
-		 ValueElement<int>>
+		 ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>, ValueElement<float>>
 		creatureInfo(&blank, &font, &event);
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 
 	creatureInfo.get<0>().height = 350;
-
 	creatureInfo.get<3>().str	 = "- Position -";
-	creatureInfo.get<4>().label	 = "X";
-	creatureInfo.get<5>().label	 = "Y";
 	creatureInfo.get<6>().str	 = "- Velocity -";
-	creatureInfo.get<7>().label	 = "X";
-	creatureInfo.get<8>().label	 = "Y";
 	creatureInfo.get<9>().str	 = "- Force -";
-	creatureInfo.get<10>().label = "X";
-	creatureInfo.get<11>().label = "Y";
 
-	creatureInfo.get<13>().label = "Eating";
-	creatureInfo.get<14>().label = "Laying Egg";
+	float vel = 0;
 
-	creatureInfo.get<16>().label = "Health";
-	creatureInfo.get<17>().label = "Energy";
-	creatureInfo.get<18>().label = "Life Left";
-
-	creatureInfo.get<20>().label = "Sight";
-	creatureInfo.get<21>().label = "Speed";
-	creatureInfo.get<22>().label = "Size";
-	creatureInfo.get<23>().label = "Hue";
+	creatureInfo.get<27>() = {"vel", &vel};
 
 	Menu<ButtonElement, ButtonElement, ButtonElement, ButtonElement> actionMenu(&blank, &font, &event);
 	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {150, 140});
@@ -329,6 +314,8 @@ int main()
 		float speed;
 		float size;
 		int hue;
+		float biomass;
+		float energyDensity;
 	} focusInfo;
 
 	simulationInfo.get<0>() = {"Creatures", &simulation.existingCreatures->length};
@@ -354,6 +341,8 @@ int main()
 	creatureInfo.get<21>() = { "Speed", &focusInfo.speed};
 	creatureInfo.get<22>() = { "Size", &focusInfo.size};
 	creatureInfo.get<23>() = { "Hue", &focusInfo.hue};
+	creatureInfo.get<25>() = { "Biomass", &focusInfo.biomass};
+	creatureInfo.get<26>() = {"Energy Density", &focusInfo.energyDensity};
 
 	bool mHeld		= false;
 	bool b1Held		= false;
@@ -551,7 +540,7 @@ int main()
 
 			if (event.isKeyPressed(XK_z))
 			{
-				if (existingCreatures->get(i)->creatureData.preference > 0)
+				if (existingCreatures->get(i)->creatureData.preference > .5)
 				{
 					creatureShape.setColor(agl::Color::Blue);
 				}
@@ -616,6 +605,10 @@ int main()
 			focusInfo.speed = focusCreature->speed;
 			focusInfo.size = focusCreature->size;
 			focusInfo.hue = focusCreature->hue;
+			focusInfo.biomass = focusCreature->biomass;
+			focusInfo.energyDensity = focusCreature->energyDensity;
+
+			vel = focusInfo.velocity.length();
 
 			window.draw(creatureInfo);
 			window.drawShape(networkBackground);

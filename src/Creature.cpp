@@ -1,5 +1,7 @@
 #include "../inc/Creature.hpp"
 
+#define METABOLISM .25
+
 Creature::Creature() : phy::Circle(*(agl::Circle *)0)
 {
 	mass = 1;
@@ -55,6 +57,10 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->maxHealth = 100 * size * size;
 	this->maxLife	= 60 * 60 * size * size;
 
+	this->maxBiomass = 100 * size * size;
+	this->biomass = 0;
+	this->energyDensity = 0.0;
+
 	this->radius = 12.5 * size;
 
 	this->energy = creatureData.eggCost * .8;
@@ -67,8 +73,8 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	endGridOffset.x	  = xOffset;
 	endGridOffset.y	  = yOffset;
 
-	network = new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, this->creatureData.connection,
-								this->creatureData.totalConnections);
+	network =
+		new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, this->creatureData.connection, this->creatureData.totalConnections);
 }
 
 void Creature::clear()
@@ -107,7 +113,7 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
-void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat*> *meatGrid)
+void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat *> *meatGrid)
 {
 	network->setInputNode(CONSTANT_INPUT, 1);
 
@@ -299,7 +305,18 @@ void Creature::updateActions()
 
 	rotation = loop(-PI, PI, rotation);
 
-	energy -= (sight + (moveForce * moveForce * size * size * size)) / 300;
+	if (biomass > 0)
+	{
+		biomass -= METABOLISM;
+		energy += energyDensity * METABOLISM;
+	}
+	else
+	{
+		biomass = 0;
+	}
+
+	// energy loss
+	energy -= (sight + (moveForce * moveForce * size * size)) / 300;
 
 	life--;
 

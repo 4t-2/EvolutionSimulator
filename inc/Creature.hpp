@@ -28,8 +28,8 @@
 #define ENERGY_INPUT	  9
 #define HEALTH_INPUT	  10
 #define LIFE_INPUT		  11
-#define MEAT_DISTANCE 12
-#define MEAT_ROTATION 13
+#define MEAT_DISTANCE	  12
+#define MEAT_ROTATION	  13
 
 #define FOWARD_OUTPUT (TOTAL_INPUT + 0)
 #define RIGHT_OUTPUT  (TOTAL_INPUT + 1)
@@ -40,7 +40,7 @@
 class Creature : public phy::Circle
 {
 	public:
-		float			   rotation		= 0;
+		float rotation = 0;
 
 		agl::Vec<int, 2> gridPosition = {0, 0};
 
@@ -60,6 +60,13 @@ class Creature : public phy::Circle
 		float maxEnergy = 0;
 		float maxHealth = 0;
 		int	  maxLife	= 0;
+
+		float maxBiomass	= 0;
+		float biomass		= 0;
+		float energyDensity = 0;
+
+		float preference = 1; // plant = 1
+							  // meat  = 0
 
 		float maxForce	  = 0;
 		float maxRotation = 0;
