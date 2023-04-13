@@ -11,25 +11,26 @@
 
 #define RAY_LENGTH 1000
 
-#define TOTAL_INPUT	 14
+#define TOTAL_INPUT	 15
 #define TOTAL_OUTPUT 5
 #define TOTAL_HIDDEN 4
 #define TOTAL_NODES	 (TOTAL_INPUT + TOTAL_OUTPUT + TOTAL_HIDDEN)
 
-#define CONSTANT_INPUT	  0
-#define X_INPUT			  1
-#define Y_INPUT			  2
-#define ROTATION_INPUT	  3
-#define SPEED_INPUT		  4
-#define FOOD_DISTANCE	  5
-#define FOOD_ROTATION	  6
-#define CREATURE_DISTANCE 7
-#define CREATURE_ROTATION 8
-#define ENERGY_INPUT	  9
-#define HEALTH_INPUT	  10
-#define LIFE_INPUT		  11
-#define MEAT_DISTANCE	  12
-#define MEAT_ROTATION	  13
+#define CONSTANT_INPUT		0
+#define X_INPUT				1
+#define Y_INPUT				2
+#define ROTATION_INPUT		3
+#define SPEED_INPUT			4
+#define FOOD_DISTANCE		5
+#define FOOD_ROTATION		6
+#define CREATURE_DISTANCE	7
+#define CREATURE_ROTATION	8
+#define ENERGY_INPUT		9
+#define HEALTH_INPUT		10
+#define LIFE_INPUT			11
+#define MEAT_DISTANCE		12
+#define MEAT_ROTATION		13
+#define CREATURE_PREFERENCE 14
 
 #define FOWARD_OUTPUT (TOTAL_INPUT + 0)
 #define RIGHT_OUTPUT  (TOTAL_INPUT + 1)
@@ -65,8 +66,8 @@ class Creature : public phy::Circle
 		float biomass		= 0;
 		float energyDensity = 0;
 
-		float preference = 1; // plant = 1
-							  // meat  = 0
+		float &preference = creatureData.preference; // plant = 1
+													 // meat  = 0
 
 		float maxForce	  = 0;
 		float maxRotation = 0;

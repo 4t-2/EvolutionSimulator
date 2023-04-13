@@ -50,14 +50,14 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->maxForce	  = 1.5 * speed;
 	this->maxRotation = 0.05 * speed;
 
-	this->health = 100 * size * size;
-	this->life	 = 60 * 60 * size * size;
+	this->health = 100 * size * size * size;
+	this->life	 = 60 * 60 * size * size * size;
 
 	this->maxEnergy = 100 * size * size;
-	this->maxHealth = 100 * size * size;
-	this->maxLife	= 60 * 60 * size * size;
+	this->maxHealth = 100 * size * size * size;
+	this->maxLife	= 60 * 60 * size * size * size;
 
-	this->maxBiomass = 100 * size * size;
+	this->maxBiomass = 100 * size * size * size;
 	this->biomass = 0;
 	this->energyDensity = 0.0;
 
@@ -217,6 +217,8 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 
 		creatureRotation = vectorAngle(offset) + rotation;
 		creatureDistance = distance;
+
+		network->setInputNode(CREATURE_PREFERENCE, creature->preference);
 	});
 
 	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / rayLength));

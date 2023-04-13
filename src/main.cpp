@@ -296,26 +296,26 @@ int main()
 	Food			 *food				= simulation.foodBuffer;
 
 	Creature   *focusCreature = nullptr;
-	int			frame = 0;
-	float		fps	  = 0;
+	int			frame		  = 0;
+	float		fps			  = 0;
 	std::string nodeName;
 
-	struct 
+	struct
 	{
-		agl::Vec<float, 2> position;
-		agl::Vec<float, 2> velocity;
-		agl::Vec<float, 2> force;
-		bool eating;
-		bool layingEgg;
-		float health;
-		float energy;
-		int life;
-		float sight;
-		float speed;
-		float size;
-		int hue;
-		float biomass;
-		float energyDensity;
+			agl::Vec<float, 2> position;
+			agl::Vec<float, 2> velocity;
+			agl::Vec<float, 2> force;
+			bool			   eating;
+			bool			   layingEgg;
+			float			   health;
+			float			   energy;
+			int				   life;
+			float			   sight;
+			float			   speed;
+			float			   size;
+			int				   hue;
+			float			   biomass;
+			float			   energyDensity;
 	} focusInfo;
 
 	simulationInfo.get<0>() = {"Creatures", &simulation.existingCreatures->length};
@@ -325,23 +325,23 @@ int main()
 	simulationInfo.get<4>() = {"Frame", &frame};
 	simulationInfo.get<5>() = {"FPS", &fps};
 
-	creatureInfo.get<1>()		 = {"Node", &nodeName};
-	creatureInfo.get<4>()		 = {"X", &focusInfo.position.x};
-	creatureInfo.get<5>() = {"Y", &focusInfo.position.y};
-	creatureInfo.get<7>()= {"X", &focusInfo.velocity.x};
-	creatureInfo.get<8>()= {"Y", &focusInfo.velocity.y};
+	creatureInfo.get<1>()  = {"Node", &nodeName};
+	creatureInfo.get<4>()  = {"X", &focusInfo.position.x};
+	creatureInfo.get<5>()  = {"Y", &focusInfo.position.y};
+	creatureInfo.get<7>()  = {"X", &focusInfo.velocity.x};
+	creatureInfo.get<8>()  = {"Y", &focusInfo.velocity.y};
 	creatureInfo.get<10>() = {"X", &focusInfo.force.x};
 	creatureInfo.get<11>() = {"Y", &focusInfo.force.y};
-	creatureInfo.get<13>() = { "Eating", &focusInfo.eating};
-	creatureInfo.get<14>() = { "Laying Egg", &focusInfo.layingEgg};
-	creatureInfo.get<16>() = { "Health", &focusInfo.health};
-	creatureInfo.get<17>() = { "Energy", &focusInfo.energy};
-	creatureInfo.get<18>() = { "Life Life", &focusInfo.life};
-	creatureInfo.get<20>() = { "Sight", &focusInfo.sight};
-	creatureInfo.get<21>() = { "Speed", &focusInfo.speed};
-	creatureInfo.get<22>() = { "Size", &focusInfo.size};
-	creatureInfo.get<23>() = { "Hue", &focusInfo.hue};
-	creatureInfo.get<25>() = { "Biomass", &focusInfo.biomass};
+	creatureInfo.get<13>() = {"Eating", &focusInfo.eating};
+	creatureInfo.get<14>() = {"Laying Egg", &focusInfo.layingEgg};
+	creatureInfo.get<16>() = {"Health", &focusInfo.health};
+	creatureInfo.get<17>() = {"Energy", &focusInfo.energy};
+	creatureInfo.get<18>() = {"Life Life", &focusInfo.life};
+	creatureInfo.get<20>() = {"Sight", &focusInfo.sight};
+	creatureInfo.get<21>() = {"Speed", &focusInfo.speed};
+	creatureInfo.get<22>() = {"Size", &focusInfo.size};
+	creatureInfo.get<23>() = {"Hue", &focusInfo.hue};
+	creatureInfo.get<25>() = {"Biomass", &focusInfo.biomass};
 	creatureInfo.get<26>() = {"Energy Density", &focusInfo.energyDensity};
 
 	bool mHeld		= false;
@@ -387,7 +387,7 @@ int main()
 		{
 			mHeld = false;
 
-			CreatureData creatureData(1, 1, 1, 60, 15);
+			CreatureData creatureData(1, 2, 1, 60, 15);
 
 			creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 			creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
@@ -395,7 +395,7 @@ int main()
 			creatureData.setConnection(3, CREATURE_ROTATION, LEFT_OUTPUT, 1);
 			creatureData.setConnection(4, CREATURE_ROTATION, RIGHT_OUTPUT, -1);
 
-			creatureData.preference = -1;
+			creatureData.preference = 0;
 			agl::Vec<float, 2> position;
 			position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
 			position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
@@ -593,19 +593,19 @@ int main()
 			static int selectedID = 0;
 			nodeName			  = nodeNames[selectedID];
 
-			focusInfo.position = focusCreature->position;
-			focusInfo.velocity = focusCreature->velocity;
-			focusInfo.force = focusCreature->force;
-			focusInfo.eating = focusCreature->eating;
-			focusInfo.layingEgg = focusCreature->layingEgg;
-			focusInfo.health = focusCreature->health;
-			focusInfo.energy = focusCreature->energy;
-			focusInfo.life = focusCreature->life;
-			focusInfo.sight = focusCreature->sight;
-			focusInfo.speed = focusCreature->speed;
-			focusInfo.size = focusCreature->size;
-			focusInfo.hue = focusCreature->hue;
-			focusInfo.biomass = focusCreature->biomass;
+			focusInfo.position		= focusCreature->position;
+			focusInfo.velocity		= focusCreature->velocity;
+			focusInfo.force			= focusCreature->force;
+			focusInfo.eating		= focusCreature->eating;
+			focusInfo.layingEgg		= focusCreature->layingEgg;
+			focusInfo.health		= focusCreature->health;
+			focusInfo.energy		= focusCreature->energy;
+			focusInfo.life			= focusCreature->life;
+			focusInfo.sight			= focusCreature->sight;
+			focusInfo.speed			= focusCreature->speed;
+			focusInfo.size			= focusCreature->size;
+			focusInfo.hue			= focusCreature->hue;
+			focusInfo.biomass		= focusCreature->biomass;
 			focusInfo.energyDensity = focusCreature->energyDensity;
 
 			vel = focusInfo.velocity.length();
@@ -665,8 +665,7 @@ int main()
 			}
 
 			// draw nodes
-			for (int i = 0;
-				 i < existingCreatures->get(existingCreatures->find(focusCreature))->network->getTotalNodes(); i++)
+			for (int i = 0; i < focusCreature->network->getTotalNodes(); i++)
 			{
 				float angle = (360. / focusCreature->network->getTotalNodes()) * (i + 1);
 

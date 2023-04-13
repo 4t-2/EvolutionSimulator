@@ -26,7 +26,7 @@ class Connection
 
 class NeuralNetwork
 {
-	private:
+	public:
 		int totalNodes		 = 0;
 		int totalInputNodes	 = 0;
 		int totalConnections = 0;
@@ -37,7 +37,6 @@ class NeuralNetwork
 		Connection *connection;
 		Node	  **nodeCalculationOrder;
 
-	public:
 		NeuralNetwork(int totalNodes, int totalInputNodes, Connection connection[], int totalConnections);
 		// ~NeuralNetwork();
 
