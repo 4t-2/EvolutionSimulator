@@ -53,7 +53,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->health = 100 * size * size * size;
 	this->life	 = 60 * 60 * size * size * size;
 
-	this->maxEnergy = 100 * size * size;
+	this->maxEnergy = 100 * size * size * size;
 	this->maxHealth = 100 * size * size * size;
 	this->maxLife	= 60 * 60 * size * size * size;
 
@@ -63,7 +63,10 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 
 	this->radius = 12.5 * size;
 
-	this->energy = creatureData.eggCost * .8;
+	this->eggCost = (this->maxHealth / 2) + (this->maxEnergy / 4);
+	this->eggDesposit = 0;
+
+	this->energy = creatureData.startEnergy;
 
 	int xOffset = (roundUp(rayLength / ((float)simulationRules->size.x / simulationRules->gridResolution.x), 2) / 2);
 	int yOffset = (roundUp(rayLength / ((float)simulationRules->size.y / simulationRules->gridResolution.y), 2) / 2);
@@ -318,7 +321,7 @@ void Creature::updateActions()
 	}
 
 	// energy loss
-	energy -= (sight + (moveForce * moveForce * size * size)) / 300;
+	energy -= (sight + (moveForce * moveForce * size * size)) / 400;
 
 	life--;
 

@@ -2,6 +2,7 @@
 
 #include "../lib/AGL/agl.hpp"
 #include "../lib/PHY/fastphys.hpp"
+#include <cstdlib>
 
 class Food : public phy::Circle
 {

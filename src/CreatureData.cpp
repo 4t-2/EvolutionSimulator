@@ -14,7 +14,7 @@ CreatureData::CreatureData(float sight, float speed, float size, int hue, int to
 	this->size			   = size;
 	this->totalConnections = totalConnections;
 	this->hue			   = hue;
-	this->eggCost		   = 60;
+	this->startEnergy		   = 60;
 
 	connection = new Connection[totalConnections];
 
@@ -42,7 +42,7 @@ CreatureData::CreatureData(const CreatureData &creatureData)
 	speed = creatureData.speed;
 	size  = creatureData.size;
 	hue	  = creatureData.hue;
-	eggCost = creatureData.eggCost;
+	startEnergy = creatureData.startEnergy;
 	preference = creatureData.preference;
 }
 
@@ -62,7 +62,7 @@ void CreatureData::operator=(CreatureData &creatureData)
 	speed = creatureData.speed;
 	size  = creatureData.size;
 	hue	  = creatureData.hue;
-	eggCost = creatureData.eggCost;
+	startEnergy = creatureData.startEnergy;
 	preference = creatureData.preference;
 }
 

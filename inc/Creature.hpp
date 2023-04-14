@@ -38,6 +38,10 @@
 #define EAT_OUTPUT	  (TOTAL_INPUT + 3)
 #define LAYEGG_OUTPUT (TOTAL_INPUT + 4)
 
+#define PREGNANCY_COST 1
+
+#define sizeToHealth(size) 100*size*size*size
+
 class Creature : public phy::Circle
 {
 	public:
@@ -50,6 +54,8 @@ class Creature : public phy::Circle
 		bool eating	   = false;
 		bool layingEgg = false;
 
+		bool incubating = 0;
+		
 		float sight = 0;
 		float speed = 0;
 		float size	= 0;
@@ -65,6 +71,9 @@ class Creature : public phy::Circle
 		float maxBiomass	= 0;
 		float biomass		= 0;
 		float energyDensity = 0;
+
+		float eggCost	  = 0;
+		float eggDesposit = 0;
 
 		float &preference = creatureData.preference; // plant = 1
 													 // meat  = 0

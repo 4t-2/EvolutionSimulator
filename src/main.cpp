@@ -157,7 +157,8 @@ int main()
 		 TextElement, ValueElement<float>, ValueElement<float>, TextElement, ValueElement<float>, ValueElement<float>,
 		 SpacerElement, ValueElement<bool>, ValueElement<bool>, SpacerElement, ValueElement<float>, ValueElement<float>,
 		 ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>, ValueElement<float>,
-		 ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>, ValueElement<float>>
+		 ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>, ValueElement<float>,
+		 ValueElement<float>>
 		creatureInfo(&blank, &font, &event);
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 
@@ -295,28 +296,11 @@ int main()
 	List<Egg *>		 *existingEggs		= simulation.existingEggs;
 	Food			 *food				= simulation.foodBuffer;
 
-	Creature   *focusCreature = nullptr;
-	int			frame		  = 0;
-	float		fps			  = 0;
-	std::string nodeName;
+	Creature *focusCreature	   = nullptr;
 
-	struct
-	{
-			agl::Vec<float, 2> position;
-			agl::Vec<float, 2> velocity;
-			agl::Vec<float, 2> force;
-			bool			   eating;
-			bool			   layingEgg;
-			float			   health;
-			float			   energy;
-			int				   life;
-			float			   sight;
-			float			   speed;
-			float			   size;
-			int				   hue;
-			float			   biomass;
-			float			   energyDensity;
-	} focusInfo;
+	int			frame = 0;
+	float		fps	  = 0;
+	std::string nodeName;
 
 	simulationInfo.get<0>() = {"Creatures", &simulation.existingCreatures->length};
 	simulationInfo.get<1>() = {"Eggs", &simulation.existingEggs->length};
@@ -325,24 +309,28 @@ int main()
 	simulationInfo.get<4>() = {"Frame", &frame};
 	simulationInfo.get<5>() = {"FPS", &fps};
 
-	creatureInfo.get<1>()  = {"Node", &nodeName};
-	creatureInfo.get<4>()  = {"X", &focusInfo.position.x};
-	creatureInfo.get<5>()  = {"Y", &focusInfo.position.y};
-	creatureInfo.get<7>()  = {"X", &focusInfo.velocity.x};
-	creatureInfo.get<8>()  = {"Y", &focusInfo.velocity.y};
-	creatureInfo.get<10>() = {"X", &focusInfo.force.x};
-	creatureInfo.get<11>() = {"Y", &focusInfo.force.y};
-	creatureInfo.get<13>() = {"Eating", &focusInfo.eating};
-	creatureInfo.get<14>() = {"Laying Egg", &focusInfo.layingEgg};
-	creatureInfo.get<16>() = {"Health", &focusInfo.health};
-	creatureInfo.get<17>() = {"Energy", &focusInfo.energy};
-	creatureInfo.get<18>() = {"Life Life", &focusInfo.life};
-	creatureInfo.get<20>() = {"Sight", &focusInfo.sight};
-	creatureInfo.get<21>() = {"Speed", &focusInfo.speed};
-	creatureInfo.get<22>() = {"Size", &focusInfo.size};
-	creatureInfo.get<23>() = {"Hue", &focusInfo.hue};
-	creatureInfo.get<25>() = {"Biomass", &focusInfo.biomass};
-	creatureInfo.get<26>() = {"Energy Density", &focusInfo.energyDensity};
+	auto setValues = [&]() {
+		creatureInfo.get<1>()  = {"Node", &nodeName};
+		creatureInfo.get<4>()  = {"X", &focusCreature->position.x};
+		creatureInfo.get<5>()  = {"Y", &focusCreature->position.y};
+		creatureInfo.get<7>()  = {"X", &focusCreature->velocity.x};
+		creatureInfo.get<8>()  = {"Y", &focusCreature->velocity.y};
+		creatureInfo.get<10>() = {"X", &focusCreature->force.x};
+		creatureInfo.get<11>() = {"Y", &focusCreature->force.y};
+		creatureInfo.get<13>() = {"Eating", &focusCreature->eating};
+		creatureInfo.get<14>() = {"Laying Egg", &focusCreature->layingEgg};
+		creatureInfo.get<16>() = {"Health", &focusCreature->health};
+		creatureInfo.get<17>() = {"Energy", &focusCreature->energy};
+		creatureInfo.get<18>() = {"Life Left", &focusCreature->life};
+		creatureInfo.get<20>() = {"Sight", &focusCreature->sight};
+		creatureInfo.get<21>() = {"Speed", &focusCreature->speed};
+		creatureInfo.get<22>() = {"Size", &focusCreature->size};
+		creatureInfo.get<23>() = {"Hue", &focusCreature->hue};
+		creatureInfo.get<25>() = {"Biomass", &focusCreature->biomass};
+		creatureInfo.get<26>() = {"Energy Density", &focusCreature->energyDensity};
+		creatureInfo.get<27>() = {"Egg Cost", &focusCreature->eggCost};
+		creatureInfo.get<28>() = {"Egg Deposit", &focusCreature->eggDesposit};
+	};
 
 	bool mHeld		= false;
 	bool b1Held		= false;
@@ -519,11 +507,11 @@ int main()
 			creatureShape.setPosition(existingCreatures->get(i)->position);
 			creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(i)->rotation * 180 / PI)});
 
-			float speed = existingCreatures->get(i)->position.length() / 10;
+			float speed = existingCreatures->get(i)->velocity.length();
 
 			creatureShape.setTexture(&creatureBodyTexture);
 
-			int textureFrame = int(frame * speed) % 6;
+			int textureFrame = int(frame * (speed / 8)) % 6;
 
 			if (textureFrame > 2)
 			{
@@ -593,22 +581,7 @@ int main()
 			static int selectedID = 0;
 			nodeName			  = nodeNames[selectedID];
 
-			focusInfo.position		= focusCreature->position;
-			focusInfo.velocity		= focusCreature->velocity;
-			focusInfo.force			= focusCreature->force;
-			focusInfo.eating		= focusCreature->eating;
-			focusInfo.layingEgg		= focusCreature->layingEgg;
-			focusInfo.health		= focusCreature->health;
-			focusInfo.energy		= focusCreature->energy;
-			focusInfo.life			= focusCreature->life;
-			focusInfo.sight			= focusCreature->sight;
-			focusInfo.speed			= focusCreature->speed;
-			focusInfo.size			= focusCreature->size;
-			focusInfo.hue			= focusCreature->hue;
-			focusInfo.biomass		= focusCreature->biomass;
-			focusInfo.energyDensity = focusCreature->energyDensity;
-
-			vel = focusInfo.velocity.length();
+			setValues();
 
 			window.draw(creatureInfo);
 			window.drawShape(networkBackground);

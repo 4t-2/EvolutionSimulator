@@ -16,7 +16,7 @@ class CreatureData
 		float size;	 // 0 - 2
 		int	  hue;	 // 0 - 359
 
-		float eggCost;
+		float startEnergy;
 		float preference; // 1 = plant, -1 = meat
 
 		CreatureData();
