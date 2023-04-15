@@ -14,7 +14,7 @@ CreatureData::CreatureData(float sight, float speed, float size, int hue, int to
 	this->size			   = size;
 	this->totalConnections = totalConnections;
 	this->hue			   = hue;
-	this->startEnergy		   = 60;
+	this->startEnergy		   = 25 * size * size * size;
 
 	connection = new Connection[totalConnections];
 

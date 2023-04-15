@@ -204,6 +204,8 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 	float foodDistance	   = rayLength;
 	float foodRotation	   = 0;
 
+	network->setInputNode(CREATURE_PREFERENCE, 0);
+
 	creatureGrid->updateElements(gridPosition, startGridOffset, endGridOffset, [&](Creature *creature) {
 		if (creature == this)
 		{

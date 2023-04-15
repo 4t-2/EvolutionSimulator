@@ -35,6 +35,8 @@ class Simulation
 		List<Meat *> *existingMeat;
 		Grid<Meat*> *meatGrid;
 
+		int frame =0 ;
+
 		Simulation(SimulationRules simulationRules);
 		void destroy();
 

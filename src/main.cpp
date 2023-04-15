@@ -141,11 +141,7 @@ int main()
 	background.setTexture(&blank);
 	background.setColor(CLEARCOLOR);
 
-	float backgroundSize = 100000;
-
-	background.setSize({backgroundSize, backgroundSize});
 	background.setPosition({0, 0, 0});
-	background.setOffset({-backgroundSize / 2, -backgroundSize / 2, -40});
 
 	// menu shapes
 	Menu<ValueElement<int>, ValueElement<int>, ValueElement<int>, ValueElement<int>, ValueElement<int>,
@@ -284,6 +280,8 @@ int main()
 	std::cout << "penaltyBuffer- " << simulationRules.penaltyBuffer << '\n';
 	std::cout << "penaltyPeriod- " << simulationRules.penaltyPeriod << '\n';
 
+	background.setSize(simulationRules.size);
+	
 	printf("starting sim\n");
 
 	// background.setPosition(simulationRules.size * .5);
@@ -298,7 +296,6 @@ int main()
 
 	Creature *focusCreature	   = nullptr;
 
-	int			frame = 0;
 	float		fps	  = 0;
 	std::string nodeName;
 
@@ -306,7 +303,7 @@ int main()
 	simulationInfo.get<1>() = {"Eggs", &simulation.existingEggs->length};
 	simulationInfo.get<2>() = {"Food", &simulation.existingFood->length};
 	simulationInfo.get<3>() = {"Meat", &simulation.existingMeat->length};
-	simulationInfo.get<4>() = {"Frame", &frame};
+	simulationInfo.get<4>() = {"Frame", &simulation.frame};
 	simulationInfo.get<5>() = {"FPS", &fps};
 
 	auto setValues = [&]() {
@@ -382,6 +379,10 @@ int main()
 			creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
 			creatureData.setConnection(3, CREATURE_ROTATION, LEFT_OUTPUT, 1);
 			creatureData.setConnection(4, CREATURE_ROTATION, RIGHT_OUTPUT, -1);
+			creatureData.setConnection(5, CONSTANT_INPUT, RIGHT_OUTPUT, -1);
+			creatureData.setConnection(6, CONSTANT_INPUT, LEFT_OUTPUT, -1);
+			creatureData.setConnection(7, CREATURE_PREFERENCE, RIGHT_OUTPUT, 1);
+			creatureData.setConnection(8, CREATURE_PREFERENCE, LEFT_OUTPUT, 1);
 
 			creatureData.preference = 0;
 			agl::Vec<float, 2> position;
@@ -404,10 +405,6 @@ int main()
 		if (!event.isKeyPressed(XK_space))
 		{
 			simulation.update();
-
-			frame++;
-
-			// std::cout << frame << '\n';
 		}
 
 		if (skipRender)
@@ -511,7 +508,7 @@ int main()
 
 			creatureShape.setTexture(&creatureBodyTexture);
 
-			int textureFrame = int(frame * (speed / 8)) % 6;
+			int textureFrame = int(simulation.frame * (speed / 8)) % 6;
 
 			if (textureFrame > 2)
 			{
