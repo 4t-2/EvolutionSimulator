@@ -9,6 +9,8 @@
 #include "Meat.hpp"
 
 #define MAXMEAT 2000
+#define FOODENERGY .5
+#define MEATENERGY 2
 
 class Simulation
 {
@@ -36,6 +38,8 @@ class Simulation
 		Grid<Meat*> *meatGrid;
 
 		int frame =0 ;
+
+		float foodEnergyDensity = FOODENERGY;
 
 		Simulation(SimulationRules simulationRules);
 		void destroy();

@@ -5,7 +5,7 @@
 #include <type_traits>
 
 #define MENU_BORDER		2
-#define MENU_PADDING	10
+#define MENU_PADDING	1
 #define MENU_SHADOWSIZE 1
 
 #define MENU_BORDERTHICKNESS  (float)6
@@ -52,22 +52,30 @@ class MenuElement : public agl::Drawable
 {
 	public:
 		agl::Vec<float, 3> position = {0, 0, 0};
-		float			   height	= 0;
+		agl::Vec<float, 2> size		= {0, 0};
 		agl::Text		  *text		= nullptr;
 		agl::Rectangle	  *rect		= nullptr;
 		agl::Texture	  *border	= nullptr;
 		agl::Texture	  *blank	= nullptr;
 		agl::Event		  *event	= nullptr;
+		bool			  *focused	= nullptr;
 
-		void init(agl::Text *text, agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank, agl::Event *event)
+		bool pointInElement(agl::Vec<float, 2> point)
 		{
-			this->text	 = text;
-			this->rect	 = rect;
-			this->border = border;
-			this->blank	 = blank;
-			this->event	 = event;
+			return pointInArea(point, position, size);
+		}
 
-			height = text->getHeight() * text->getScale();
+		void init(agl::Text *text, agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank, agl::Event *event,
+				  bool *focused)
+		{
+			this->text	  = text;
+			this->rect	  = rect;
+			this->border  = border;
+			this->blank	  = blank;
+			this->event	  = event;
+			this->focused = focused;
+
+			size.y = text->getHeight() * text->getScale();
 		}
 
 		// void drawFunction(agl::RenderWindow &window);
@@ -88,31 +96,27 @@ class TextElement : public MenuElement
 		}
 };
 
-template<typename T>
-inline std::string toString(T value)
+template <typename T> inline std::string toString(T value)
 {
 	return std::to_string(value);
 }
 
-template<>
-inline std::string toString<std::string>(std::string value)
+template <> inline std::string toString<std::string>(std::string value)
 {
 	return value;
 }
 
-template<typename T>
-class ValueElement : public MenuElement
+template <typename T> class ValueElement : public MenuElement
 {
 	public:
 		std::string label = "null";
-		T *value = nullptr;
+		T		   *value = nullptr;
 
 		ValueElement()
 		{
-
 		}
-			
-		ValueElement(std::string label, T*value)
+
+		ValueElement(std::string label, T *value)
 		{
 			this->label = label;
 			this->value = value;
@@ -155,10 +159,10 @@ class ButtonElement : public MenuElement
 
 	public:
 		std::string label = "null";
-		float		width = 200;
 		bool		state = false;
 
-		void init(agl::Text *text, agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank, agl::Event *event)
+		void init(agl::Text *text, agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank, agl::Event *event,
+				  bool *focused)
 		{
 			this->text	 = text;
 			this->rect	 = rect;
@@ -166,32 +170,14 @@ class ButtonElement : public MenuElement
 			this->blank	 = blank;
 			this->event	 = event;
 
-			height = text->getHeight() * text->getScale() + MENU_BORDEREDGE * 2;
-		}
-
-		bool pointInButton(agl::Vec<float, 2> point)
-		{
-			return pointInArea(point, position, {width, height});
+			size.y = text->getHeight() * text->getScale() + MENU_BORDEREDGE * 2;
 		}
 
 		void drawFunction(agl::RenderWindow &window)
 		{
-			// update button (toggle)
-
-			if (this->pointInButton(event->getPointerWindowPosition()))
+			if (event->pointerButton == 1 && this->pointInElement(event->getPointerWindowPosition()))
 			{
-				if (event->isPointerButtonPressed(Button1Mask))
-				{
-					if (!mouseHeld)
-					{
-						state = !state;
-					}
-					mouseHeld = true;
-				}
-				else
-				{
-					mouseHeld = false;
-				}
+				state = !state;
 			}
 
 			// draw button
@@ -208,16 +194,16 @@ class ButtonElement : public MenuElement
 			{
 				rect->setTextureTranslation({0, 0});
 			}
-			rect->setSize({MENU_BORDERTHICKNESS, height});
+			rect->setSize({MENU_BORDERTHICKNESS, size.y});
 			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
 			rect->setPosition(position);
 			window.drawShape(*rect);
 
 			// right
-			rect->setSize({MENU_BORDERTHICKNESS, height});
+			rect->setSize({MENU_BORDERTHICKNESS, size.y});
 			rect->setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 1});
 			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
-			rect->setPosition(position + agl::Vec<float, 2>{width - MENU_BORDERTHICKNESS, 0});
+			rect->setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, 0});
 			window.drawShape(*rect);
 
 			// up
@@ -229,18 +215,18 @@ class ButtonElement : public MenuElement
 			{
 				rect->setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 2});
 			}
-			rect->setSize({MENU_BORDERTHICKNESS, width});
+			rect->setSize({MENU_BORDERTHICKNESS, size.x});
 			rect->setRotation({0, 0, 90});
 			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
 			rect->setPosition(position + agl::Vec<float, 2>{0, MENU_BORDERTHICKNESS});
 			window.drawShape(*rect);
 
 			// down
-			rect->setSize({MENU_BORDERTHICKNESS, width});
+			rect->setSize({MENU_BORDERTHICKNESS, size.x});
 			rect->setRotation({0, 0, 90});
 			rect->setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 3});
 			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
-			rect->setPosition(position + agl::Vec<float, 2>{0, height});
+			rect->setPosition(position + agl::Vec<float, 2>{0, size.y});
 			window.drawShape(*rect);
 
 			rect->setRotation({0, 0, 0});
@@ -250,13 +236,13 @@ class ButtonElement : public MenuElement
 			{
 				rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 3});
 				rect->setRotation({0, 0, 90});
-				rect->setPosition(position + agl::Vec<float, 2>{width - MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
+				rect->setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
 			}
 			else
 			{
 				rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 4});
 				rect->setRotation({0, 0, 0});
-				rect->setPosition(position + agl::Vec<float, 2>{width - MENU_BORDERTHICKNESS, 0});
+				rect->setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, 0});
 			}
 			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
 			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
@@ -268,7 +254,7 @@ class ButtonElement : public MenuElement
 			rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 3});
 			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
 			rect->setPosition(position +
-							  agl::Vec<float, 2>{width - MENU_BORDERTHICKNESS, height - MENU_BORDERTHICKNESS});
+							  agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, size.y - MENU_BORDERTHICKNESS});
 			window.drawShape(*rect);
 
 			// tl
@@ -293,13 +279,13 @@ class ButtonElement : public MenuElement
 			{
 				rect->setRotation({0, 0, 270});
 				rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 3});
-				rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDERTHICKNESS, height - MENU_BORDERTHICKNESS});
+				rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDERTHICKNESS, size.y - MENU_BORDERTHICKNESS});
 			}
 			else
 			{
 				rect->setRotation({0, 0, 0});
 				rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT)});
-				rect->setPosition(position + agl::Vec<float, 2>{0, height - MENU_BORDERTHICKNESS});
+				rect->setPosition(position + agl::Vec<float, 2>{0, size.y - MENU_BORDERTHICKNESS});
 			}
 			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
 			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
@@ -308,7 +294,8 @@ class ButtonElement : public MenuElement
 			// body
 			rect->setRotation({0, 0, 0});
 			rect->setTexture(blank);
-			rect->setSize(agl::Vec<float, 2>{width, height} - agl::Vec<float, 2>{MENU_BORDEREDGE, MENU_BORDEREDGE} * 2);
+			rect->setSize(agl::Vec<float, 2>{size.x, size.y} -
+						  agl::Vec<float, 2>{MENU_BORDEREDGE, MENU_BORDEREDGE} * 2);
 			rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDEREDGE, MENU_BORDEREDGE});
 			rect->setColor({0xc0, 0xc0, 0xc0});
 			window.drawShape(*rect);
@@ -316,6 +303,106 @@ class ButtonElement : public MenuElement
 			text->setPosition(position + agl::Vec<float, 2>{MENU_BORDEREDGE * 2, 0});
 			text->clearText();
 			text->setText(label);
+			window.drawText(*text);
+		}
+};
+
+class FieldElement : public MenuElement
+{
+	public:
+		std::string label = "null";
+		std::string value = "";
+		std::string liveValue = "";
+
+		float fieldWidth = 0;
+
+		bool textFocus = false;
+
+		bool hovered = false;
+
+		void drawFunction(agl::RenderWindow &window)
+		{
+			size.x	   = 225;
+			fieldWidth = 125;
+
+			// bad fix, too lazy to add utf-8 fonts yet
+
+			bool utf8 = false;
+
+			for (const char &byte : event->keybuffer)
+			{
+				if (byte & (1 << 8))
+				{
+					utf8 = true;
+					break;
+				}
+			}
+
+			if (this->pointInElement(event->getPointerWindowPosition()))
+			{
+				if(event->pointerButton == 1)
+				{
+					textFocus = !textFocus;
+					value = liveValue;
+				}
+
+				if (hovered) // holding
+				{
+					window.setCursorShape(XC_xterm);
+				}
+				else // first
+				{
+					window.setCursorShape(XC_xterm);
+					hovered = true;
+				}
+			}
+			else if (hovered) // last
+			{
+				window.setCursorShape(XC_left_ptr);
+				hovered = false;
+			}
+
+			if(textFocus && !utf8)
+			{
+				liveValue += event->keybuffer;
+
+				while(liveValue[0] == 127 || liveValue[0] == 8)
+				{
+					liveValue.erase(0, 1);
+				}
+
+				for(int i = 1; i < liveValue.length(); i++)
+				{
+					if(liveValue[i] == 127 || liveValue[i] == 8)
+					{
+						liveValue.erase(i-1, 2);
+						i--;
+					}
+				}
+			}
+
+			text->setPosition(position);
+			text->clearText();
+			text->setText(label);
+
+			window.drawText(*text);
+
+			if (textFocus)
+			{
+				rect->setColor({200, 200, 200});
+			}
+			else
+			{
+				rect->setColor(agl::Color::Gray);
+			}
+			rect->setPosition(position + agl::Vec<float, 2>{size.x - fieldWidth, 0});
+			rect->setSize({fieldWidth, size.y});
+
+			window.drawShape(*rect);
+
+			text->setPosition(position + agl::Vec<float, 2>{size.x - fieldWidth, 0});
+			text->setText(liveValue);
+
 			window.drawText(*text);
 		}
 };
@@ -344,6 +431,8 @@ template <typename... ElementType> class Menu : public agl::Drawable
 		agl::Rectangle trCorner;
 		agl::Rectangle brCorner;
 
+		bool focused = false;
+
 		agl::Text	   text;
 		agl::Rectangle rect;
 
@@ -358,7 +447,7 @@ template <typename... ElementType> class Menu : public agl::Drawable
 
 		template <size_t i = 0> typename std::enable_if < i<sizeof...(ElementType), void>::type initTuple()
 		{
-			std::get<i>(element).init(&text, &rect, &border, blank, event);
+			std::get<i>(element).init(&text, &rect, &border, blank, event, &focused);
 
 			initTuple<i + 1>();
 		}
@@ -383,7 +472,7 @@ template <typename... ElementType> class Menu : public agl::Drawable
 
 			window.draw(std::get<i>(element));
 
-			pen.y += std::get<i>(element).height;
+			pen.y += std::get<i>(element).size.y + MENU_PADDING;
 
 			draw<i + 1>(window, pen);
 		}

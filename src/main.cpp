@@ -96,8 +96,6 @@ int main()
 	// window.GLEnable(GL_ALPHA_TEST);
 	// glAlphaFunc(GL_GREATER, 0.1f);
 
-	XSelectInput(window.getDisplay(), window.getWindow(), ButtonPressMask | ButtonReleaseMask);
-
 	agl::Event event;
 	event.setWindow(window);
 
@@ -158,7 +156,7 @@ int main()
 		creatureInfo(&blank, &font, &event);
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 
-	creatureInfo.get<0>().height = 350;
+	creatureInfo.get<0>().size.y = 350;
 	creatureInfo.get<3>().str	 = "- Position -";
 	creatureInfo.get<6>().str	 = "- Velocity -";
 	creatureInfo.get<9>().str	 = "- Force -";
@@ -167,24 +165,27 @@ int main()
 
 	creatureInfo.get<27>() = {"vel", &vel};
 
-	Menu<ButtonElement, ButtonElement, ButtonElement, ButtonElement> actionMenu(&blank, &font, &event);
-	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {150, 140});
-	actionMenu.get<0>().label = "Food";
-	actionMenu.get<0>().width = 150 - 16 * 2;
-	actionMenu.get<1>().label = "Meat";
-	actionMenu.get<1>().width = 150 - 16 * 2;
-	actionMenu.get<2>().label = "Select";
-	actionMenu.get<2>().width = 150 - 16 * 2;
-	actionMenu.get<3>().label = "Kill";
-	actionMenu.get<3>().width = 150 - 16 * 2;
+	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement> actionMenu(&blank, &font, &event);
+	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 190});
+	actionMenu.get<0>().str = "Left Click";
+	actionMenu.get<0>().size.y = 30;
+	actionMenu.get<1>().label  = "Food";
+	actionMenu.get<1>().size.x = 150 - 16 * 2;
+	actionMenu.get<2>().label  = "Meat";
+	actionMenu.get<2>().size.x = 150 - 16 * 2;
+	actionMenu.get<3>().label  = "Select";
+	actionMenu.get<3>().size.x = 150 - 16 * 2;
+	actionMenu.get<4>().label  = "Kill";
+	actionMenu.get<4>().size.x = 150 - 16 * 2;
+	actionMenu.get<5>().label = "FdEnDn";
 
 	Menu<TextElement, ButtonElement, ButtonElement> quitMenu(&blank, &font, &event);
 	quitMenu.setup({0, 0}, {150, 115});
-	quitMenu.get<0>().str	= "Quit?";
-	quitMenu.get<1>().label = "Confirm";
-	quitMenu.get<1>().width = 150 - 16 * 2;
-	quitMenu.get<2>().label = "Cancel";
-	quitMenu.get<2>().width = 150 - 16 * 2;
+	quitMenu.get<0>().str	 = "Quit?";
+	quitMenu.get<1>().label	 = "Confirm";
+	quitMenu.get<1>().size.x = 150 - 16 * 2;
+	quitMenu.get<2>().label	 = "Cancel";
+	quitMenu.get<2>().size.x = 150 - 16 * 2;
 
 	agl::Circle networkBackground(60);
 	networkBackground.setTexture(&blank);
@@ -281,7 +282,7 @@ int main()
 	std::cout << "penaltyPeriod- " << simulationRules.penaltyPeriod << '\n';
 
 	background.setSize(simulationRules.size);
-	
+
 	printf("starting sim\n");
 
 	// background.setPosition(simulationRules.size * .5);
@@ -294,9 +295,9 @@ int main()
 	List<Egg *>		 *existingEggs		= simulation.existingEggs;
 	Food			 *food				= simulation.foodBuffer;
 
-	Creature *focusCreature	   = nullptr;
+	Creature *focusCreature = nullptr;
 
-	float		fps	  = 0;
+	float		fps = 0;
 	std::string nodeName;
 
 	simulationInfo.get<0>() = {"Creatures", &simulation.existingCreatures->length};
@@ -337,6 +338,9 @@ int main()
 
 	float sizeMultiplier = 1;
 
+	actionMenu.get<5>().value = std::to_string(simulation.foodEnergyDensity);
+	actionMenu.get<5>().liveValue = std::to_string(simulation.foodEnergyDensity);
+
 	printf("entering sim loop\n");
 
 	bool quiting = false;
@@ -346,23 +350,7 @@ int main()
 		static int milliDiff = 0;
 		int		   start	 = getMillisecond();
 
-		int mouseWheelPos = 0;
-
-		event.poll([&](XEvent xev) {
-			switch (xev.type)
-			{
-				case ButtonPress:
-					if (xev.xbutton.button == 4)
-					{
-						mouseWheelPos = 1;
-					}
-					if (xev.xbutton.button == 5)
-					{
-						mouseWheelPos = -1;
-					}
-					break;
-			}
-		});
+		event.poll();
 
 		if (event.isKeyPressed(XK_m))
 		{
@@ -728,17 +716,17 @@ int main()
 				goto endif;
 			}
 
-			if (actionMenu.get<0>().state) // add food
+			if (actionMenu.get<1>().state) // add food
 			{
 				simulation.addFood(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
 														  cameraPosition));
 			}
-			if (actionMenu.get<1>().state) // add meat
+			if (actionMenu.get<2>().state) // add meat
 			{
 				simulation.addMeat(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
 														  cameraPosition));
 			}
-			if (actionMenu.get<2>().state) // select creature
+			if (actionMenu.get<3>().state) // select creature
 			{
 				for (int i = 0; i < existingCreatures->length; i++)
 				{
@@ -758,7 +746,7 @@ int main()
 					}
 				}
 			}
-			if (actionMenu.get<3>().state) // kill creature
+			if (actionMenu.get<4>().state) // kill creature
 			{
 				for (int i = 0; i < existingCreatures->length; i++)
 				{
@@ -819,7 +807,7 @@ int main()
 
 		const float sizeDelta = .2;
 
-		if (mouseWheelPos == 1)
+		if (event.pointerButton == 4)
 		{
 			float scale = sizeDelta * sizeMultiplier;
 
@@ -835,7 +823,7 @@ int main()
 
 			cameraPosition = cameraPosition + offset;
 		}
-		if (mouseWheelPos == -1)
+		if (event.pointerButton == 5)
 		{
 			float scale = sizeDelta * sizeMultiplier;
 
@@ -853,7 +841,7 @@ int main()
 		}
 
 		simulationInfo.setPosition({windowSize.x - 260, 10, 9});
-		actionMenu.setPosition({windowSize.x - 160, simulationInfo.position.y + simulationInfo.size.y + 10, 9});
+		actionMenu.setPosition({windowSize.x - actionMenu.size.x - 10, simulationInfo.position.y + simulationInfo.size.y + 10, 9});
 		quitMenu.setPosition({(windowSize.x - quitMenu.size.x) / 2, (windowSize.y - quitMenu.size.y) / 2});
 
 		window.setViewport(0, 0, windowSize.x, windowSize.y);
@@ -864,6 +852,8 @@ int main()
 		camera.setView({cameraPosition.x, cameraPosition.y, 50}, {cameraPosition.x, cameraPosition.y, 0}, {0, 1, 0});
 
 		guiCamera.setOrthographicProjection(0, windowSize.x, windowSize.y, 0, 0.1, 100);
+
+		simulation.foodEnergyDensity = std::stof(actionMenu.get<5>().value);
 
 		milliDiff = getMillisecond() - start;
 	}

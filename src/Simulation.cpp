@@ -11,9 +11,6 @@
 #define EATRADIUS 5
 #define DAMAGE	  25
 
-#define FOODENERGY .5
-#define MEATENERGY 2
-
 #define FOODVOL	 25
 #define MEATVOL	 25
 #define LEACHVOL .25
@@ -839,7 +836,7 @@ void Simulation::updateSimulation()
 
 					if (offset.length() < (creature->radius + food->radius + EATRADIUS))
 					{
-						float energy = FOODENERGY * creature->preference;
+						float energy = foodEnergyDensity * creature->preference;
 
 						creature->energyDensity = ((creature->biomass * creature->energyDensity) + (FOODVOL * energy)) /
 												  (creature->biomass + FOODVOL);
