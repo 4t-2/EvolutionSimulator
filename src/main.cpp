@@ -14,20 +14,6 @@
 #include <string>
 #include <unistd.h>
 
-#define TOTAL_FOOD 10
-
-#define BASE_B_VALUE 63
-
-#define WIDTH  1920
-#define HEIGHT 1080
-
-#define CLEARCOLOR \
-	{              \
-		12, 12, 24 \
-	}
-
-#define NETWORK_PADDING 20
-
 int getMillisecond()
 {
 	auto timepoint = std::chrono::system_clock::now().time_since_epoch();
@@ -193,7 +179,7 @@ int main()
 	networkBackground.setSize(agl::Vec<float, 3>{150, 150, 0});
 	networkBackground.setPosition(agl::Vec<float, 3>{
 		creatureInfo.position.x + (creatureInfo.size.x / 2),
-		creatureInfo.position.y + MENU_BORDER + MENU_PADDING + MENU_SHADOWSIZE + networkBackground.getSize().y, 10});
+		creatureInfo.position.y + MENU_BORDERTHICKNESS + MENU_PADDING + networkBackground.getSize().y, 10});
 
 	agl::Circle nodeShape(10);
 	nodeShape.setTexture(&blank);

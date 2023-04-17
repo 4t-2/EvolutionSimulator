@@ -7,10 +7,8 @@
 #include "Grid.hpp"
 #include "SimulationRules.hpp"
 #include "Meat.hpp"
+#include "macro.hpp"
 
-#define MAXMEAT 2000
-#define FOODENERGY .5
-#define MEATENERGY 2
 
 class Simulation
 {

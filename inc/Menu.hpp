@@ -1,30 +1,10 @@
 #pragma once
 
 #include "../lib/AGL/agl.hpp"
+#include "macro.hpp"
 
 #include <type_traits>
 
-#define MENU_BORDER		2
-#define MENU_PADDING	1
-#define MENU_SHADOWSIZE 1
-
-#define MENU_BORDERTHICKNESS  (float)6
-#define MENU_DECORATIONHEIGHT (float)(4 + (MENU_BORDERTHICKNESS * 4))
-
-#define MENU_BORDEREDGE (float)2
-
-#define MENU_BORDERCOLOR \
-	{                    \
-		140, 140, 140    \
-	}
-#define MENU_SHADOWCOLOR \
-	{                    \
-		100, 100, 100    \
-	}
-#define MENU_BODYCOLOR \
-	{                  \
-		210, 210, 210  \
-	}
 
 inline bool pointInArea(agl::Vec<float, 2> point, agl::Vec<float, 2> position, agl::Vec<float, 2> size)
 {

@@ -3,8 +3,6 @@
 #include "../lib/AGL/agl.hpp"
 #include "NeuralNetwork.hpp"
 
-#define EXTRA_BYTES 4
-
 class CreatureData
 {
 	public:

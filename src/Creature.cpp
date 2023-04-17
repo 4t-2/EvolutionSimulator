@@ -1,7 +1,5 @@
 #include "../inc/Creature.hpp"
 
-#define METABOLISM .25
-
 Creature::Creature() : phy::Circle(*(agl::Circle *)0)
 {
 	mass = 1;

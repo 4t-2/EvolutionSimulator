@@ -3,6 +3,7 @@
 #include "../lib/AGL/agl.hpp"
 #include "../lib/PHY/fastphys.hpp"
 #include <cstdlib>
+#include "macro.hpp"
 
 class Food : public phy::Circle
 {
@@ -17,11 +18,12 @@ class Food : public phy::Circle
 		float energy;
 		bool exists = true;
 
+#ifdef ACTIVEFOOD
 		agl::Vec<float, 2> nextPos;
 
 		void nextRandPos(agl::Vec<float, 2> worldSize)
 		{
-			constexpr float range = 500;
+			constexpr float range = ACTIVEFOOD;
 
 			float xOffset = rand() / (float)RAND_MAX;
 			xOffset -= .5;
@@ -34,4 +36,5 @@ class Food : public phy::Circle
 			nextPos.x = std::max((float)0, std::min(worldSize.x, position.x + xOffset));
 			nextPos.y = std::max((float)0, std::min(worldSize.y, position.y + yOffset));
 		}
+#endif
 };

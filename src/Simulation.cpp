@@ -1,23 +1,9 @@
 #include "../inc/Simulation.hpp"
 
 #include <cstdlib>
-#include <thread>
-
 #include <fstream>
-
-#define LOGCREATUREDATA
-
-#define THREADS	  2
-#define EATRADIUS 5
-#define DAMAGE	  25
-
-#define FOODVOL	 25
-#define MEATVOL	 25
-#define LEACHVOL .25
-
-#define BITEDELAY 20
-
-// 1 health = 2 energy
+#include <thread>
+#include <type_traits>
 
 void randomData(Buffer *buffer)
 {
@@ -124,45 +110,6 @@ void Simulation::destroy()
 	csizd.close();
 
 #endif
-}
-
-Buffer Simulation::creatureDataToBuffer(CreatureData &creatureData)
-{
-	Buffer buffer((creatureData.totalConnections * 3) + EXTRA_BYTES);
-
-	buffer.data[0] = 255 * (creatureData.sight / 2);
-	buffer.data[1] = 255 * (creatureData.speed / 2);
-	buffer.data[2] = 255 * (creatureData.size / 2);
-	buffer.data[3] = 255 * (creatureData.hue / 359.);
-
-	for (int i = 0; i < creatureData.totalConnections; i++)
-	{
-		buffer.data[(i * 3) + 0 + EXTRA_BYTES] = creatureData.connection[i].startNode;
-		buffer.data[(i * 3) + 1 + EXTRA_BYTES] = creatureData.connection[i].endNode;
-		buffer.data[(i * 3) + 2 + EXTRA_BYTES] = 127 * (creatureData.connection[i].weight + 1);
-	}
-
-	return buffer;
-}
-
-CreatureData Simulation::bufferToCreatureData(Buffer buffer)
-{
-	CreatureData creatureData((buffer.data[0] * 2) / 255.,	  //
-							  (buffer.data[1] * 2) / 255.,	  //
-							  (buffer.data[2] * 2) / 255.,	  //
-							  (buffer.data[3] * 359.) / 255., //
-							  (buffer.size - EXTRA_BYTES) / 3);
-
-	for (int i = 0; i < creatureData.totalConnections; i++)
-	{
-		creatureData.setConnection(i,												   // id
-								   buffer.data[(i * 3) + 0 + EXTRA_BYTES],			   // start
-								   buffer.data[(i * 3) + 1 + EXTRA_BYTES],			   // end
-								   (buffer.data[(i * 3) + 2 + EXTRA_BYTES] / 127.) - 1 // weight
-		);
-	}
-
-	return creatureData;
 }
 
 void Simulation::mutateBuffer(Buffer *buffer, int chance)
@@ -290,7 +237,9 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 			foodBuffer[i].position = position;
 			foodBuffer[i].energy   = simulationRules.foodEnergy;
 
+#ifdef ACTIVEFOOD
 			foodBuffer[i].nextRandPos(simulationRules.size);
+#endif
 
 			break;
 		}
@@ -528,7 +477,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	}
 }
 
-void correctPosition(phy::Circle &circle, phy::Circle &otherCircle)
+template <typename T, typename U> void correctPosition(T &circle, U &otherCircle)
 {
 	agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
 
@@ -542,6 +491,7 @@ void correctPosition(phy::Circle &circle, phy::Circle &otherCircle)
 		{
 			circleOffset   = {rand() / (float)RAND_MAX - (float).5, rand() / (float)RAND_MAX - (float).5};
 			circleDistance = circleOffset.length();
+			circleOverlap  = (otherCircle.radius + circle.radius) - circleDistance;
 		}
 
 		agl::Vec<float, 2> offsetNormal = circleOffset.normalized();
@@ -555,6 +505,21 @@ void correctPosition(phy::Circle &circle, phy::Circle &otherCircle)
 		circle.force -= pushback * actingMass;
 		otherCircle.force += pushback * actingMass;
 	}
+
+#ifdef FOODPRESSURE
+	else if constexpr (std::is_same_v<T, Food> && std::is_same_v<U, Food>)
+	{
+		if (circleDistance < 700)
+		{
+			float forceScalar = FOODPRESSURE / (circleDistance * circleDistance);
+
+			agl::Vec<float, 2> force = circleOffset.normalized() * forceScalar;
+
+			circle.force -= force;
+			otherCircle.force += force;
+		}
+	}
+#endif
 }
 
 void multithreadedRecurse(int size, std::function<void(int i)> lambda)
@@ -697,7 +662,8 @@ void Simulation::updateSimulation()
 
 		phy::Circle &circle = *existingFood->get(i);
 
-		float dragCoeficient = .1;
+#ifdef FOODDRAG
+		float dragCoeficient = FOODDRAG;
 
 		float velMag = circle.velocity.length();
 
@@ -715,16 +681,18 @@ void Simulation::updateSimulation()
 		agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 1);
 
 		circle.force -= drag;
+#endif
 
+#ifdef ACTIVEFOOD
 		if ((food->nextPos - food->position).length() < 50)
 		{
 			food->nextRandPos(simulationRules.size);
 		}
 
 		food->force += (food->nextPos - food->position).normalized() / 100;
+#endif
 
-		food->update();
-
+#ifdef FOODBORDER
 		if (food->position.x < 0)
 		{
 			food->force.x += 1;
@@ -742,6 +710,9 @@ void Simulation::updateSimulation()
 		{
 			food->force.y -= 1;
 		}
+#endif
+
+		food->update();
 
 		food->exists = true;
 

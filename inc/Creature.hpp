@@ -8,37 +8,7 @@
 #include "NeuralNetwork.hpp"
 #include "SimulationRules.hpp"
 #include "other.hpp"
-
-#define RAY_LENGTH 1000
-
-#define TOTAL_INPUT	 15
-#define TOTAL_OUTPUT 5
-#define TOTAL_HIDDEN 4
-#define TOTAL_NODES	 (TOTAL_INPUT + TOTAL_OUTPUT + TOTAL_HIDDEN)
-
-#define CONSTANT_INPUT		0
-#define X_INPUT				1
-#define Y_INPUT				2
-#define ROTATION_INPUT		3
-#define SPEED_INPUT			4
-#define FOOD_DISTANCE		5
-#define FOOD_ROTATION		6
-#define CREATURE_DISTANCE	7
-#define CREATURE_ROTATION	8
-#define ENERGY_INPUT		9
-#define HEALTH_INPUT		10
-#define LIFE_INPUT			11
-#define MEAT_DISTANCE		12
-#define MEAT_ROTATION		13
-#define CREATURE_PREFERENCE 14
-
-#define FOWARD_OUTPUT (TOTAL_INPUT + 0)
-#define RIGHT_OUTPUT  (TOTAL_INPUT + 1)
-#define LEFT_OUTPUT	  (TOTAL_INPUT + 2)
-#define EAT_OUTPUT	  (TOTAL_INPUT + 3)
-#define LAYEGG_OUTPUT (TOTAL_INPUT + 4)
-
-#define PREGNANCY_COST 1
+#include "macro.hpp"
 
 #define sizeToHealth(size) 100*size*size*size
 
