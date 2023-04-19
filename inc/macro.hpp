@@ -12,7 +12,7 @@
 // #define ACTIVEFOOD 500
 
 // food experiences drag, value is drag coeficient
-#define FOODDRAG 0.001
+#define FOODDRAG 0.0005
 
 // food experiences a pushback force at the border of the simulation
 #define FOODBORDER

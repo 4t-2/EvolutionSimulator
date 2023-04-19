@@ -151,9 +151,10 @@ int main()
 
 	creatureInfo.get<27>() = {"vel", &vel};
 
-	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement> actionMenu(&blank, &font, &event);
-	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 190});
-	actionMenu.get<0>().str = "Left Click";
+	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement, FieldElement>
+		actionMenu(&blank, &font, &event);
+	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 220});
+	actionMenu.get<0>().str	   = "Left Click";
 	actionMenu.get<0>().size.y = 30;
 	actionMenu.get<1>().label  = "Food";
 	actionMenu.get<1>().size.x = 150 - 16 * 2;
@@ -163,7 +164,8 @@ int main()
 	actionMenu.get<3>().size.x = 150 - 16 * 2;
 	actionMenu.get<4>().label  = "Kill";
 	actionMenu.get<4>().size.x = 150 - 16 * 2;
-	actionMenu.get<5>().label = "FdEnDn";
+	actionMenu.get<5>().label  = "FdEnDn";
+	actionMenu.get<6>().label  = "MtEnDn";
 
 	Menu<TextElement, ButtonElement, ButtonElement> quitMenu(&blank, &font, &event);
 	quitMenu.setup({0, 0}, {150, 115});
@@ -313,7 +315,7 @@ int main()
 		creatureInfo.get<25>() = {"Biomass", &focusCreature->biomass};
 		creatureInfo.get<26>() = {"Energy Density", &focusCreature->energyDensity};
 		creatureInfo.get<27>() = {"Egg Cost", &focusCreature->eggCost};
-		creatureInfo.get<28>() = {"Egg Deposit", &focusCreature->eggDesposit};
+		creatureInfo.get<28>() = {"Preference", &focusCreature->preference};
 	};
 
 	bool mHeld		= false;
@@ -324,8 +326,11 @@ int main()
 
 	float sizeMultiplier = 1;
 
-	actionMenu.get<5>().value = std::to_string(simulation.foodEnergyDensity);
+	actionMenu.get<5>().value	  = std::to_string(simulation.foodEnergyDensity);
 	actionMenu.get<5>().liveValue = std::to_string(simulation.foodEnergyDensity);
+
+	actionMenu.get<6>().value	  = std::to_string(simulation.meatEnergyDensity);
+	actionMenu.get<6>().liveValue = std::to_string(simulation.meatEnergyDensity);
 
 	printf("entering sim loop\n");
 
@@ -428,6 +433,9 @@ int main()
 		// draw rays
 		if (existingCreatures->find(focusCreature) != -1)
 		{
+			rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH * focusCreature->sight});
+			rayShape.setPosition(focusCreature->position);
+
 			{
 				float angleOffset = focusCreature->network->getNode(CREATURE_ROTATION).value * 180;
 				angleOffset += 180;
@@ -438,7 +446,6 @@ int main()
 
 				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
 
-				rayShape.setPosition(focusCreature->position);
 				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
 				window.drawShape(rayShape);
 			}
@@ -452,7 +459,6 @@ int main()
 
 				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
 
-				rayShape.setPosition(focusCreature->position);
 				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
 				window.drawShape(rayShape);
 			}
@@ -466,7 +472,6 @@ int main()
 
 				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
 
-				rayShape.setPosition(focusCreature->position);
 				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
 				window.drawShape(rayShape);
 			}
@@ -499,14 +504,13 @@ int main()
 
 			if (event.isKeyPressed(XK_z))
 			{
-				if (existingCreatures->get(i)->creatureData.preference > .5)
-				{
-					creatureShape.setColor(agl::Color::Blue);
-				}
-				else
-				{
-					creatureShape.setColor(agl::Color::Yellow);
-				}
+				agl::Vec<float, 3> blue =
+					agl::Vec<float, 3>{0, 0, 255} * existingCreatures->get(i)->creatureData.preference;
+				agl::Vec<float, 3> yellow =
+					agl::Vec<float, 3>{255, 255, 0} * (1 - existingCreatures->get(i)->creatureData.preference);
+
+				creatureShape.setColor({(unsigned char)(blue.x + yellow.x), (unsigned char)(blue.y + yellow.y),
+										(unsigned char)(blue.z + yellow.z)});
 			}
 			else
 			{
@@ -827,7 +831,8 @@ int main()
 		}
 
 		simulationInfo.setPosition({windowSize.x - 260, 10, 9});
-		actionMenu.setPosition({windowSize.x - actionMenu.size.x - 10, simulationInfo.position.y + simulationInfo.size.y + 10, 9});
+		actionMenu.setPosition(
+			{windowSize.x - actionMenu.size.x - 10, simulationInfo.position.y + simulationInfo.size.y + 10, 9});
 		quitMenu.setPosition({(windowSize.x - quitMenu.size.x) / 2, (windowSize.y - quitMenu.size.y) / 2});
 
 		window.setViewport(0, 0, windowSize.x, windowSize.y);
@@ -840,6 +845,7 @@ int main()
 		guiCamera.setOrthographicProjection(0, windowSize.x, windowSize.y, 0, 0.1, 100);
 
 		simulation.foodEnergyDensity = std::stof(actionMenu.get<5>().value);
+		simulation.meatEnergyDensity = std::stof(actionMenu.get<6>().value);
 
 		milliDiff = getMillisecond() - start;
 	}

@@ -45,13 +45,13 @@ Simulation::Simulation(SimulationRules simulationRules)
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
-		CreatureData creatureData(.5, .5, 1, 0, connections);
+		CreatureData creatureData(.1, .5, 1, 0, connections);
 
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
 		creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
-		creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, 1);
-		creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -1);
+		// creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, 1);
+		// creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -1);
 
 		creatureData.preference = 1;
 
@@ -330,23 +330,24 @@ float mutShift(float f, float max)
 
 void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 {
-	// creatureData->sight = mutShift(creatureData->sight, 4);
-	// creatureData->speed = mutShift(creatureData->speed, 4);
-	// creatureData->size	= mutShift(creatureData->size, 4);
-	// creatureData->hue	= mutShift(creatureData->hue / 60., 359. / 60) * 60;
+	creatureData->sight		 = mutShift(creatureData->sight, 4);
+	creatureData->speed		 = mutShift(creatureData->speed, 4);
+	creatureData->size		 = mutShift(creatureData->size, 4);
+	creatureData->hue		 = mutShift(creatureData->hue / 60., 359. / 60) * 60;
+	creatureData->preference = mutShift(creatureData->preference, 1);
 
-	Buffer buf(EXTRA_BYTES);
-	buf.data[0] = 255 * (creatureData->sight / 2);
-	buf.data[1] = 255 * (creatureData->speed / 2);
-	buf.data[2] = 255 * (creatureData->size / 2);
-	buf.data[3] = 255 * (creatureData->hue / 359.);
-
-	Simulation::mutateBuffer(&buf, bodyMutation);
-
-	creatureData->sight = (buf.data[0] * 2) / 255.;
-	creatureData->speed = (buf.data[1] * 2) / 255.;
-	creatureData->size	= (buf.data[2] * 2) / 255.;
-	creatureData->hue	= (buf.data[3] * 359.) / 255.;
+	// Buffer buf(EXTRA_BYTES);
+	// buf.data[0] = 255 * (creatureData->sight / 2);
+	// buf.data[1] = 255 * (creatureData->speed / 2);
+	// buf.data[2] = 255 * (creatureData->size / 2);
+	// buf.data[3] = 255 * (creatureData->hue / 359.);
+	//
+	// Simulation::mutateBuffer(&buf, bodyMutation);
+	//
+	// creatureData->sight = (buf.data[0] * 2) / 255.;
+	// creatureData->speed = (buf.data[1] * 2) / 255.;
+	// creatureData->size	= (buf.data[2] * 2) / 255.;
+	// creatureData->hue	= (buf.data[3] * 359.) / 255.;
 
 	for (int i = 0; i < networkCycles; i++)
 	{
@@ -807,7 +808,7 @@ void Simulation::updateSimulation()
 
 					if (offset.length() < (creature->radius + food->radius + EATRADIUS))
 					{
-						float energy = foodEnergyDensity * creature->preference;
+						float energy = std::max(0., (foodEnergyDensity * 2 * creature->preference) - .5);
 
 						creature->energyDensity = ((creature->biomass * creature->energyDensity) + (FOODVOL * energy)) /
 												  (creature->biomass + FOODVOL);
@@ -836,7 +837,8 @@ void Simulation::updateSimulation()
 
 					if (offset.length() < (creature->radius + meat->radius + EATRADIUS))
 					{
-						float energy = MEATENERGY * (1 - creature->preference);
+
+						float energy = (meatEnergyDensity * .9 * (1 - creature->preference)) - (2 * .9) + 2;
 
 						creature->energyDensity = ((creature->biomass * creature->energyDensity) + (MEATVOL * energy)) /
 												  (creature->biomass + MEATVOL);
@@ -868,7 +870,7 @@ void Simulation::updateSimulation()
 					{
 						if (frame % BITEDELAY == 0)
 						{
-							float energy = MEATENERGY * (1 - creature->preference);
+							float energy = (meatEnergyDensity * .9 * (1 - creature->preference)) - (2 * .9) + 2;
 
 							creature->energyDensity =
 								((creature->biomass * creature->energyDensity) + (LEACHVOL * energy)) /

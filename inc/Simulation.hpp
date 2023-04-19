@@ -38,6 +38,7 @@ class Simulation
 		int frame =0 ;
 
 		float foodEnergyDensity = FOODENERGY;
+		float meatEnergyDensity = MEATENERGY;
 
 		Simulation(SimulationRules simulationRules);
 		void destroy();
