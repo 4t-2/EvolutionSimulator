@@ -5,7 +5,6 @@
 
 #include <type_traits>
 
-
 inline bool pointInArea(agl::Vec<float, 2> point, agl::Vec<float, 2> position, agl::Vec<float, 2> size)
 {
 	if (point.x < position.x)
@@ -55,7 +54,10 @@ class MenuElement : public agl::Drawable
 			this->event	  = event;
 			this->focused = focused;
 
-			size.y = text->getHeight() * text->getScale();
+			if (size.y == 0)
+			{
+				size.y = text->getHeight() * text->getScale();
+			}
 		}
 
 		// void drawFunction(agl::RenderWindow &window);
@@ -65,6 +67,15 @@ class TextElement : public MenuElement
 {
 	public:
 		std::string str = "null";
+
+		TextElement()
+		{
+		}
+
+		TextElement(std::string str)
+		{
+			this->str = str;
+		}
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
@@ -102,12 +113,6 @@ template <typename T> class ValueElement : public MenuElement
 			this->value = value;
 		}
 
-		ValueElement(ValueElement const &valueElement)
-		{
-			this->label = valueElement.label;
-			this->value = valueElement.value;
-		}
-
 		void operator=(ValueElement valueElement)
 		{
 			this->label = valueElement.label;
@@ -127,6 +132,15 @@ template <typename T> class ValueElement : public MenuElement
 class SpacerElement : public MenuElement
 {
 	public:
+		SpacerElement()
+		{
+		}
+
+		SpacerElement(float height)
+		{
+			this->size.y = height;
+		}
+
 		void drawFunction(agl::RenderWindow &window) override
 		{
 		}
@@ -135,11 +149,19 @@ class SpacerElement : public MenuElement
 class ButtonElement : public MenuElement
 {
 	public:
-		float mouseHeld = false;
+		float		mouseHeld = false;
+		std::string label	  = "null";
+		bool		state	  = false;
 
-	public:
-		std::string label = "null";
-		bool		state = false;
+		ButtonElement()
+		{
+		}
+
+		ButtonElement(std::string label, float width)
+		{
+			this->label	 = label;
+			this->size.x = width;
+		}
 
 		void init(agl::Text *text, agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank, agl::Event *event,
 				  bool *focused)
@@ -284,14 +306,15 @@ class ButtonElement : public MenuElement
 			text->clearText();
 			text->setText(label);
 			window.drawText(*text);
+			text->clearText();
 		}
 };
 
 class FieldElement : public MenuElement
 {
 	public:
-		std::string label = "null";
-		std::string value = "";
+		std::string label	  = "null";
+		std::string value	  = "";
 		std::string liveValue = "";
 
 		float fieldWidth = 0;
@@ -299,6 +322,17 @@ class FieldElement : public MenuElement
 		bool textFocus = false;
 
 		bool hovered = false;
+
+		FieldElement()
+		{
+		}
+
+		FieldElement(std::string label, std::string startValue)
+		{
+			this->label		= label;
+			this->value		= startValue;
+			this->liveValue = startValue;
+		}
 
 		void drawFunction(agl::RenderWindow &window)
 		{
@@ -320,10 +354,10 @@ class FieldElement : public MenuElement
 
 			if (this->pointInElement(event->getPointerWindowPosition()))
 			{
-				if(event->pointerButton == 1)
+				if (event->pointerButton == 1)
 				{
 					textFocus = !textFocus;
-					value = liveValue;
+					value	  = liveValue;
 				}
 
 				if (hovered) // holding
@@ -342,20 +376,20 @@ class FieldElement : public MenuElement
 				hovered = false;
 			}
 
-			if(textFocus && !utf8)
+			if (textFocus && !utf8)
 			{
 				liveValue += event->keybuffer;
 
-				while(liveValue[0] == 127 || liveValue[0] == 8)
+				while (liveValue[0] == 127 || liveValue[0] == 8)
 				{
 					liveValue.erase(0, 1);
 				}
 
-				for(int i = 1; i < liveValue.length(); i++)
+				for (int i = 1; i < liveValue.length(); i++)
 				{
-					if(liveValue[i] == 127 || liveValue[i] == 8)
+					if (liveValue[i] == 127 || liveValue[i] == 8)
 					{
-						liveValue.erase(i-1, 2);
+						liveValue.erase(i - 1, 2);
 						i--;
 					}
 				}
@@ -366,6 +400,8 @@ class FieldElement : public MenuElement
 			text->setText(label);
 
 			window.drawText(*text);
+
+			text->clearText();
 
 			if (textFocus)
 			{
@@ -384,6 +420,8 @@ class FieldElement : public MenuElement
 			text->setText(liveValue);
 
 			window.drawText(*text);
+
+			text->clearText();
 		}
 };
 
@@ -427,7 +465,7 @@ template <typename... ElementType> class Menu : public agl::Drawable
 
 		template <size_t i = 0> typename std::enable_if < i<sizeof...(ElementType), void>::type initTuple()
 		{
-			std::get<i>(element).init(&text, &rect, &border, blank, event, &focused);
+			this->get<i>().init(&text, &rect, &border, blank, event, &focused);
 
 			initTuple<i + 1>();
 		}
@@ -448,13 +486,46 @@ template <typename... ElementType> class Menu : public agl::Drawable
 			typename std::enable_if <
 			i<sizeof...(ElementType), void>::type draw(agl::RenderWindow &window, agl::Vec<float, 3> &pen)
 		{
-			std::get<i>(element).position = pen;
+			this->get<i>().position = pen;
 
-			window.draw(std::get<i>(element));
+			window.draw(this->get<i>());
 
-			pen.y += std::get<i>(element).size.y + MENU_PADDING;
+			pen.y += this->get<i>().size.y + MENU_PADDING;
 
 			draw<i + 1>(window, pen);
+		}
+
+		template <size_t i = 0, typename Element> void assign(Element newElement)
+		{
+			this->get<i>() = newElement;
+			this->get<i>().init(&text, &rect, &border, blank, event, &focused);
+		}
+
+		template <size_t i = 0, typename Element, typename... Elements>
+		void assign(Element newElement, Elements... newElements)
+		{
+			this->get<i>() = newElement;
+			this->get<i>().init(&text, &rect, &border, blank, event, &focused);
+
+			assign<i + 1>(newElements...);
+		}
+
+		template <size_t i = 0>
+		typename std::enable_if<i == sizeof...(ElementType), void>::type pointerAssign(void *pointerStruct)
+		{
+			return;
+		}
+
+		template <size_t i = 0>
+			typename std::enable_if < i<sizeof...(ElementType), void>::type pointerAssign(void *pointerStruct)
+		{
+			long  address = (long)(pointerStruct);
+			long  offset  = i * 8;
+			long *item	  = (long *)(address + offset);
+
+			*item = (long)&this->get<i>();
+
+			pointerAssign<i + 1>(pointerStruct);
 		}
 
 	public:
@@ -546,6 +617,16 @@ template <typename... ElementType> class Menu : public agl::Drawable
 			downBorder.setSize({MENU_BORDERTHICKNESS, size.x});
 
 			return;
+		}
+
+		void setupElements(ElementType... Element)
+		{
+			assign(Element...);
+		}
+
+		void bindPointers(void *pointerStruct)
+		{
+			pointerAssign(pointerStruct);
 		}
 
 		template <int i> std::tuple_element_t<i, std::tuple<ElementType...>> &get()

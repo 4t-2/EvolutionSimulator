@@ -133,6 +133,51 @@ int main()
 		simulationInfo(&blank, &font, &event);
 	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 175});
 
+	struct
+	{
+			ValueElement<int> *creatures;
+			ValueElement<int> *eggs;
+			ValueElement<int> *food;
+			ValueElement<int> *meat;
+			ValueElement<int> *frame;
+			ValueElement<int> *fps;
+	} simulationInfoPointers;
+
+	simulationInfo.bindPointers(&simulationInfoPointers);
+
+	struct
+	{
+			SpacerElement			  *s1;
+			ValueElement<std::string> *node;
+			SpacerElement			  *s2;
+			TextElement				  *posText;
+			ValueElement<float>		  *posx;
+			ValueElement<float>		  *posy;
+			TextElement				  *velText;
+			ValueElement<float>		  *velx;
+			ValueElement<float>		  *vely;
+			TextElement				  *forText;
+			ValueElement<float>		  *forx;
+			ValueElement<float>		  *fory;
+			SpacerElement			  *s3;
+			ValueElement<bool>		  *eating;
+			ValueElement<bool>		  *layingEgg;
+			SpacerElement			  *s4;
+			ValueElement<float>		  *health;
+			ValueElement<float>		  *energy;
+			ValueElement<int>		  *lifeLeft;
+			SpacerElement			  *s5;
+			ValueElement<float>		  *sight;
+			ValueElement<float>		  *speed;
+			ValueElement<float>		  *size;
+			ValueElement<int>		  *hue;
+			SpacerElement			  *s6;
+			ValueElement<float>		  *biomass;
+			ValueElement<float>		  *energyDensity;
+			ValueElement<float>		  *eggCost;
+			ValueElement<float>		  *preference;
+	} creatureInfoPointers;
+
 	Menu<SpacerElement, ValueElement<std::string>, SpacerElement, TextElement, ValueElement<float>, ValueElement<float>,
 		 TextElement, ValueElement<float>, ValueElement<float>, TextElement, ValueElement<float>, ValueElement<float>,
 		 SpacerElement, ValueElement<bool>, ValueElement<bool>, SpacerElement, ValueElement<float>, ValueElement<float>,
@@ -141,39 +186,69 @@ int main()
 		 ValueElement<float>>
 		creatureInfo(&blank, &font, &event);
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
+	creatureInfo.bindPointers(&creatureInfoPointers);
 
-	creatureInfo.get<0>().size.y = 350;
-	creatureInfo.get<3>().str	 = "- Position -";
-	creatureInfo.get<6>().str	 = "- Velocity -";
-	creatureInfo.get<9>().str	 = "- Force -";
+	creatureInfo.setupElements({325},						//
+							   {"Node", nullptr},			//
+							   {},							//
+							   {"- Position -"},			//
+							   {"X", nullptr},				//
+							   {"Y", nullptr},				//
+							   {"- Velocity -"},			//
+							   {"X", nullptr},				//
+							   {"Y", nullptr},				//
+							   {"- Force -"},				//
+							   {"X", nullptr},				//
+							   {"Y", nullptr},				//
+							   {},							//
+							   {"Eating", nullptr},			//
+							   {"Laying Egg", nullptr},		//
+							   {},							//
+							   {"Health", nullptr},			//
+							   {"Energy", nullptr},			//
+							   {"Life Left", nullptr},		//
+							   {},							//
+							   {"Sight", nullptr},			//
+							   {"Speed", nullptr},			//
+							   {"Size", nullptr},			//
+							   {"Hue", nullptr},			//
+							   {},							//
+							   {"Biomass", nullptr},		//
+							   {"Energy Density", nullptr}, //
+							   {"Egg Cost", nullptr},		//
+							   {"Preference", nullptr}		//
+	);
 
-	float vel = 0;
-
-	creatureInfo.get<27>() = {"vel", &vel};
+	struct
+	{
+			TextElement	  *leftclick;
+			ButtonElement *food;
+			ButtonElement *meat;
+			ButtonElement *select;
+			ButtonElement *kill;
+			FieldElement  *foodDen;
+			FieldElement  *meatDen;
+	} actionMenuPointers;
 
 	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement, FieldElement>
 		actionMenu(&blank, &font, &event);
 	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 220});
-	actionMenu.get<0>().str	   = "Left Click";
-	actionMenu.get<0>().size.y = 30;
-	actionMenu.get<1>().label  = "Food";
-	actionMenu.get<1>().size.x = 150 - 16 * 2;
-	actionMenu.get<2>().label  = "Meat";
-	actionMenu.get<2>().size.x = 150 - 16 * 2;
-	actionMenu.get<3>().label  = "Select";
-	actionMenu.get<3>().size.x = 150 - 16 * 2;
-	actionMenu.get<4>().label  = "Kill";
-	actionMenu.get<4>().size.x = 150 - 16 * 2;
-	actionMenu.get<5>().label  = "FdEnDn";
-	actionMenu.get<6>().label  = "MtEnDn";
+	actionMenu.bindPointers(&actionMenuPointers);
+
+	struct
+	{
+			TextElement	  *text;
+			ButtonElement *confirm;
+			ButtonElement *cancel;
+	} quitMenuPointers;
 
 	Menu<TextElement, ButtonElement, ButtonElement> quitMenu(&blank, &font, &event);
 	quitMenu.setup({0, 0}, {150, 115});
-	quitMenu.get<0>().str	 = "Quit?";
-	quitMenu.get<1>().label	 = "Confirm";
-	quitMenu.get<1>().size.x = 150 - 16 * 2;
-	quitMenu.get<2>().label	 = "Cancel";
-	quitMenu.get<2>().size.x = 150 - 16 * 2;
+	quitMenu.bindPointers(&quitMenuPointers);
+	quitMenu.setupElements({"Quit?"},				  //
+						   {"Confirm", 150 - 16 * 2}, //
+						   {"Cancel", 150 - 16 * 2}	  //
+	);
 
 	agl::Circle networkBackground(60);
 	networkBackground.setTexture(&blank);
@@ -288,34 +363,37 @@ int main()
 	float		fps = 0;
 	std::string nodeName;
 
-	simulationInfo.get<0>() = {"Creatures", &simulation.existingCreatures->length};
-	simulationInfo.get<1>() = {"Eggs", &simulation.existingEggs->length};
-	simulationInfo.get<2>() = {"Food", &simulation.existingFood->length};
-	simulationInfo.get<3>() = {"Meat", &simulation.existingMeat->length};
-	simulationInfo.get<4>() = {"Frame", &simulation.frame};
-	simulationInfo.get<5>() = {"FPS", &fps};
+	simulationInfo.setupElements({"Creatures", &simulation.existingCreatures->length}, //
+								 {"Eggs", &simulation.existingEggs->length},		   //
+								 {"Food", &simulation.existingFood->length},		   //
+								 {"Meat", &simulation.existingMeat->length},		   //
+								 {"Frame", &simulation.frame},						   //
+								 {"FPS", &fps}										   //
+	);
+
+	creatureInfoPointers.size->value = (float *)0;
 
 	auto setValues = [&]() {
-		creatureInfo.get<1>()  = {"Node", &nodeName};
-		creatureInfo.get<4>()  = {"X", &focusCreature->position.x};
-		creatureInfo.get<5>()  = {"Y", &focusCreature->position.y};
-		creatureInfo.get<7>()  = {"X", &focusCreature->velocity.x};
-		creatureInfo.get<8>()  = {"Y", &focusCreature->velocity.y};
-		creatureInfo.get<10>() = {"X", &focusCreature->force.x};
-		creatureInfo.get<11>() = {"Y", &focusCreature->force.y};
-		creatureInfo.get<13>() = {"Eating", &focusCreature->eating};
-		creatureInfo.get<14>() = {"Laying Egg", &focusCreature->layingEgg};
-		creatureInfo.get<16>() = {"Health", &focusCreature->health};
-		creatureInfo.get<17>() = {"Energy", &focusCreature->energy};
-		creatureInfo.get<18>() = {"Life Left", &focusCreature->life};
-		creatureInfo.get<20>() = {"Sight", &focusCreature->sight};
-		creatureInfo.get<21>() = {"Speed", &focusCreature->speed};
-		creatureInfo.get<22>() = {"Size", &focusCreature->size};
-		creatureInfo.get<23>() = {"Hue", &focusCreature->hue};
-		creatureInfo.get<25>() = {"Biomass", &focusCreature->biomass};
-		creatureInfo.get<26>() = {"Energy Density", &focusCreature->energyDensity};
-		creatureInfo.get<27>() = {"Egg Cost", &focusCreature->eggCost};
-		creatureInfo.get<28>() = {"Preference", &focusCreature->preference};
+		creatureInfoPointers.node->value		  = &nodeName;
+		creatureInfoPointers.posx->value		  = &focusCreature->position.x;
+		creatureInfoPointers.posy->value		  = &focusCreature->position.y;
+		creatureInfoPointers.velx->value		  = &focusCreature->velocity.x;
+		creatureInfoPointers.vely->value		  = &focusCreature->velocity.y;
+		creatureInfoPointers.forx->value		  = &focusCreature->force.x;
+		creatureInfoPointers.fory->value		  = &focusCreature->force.y;
+		creatureInfoPointers.eating->value		  = &focusCreature->eating;
+		creatureInfoPointers.layingEgg->value	  = &focusCreature->layingEgg;
+		creatureInfoPointers.health->value		  = &focusCreature->health;
+		creatureInfoPointers.energy->value		  = &focusCreature->energy;
+		creatureInfoPointers.lifeLeft->value	  = &focusCreature->life;
+		creatureInfoPointers.sight->value		  = &focusCreature->sight;
+		creatureInfoPointers.speed->value		  = &focusCreature->speed;
+		creatureInfoPointers.size->value		  = &focusCreature->size;
+		creatureInfoPointers.hue->value			  = &focusCreature->hue;
+		creatureInfoPointers.biomass->value		  = &focusCreature->biomass;
+		creatureInfoPointers.energyDensity->value = &focusCreature->energyDensity;
+		creatureInfoPointers.eggCost->value		  = &focusCreature->eggCost;
+		creatureInfoPointers.preference->value	  = &focusCreature->preference;
 	};
 
 	bool mHeld		= false;
@@ -326,11 +404,13 @@ int main()
 
 	float sizeMultiplier = 1;
 
-	actionMenu.get<5>().value	  = std::to_string(simulation.foodEnergyDensity);
-	actionMenu.get<5>().liveValue = std::to_string(simulation.foodEnergyDensity);
-
-	actionMenu.get<6>().value	  = std::to_string(simulation.meatEnergyDensity);
-	actionMenu.get<6>().liveValue = std::to_string(simulation.meatEnergyDensity);
+	actionMenu.setupElements({"Left Click"}, {"Food", 150 - 16 * 2},				   //
+							 {"Meat", 150 - 16 * 2},								   //
+							 {"Select", 150 - 16 * 2},								   //
+							 {"Kill", 150 - 16 * 2},								   //
+							 {"FdEnDn", std::to_string(simulation.foodEnergyDensity)}, //
+							 {"MtEnDn", std::to_string(simulation.meatEnergyDensity)}  //
+	);
 
 	printf("entering sim loop\n");
 
@@ -659,15 +739,15 @@ int main()
 
 		// quit?
 
-		if (quitMenu.get<1>().state)
+		if (quitMenuPointers.confirm->state)
 		{
 			window.close();
 			break;
 		}
-		if (quitMenu.get<2>().state)
+		if (quitMenuPointers.cancel->state)
 		{
 			quiting					= false;
-			quitMenu.get<2>().state = false;
+			quitMenuPointers.cancel->state = false;
 		}
 
 		// input
@@ -706,17 +786,17 @@ int main()
 				goto endif;
 			}
 
-			if (actionMenu.get<1>().state) // add food
+			if (actionMenuPointers.food->state) // add food
 			{
 				simulation.addFood(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
 														  cameraPosition));
 			}
-			if (actionMenu.get<2>().state) // add meat
+			if (actionMenuPointers.meat->state) // add meat
 			{
 				simulation.addMeat(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
 														  cameraPosition));
 			}
-			if (actionMenu.get<3>().state) // select creature
+			if (actionMenuPointers.select->state) // select creature
 			{
 				for (int i = 0; i < existingCreatures->length; i++)
 				{
@@ -736,7 +816,7 @@ int main()
 					}
 				}
 			}
-			if (actionMenu.get<4>().state) // kill creature
+			if (actionMenuPointers.kill->state) // kill creature
 			{
 				for (int i = 0; i < existingCreatures->length; i++)
 				{
@@ -844,8 +924,8 @@ int main()
 
 		guiCamera.setOrthographicProjection(0, windowSize.x, windowSize.y, 0, 0.1, 100);
 
-		simulation.foodEnergyDensity = std::stof(actionMenu.get<5>().value);
-		simulation.meatEnergyDensity = std::stof(actionMenu.get<6>().value);
+		simulation.foodEnergyDensity = std::stof(actionMenuPointers.foodDen->value);
+		simulation.meatEnergyDensity = std::stof(actionMenuPointers.foodDen->value);
 
 		milliDiff = getMillisecond() - start;
 	}
