@@ -10,7 +10,7 @@ class SimulationRules
 		int				 startingCreatures;
 		int				 foodEnergy;
 		unsigned int	 maxCreatures;
-		int				 maxFood;
+		int				 foodCap;
 		unsigned int	 maxEggs;
 		int				 preferedCreatures;
 		int				 penaltyBuffer;

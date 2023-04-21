@@ -57,7 +57,7 @@ void loadRules(std::string path, SimulationRules *simulationRules)
 	simulationRules->startingCreatures = stoi(buffer[4]);
 	simulationRules->foodEnergy		   = stoi(buffer[5]);
 	simulationRules->maxCreatures	   = stoi(buffer[6]);
-	simulationRules->maxFood		   = stoi(buffer[7]);
+	simulationRules->foodCap		   = stoi(buffer[7]);
 	simulationRules->maxEggs		   = stoi(buffer[8]);
 	simulationRules->preferedCreatures = stoi(buffer[9]);
 	simulationRules->penaltyBuffer	   = stoi(buffer[10]);
@@ -228,11 +228,12 @@ int main()
 			ButtonElement *kill;
 			FieldElement  *foodDen;
 			FieldElement  *meatDen;
+			FieldElement  *maxFood;
 	} actionMenuPointers;
 
-	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement, FieldElement>
+	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement, FieldElement, FieldElement>
 		actionMenu(&blank, &font, &event);
-	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 220});
+	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 250});
 	actionMenu.bindPointers(&actionMenuPointers);
 
 	struct
@@ -336,7 +337,7 @@ int main()
 	std::cout << "startingCreatures - " << simulationRules.startingCreatures << '\n';
 	std::cout << "maxCreatures - " << simulationRules.maxCreatures << '\n';
 	std::cout << "foodEnergy - " << simulationRules.foodEnergy << '\n';
-	std::cout << "maxFood - " << simulationRules.maxFood << '\n';
+	std::cout << "maxFood - " << simulationRules.foodCap << '\n';
 	std::cout << "size - " << simulationRules.size << '\n';
 	std::cout << "gridResolution - " << simulationRules.gridResolution << '\n';
 	std::cout << "maxEggs - " << simulationRules.maxEggs << '\n';
@@ -409,7 +410,8 @@ int main()
 							 {"Select", 150 - 16 * 2},								   //
 							 {"Kill", 150 - 16 * 2},								   //
 							 {"FdEnDn", std::to_string(simulation.foodEnergyDensity)}, //
-							 {"MtEnDn", std::to_string(simulation.meatEnergyDensity)}  //
+							 {"MtEnDn", std::to_string(simulation.meatEnergyDensity)},  //
+							 {"maxFd", std::to_string(simulation.maxFood)}  //
 	);
 
 	printf("entering sim loop\n");
@@ -926,6 +928,9 @@ int main()
 
 		simulation.foodEnergyDensity = std::stof(actionMenuPointers.foodDen->value);
 		simulation.meatEnergyDensity = std::stof(actionMenuPointers.foodDen->value);
+		simulation.maxFood = std::stof(actionMenuPointers.maxFood->value);
+
+		std::cout << simulation.maxFood << '\n';
 
 		milliDiff = getMillisecond() - start;
 	}

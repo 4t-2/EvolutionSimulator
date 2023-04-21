@@ -31,10 +31,10 @@ Simulation::Simulation(SimulationRules simulationRules)
 	eggBuffer	 = new Egg[simulationRules.maxEggs];
 	existingEggs = new List<Egg *>(simulationRules.maxEggs);
 
-	foodBuffer	 = new Food[simulationRules.maxFood];
-	existingFood = new List<Food *>(simulationRules.maxFood);
+	foodBuffer	 = new Food[simulationRules.foodCap];
+	existingFood = new List<Food *>(simulationRules.foodCap);
 
-	foodGrid	 = new Grid<Food *>(simulationRules.gridResolution, simulationRules.maxFood);
+	foodGrid	 = new Grid<Food *>(simulationRules.gridResolution, simulationRules.foodCap);
 	creatureGrid = new Grid<Creature *>(simulationRules.gridResolution, simulationRules.maxCreatures);
 
 	meatBuffer	 = new Meat[MAXMEAT];
@@ -62,13 +62,15 @@ Simulation::Simulation(SimulationRules simulationRules)
 		this->addCreature(creatureData, position);
 	}
 
-	for (int i = 0; i < simulationRules.maxFood; i++)
+	for (int i = 0; i < simulationRules.foodCap; i++)
 	{
 		foodBuffer[i].id = i;
 
 		this->addFood({(float)rand() / (float)RAND_MAX * simulationRules.size.x,
 					   (float)rand() / (float)RAND_MAX * simulationRules.size.y});
 	}
+
+	maxFood = simulationRules.foodCap;
 
 	return;
 }
@@ -218,7 +220,7 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 {
 	bool alreadyExists;
 
-	for (int i = 0; i < simulationRules.maxFood; i++)
+	for (int i = 0; i < simulationRules.foodCap; i++)
 	{
 		alreadyExists = false;
 
@@ -934,8 +936,8 @@ void Simulation::updateSimulation()
 	static int penalty = 0;
 
 	int adjustedMaxFood =
-		int(simulationRules.maxFood * ((float)simulationRules.preferedCreatures / existingCreatures->length));
-	adjustedMaxFood = std::min(adjustedMaxFood, simulationRules.maxFood);
+		int(simulationRules.foodCap * ((float)simulationRules.preferedCreatures / existingCreatures->length));
+	adjustedMaxFood = std::min(adjustedMaxFood, simulationRules.foodCap);
 
 	if (existingCreatures->length > simulationRules.preferedCreatures)
 	{
@@ -960,7 +962,7 @@ void Simulation::updateSimulation()
 
 	// adding more food
 	// int max = std::min(simulationRules.maxFood, adjustedMaxFood);
-	int max = simulationRules.maxFood;
+	int max = std::min(simulationRules.foodCap, maxFood);
 	// int max = 0;
 
 	for (; existingFood->length < max;)
