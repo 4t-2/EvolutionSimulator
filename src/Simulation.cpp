@@ -5,6 +5,9 @@
 #include <thread>
 #include <type_traits>
 
+#define newEnergyDensity(biomass, bioEnergy, additional, addEnergy) \
+	((biomass * bioEnergy) + (additional * addEnergy)) / (biomass + additional)
+
 void randomData(Buffer *buffer)
 {
 	for (int i = 0; i < buffer->size; i++)
@@ -31,10 +34,10 @@ Simulation::Simulation(SimulationRules simulationRules)
 	eggBuffer	 = new Egg[simulationRules.maxEggs];
 	existingEggs = new List<Egg *>(simulationRules.maxEggs);
 
-	foodBuffer	 = new Food[simulationRules.foodCap];
-	existingFood = new List<Food *>(simulationRules.foodCap);
+	foodBuffer	 = new Food[simulationRules.maxFood];
+	existingFood = new List<Food *>(simulationRules.maxFood);
 
-	foodGrid	 = new Grid<Food *>(simulationRules.gridResolution, simulationRules.foodCap);
+	foodGrid	 = new Grid<Food *>(simulationRules.gridResolution, simulationRules.maxFood);
 	creatureGrid = new Grid<Creature *>(simulationRules.gridResolution, simulationRules.maxCreatures);
 
 	meatBuffer	 = new Meat[MAXMEAT];
@@ -62,7 +65,7 @@ Simulation::Simulation(SimulationRules simulationRules)
 		this->addCreature(creatureData, position);
 	}
 
-	for (int i = 0; i < simulationRules.foodCap; i++)
+	for (int i = 0; i < simulationRules.maxFood; i++)
 	{
 		foodBuffer[i].id = i;
 
@@ -70,7 +73,7 @@ Simulation::Simulation(SimulationRules simulationRules)
 					   (float)rand() / (float)RAND_MAX * simulationRules.size.y});
 	}
 
-	maxFood = simulationRules.foodCap;
+	foodCap = simulationRules.maxFood;
 
 	return;
 }
@@ -220,7 +223,7 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 {
 	bool alreadyExists;
 
-	for (int i = 0; i < simulationRules.foodCap; i++)
+	for (int i = 0; i < simulationRules.maxFood; i++)
 	{
 		alreadyExists = false;
 
@@ -286,8 +289,11 @@ void Simulation::addMeat(agl::Vec<float, 2> position, float energy)
 		if (!alreadyExists)
 		{
 			existingMeat->add(&meatBuffer[i]);
-			meatBuffer[i].position = position;
-			meatBuffer[i].energy   = energy;
+			meatBuffer[i].position	= position;
+			meatBuffer[i].energyVol = (float)energy / meatEnergyDensity;
+			meatBuffer[i].radius	= (energy / 50.) * 5;
+			meatBuffer[i].rotation	= ((float)rand() / (float)RAND_MAX) * 360;
+			meatBuffer[i].lifetime	= meatBuffer[i].energyVol * 288;
 
 			agl::Vec<int, 2> gridPosition = meatGrid->toGridPosition(position, simulationRules.size);
 
@@ -300,7 +306,7 @@ void Simulation::addMeat(agl::Vec<float, 2> position, float energy)
 
 void Simulation::addMeat(agl::Vec<float, 2> position)
 {
-	this->addMeat(position, 60);
+	this->addMeat(position, 50);
 }
 
 void Simulation::removeMeat(Meat *meat)
@@ -321,22 +327,22 @@ void Simulation::removeMeat(Meat *meat)
 	return;
 }
 
-float mutShift(float f, float max)
+float mutShift(float f, float min, float max)
 {
 	float push = ((float)rand() / (float)RAND_MAX);
 	push -= .5;
 	push /= 2;
 
-	return std::max((float)0, std::min(max, f + push));
+	return std::max((float)min, std::min(max, f + push));
 }
 
 void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 {
-	creatureData->sight		 = mutShift(creatureData->sight, 4);
-	creatureData->speed		 = mutShift(creatureData->speed, 4);
-	creatureData->size		 = mutShift(creatureData->size, 4);
-	creatureData->hue		 = mutShift(creatureData->hue / 60., 359. / 60) * 60;
-	creatureData->preference = mutShift(creatureData->preference, 1);
+	creatureData->sight		 = mutShift(creatureData->sight, .5, 4);
+	creatureData->speed		 = mutShift(creatureData->speed, .5, 4);
+	creatureData->size		 = mutShift(creatureData->size, .5, 4);
+	creatureData->hue		 = mutShift(creatureData->hue / 60., 0, 359. / 60) * 60;
+	creatureData->preference = mutShift(creatureData->preference, 0, 1);
 
 	// Buffer buf(EXTRA_BYTES);
 	// buf.data[0] = 255 * (creatureData->sight / 2);
@@ -728,6 +734,15 @@ void Simulation::updateSimulation()
 	{
 		Meat *meat = existingMeat->get(i);
 
+		meat->lifetime--;
+
+		if (meat->lifetime < 0)
+		{
+			existingMeat->pop(i);
+			i--;
+			continue;
+		}
+
 		phy::Circle &circle = *existingMeat->get(i);
 
 		float dragCoeficient = .1;
@@ -778,7 +793,7 @@ void Simulation::updateSimulation()
 			{
 				CreatureData creatureData = creature->creatureData;
 
-				mutate(&creatureData, 50, 1);
+				mutate(&creatureData, 50, 3);
 
 				creatureData.startEnergy = creature->eggCost - (sizeToHealth(creatureData.size) / 2);
 
@@ -810,10 +825,12 @@ void Simulation::updateSimulation()
 
 					if (offset.length() < (creature->radius + food->radius + EATRADIUS))
 					{
-						float energy = std::max(0., (foodEnergyDensity * 2 * creature->preference) - .5);
+						float energy =
+							foodEnergyDensity * creature->preference * creature->preference * creature->preference;
 
-						creature->energyDensity = ((creature->biomass * creature->energyDensity) + (FOODVOL * energy)) /
-												  (creature->biomass + FOODVOL);
+						creature->energyDensity =
+							newEnergyDensity(creature->biomass, creature->energyDensity, FOODVOL, energy);
+
 						creature->biomass += FOODVOL;
 
 						food->exists = false;
@@ -839,11 +856,11 @@ void Simulation::updateSimulation()
 
 					if (offset.length() < (creature->radius + meat->radius + EATRADIUS))
 					{
+						float energy = (meatEnergyDensity * (1 - creature->preference));
 
-						float energy = (meatEnergyDensity * .9 * (1 - creature->preference)) - (2 * .9) + 2;
+						creature->energyDensity =
+							newEnergyDensity(creature->biomass, creature->energyDensity, MEATVOL, energy);
 
-						creature->energyDensity = ((creature->biomass * creature->energyDensity) + (MEATVOL * energy)) /
-												  (creature->biomass + MEATVOL);
 						creature->biomass += MEATVOL;
 
 						meat->exists = false;
@@ -870,13 +887,13 @@ void Simulation::updateSimulation()
 
 					if (offset.length() < (creature->radius + eatenCreature->radius + EATRADIUS))
 					{
-						if (frame % BITEDELAY == 0)
+						// if (frame % BITEDELAY == 0)
 						{
-							float energy = (meatEnergyDensity * .9 * (1 - creature->preference)) - (2 * .9) + 2;
+							float energy = (meatEnergyDensity * (1 - creature->preference));
 
 							creature->energyDensity =
-								((creature->biomass * creature->energyDensity) + (LEACHVOL * energy)) /
-								(creature->biomass + LEACHVOL);
+								newEnergyDensity(creature->biomass, creature->energyDensity, LEACHVOL, energy);
+
 							creature->biomass += LEACHVOL;
 
 							eatenCreature->health -= DAMAGE;
@@ -936,8 +953,8 @@ void Simulation::updateSimulation()
 	static int penalty = 0;
 
 	int adjustedMaxFood =
-		int(simulationRules.foodCap * ((float)simulationRules.preferedCreatures / existingCreatures->length));
-	adjustedMaxFood = std::min(adjustedMaxFood, simulationRules.foodCap);
+		int(simulationRules.maxFood * ((float)simulationRules.preferedCreatures / existingCreatures->length));
+	adjustedMaxFood = std::min(adjustedMaxFood, simulationRules.maxFood);
 
 	if (existingCreatures->length > simulationRules.preferedCreatures)
 	{
@@ -962,7 +979,7 @@ void Simulation::updateSimulation()
 
 	// adding more food
 	// int max = std::min(simulationRules.maxFood, adjustedMaxFood);
-	int max = std::min(simulationRules.foodCap, maxFood);
+	int max = std::min(simulationRules.maxFood, foodCap);
 	// int max = 0;
 
 	for (; existingFood->length < max;)

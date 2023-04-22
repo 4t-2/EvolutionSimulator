@@ -19,7 +19,7 @@
 
 #define THREADS	  2
 #define EATRADIUS 5
-#define DAMAGE	  25
+#define DAMAGE	  10
 
 #define FOODVOL	 25
 #define MEATVOL	 25

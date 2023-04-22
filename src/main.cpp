@@ -57,7 +57,7 @@ void loadRules(std::string path, SimulationRules *simulationRules)
 	simulationRules->startingCreatures = stoi(buffer[4]);
 	simulationRules->foodEnergy		   = stoi(buffer[5]);
 	simulationRules->maxCreatures	   = stoi(buffer[6]);
-	simulationRules->foodCap		   = stoi(buffer[7]);
+	simulationRules->maxFood		   = stoi(buffer[7]);
 	simulationRules->maxEggs		   = stoi(buffer[8]);
 	simulationRules->preferedCreatures = stoi(buffer[9]);
 	simulationRules->penaltyBuffer	   = stoi(buffer[10]);
@@ -231,7 +231,8 @@ int main()
 			FieldElement  *maxFood;
 	} actionMenuPointers;
 
-	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement, FieldElement, FieldElement>
+	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement, FieldElement,
+		 FieldElement>
 		actionMenu(&blank, &font, &event);
 	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 250});
 	actionMenu.bindPointers(&actionMenuPointers);
@@ -337,7 +338,7 @@ int main()
 	std::cout << "startingCreatures - " << simulationRules.startingCreatures << '\n';
 	std::cout << "maxCreatures - " << simulationRules.maxCreatures << '\n';
 	std::cout << "foodEnergy - " << simulationRules.foodEnergy << '\n';
-	std::cout << "maxFood - " << simulationRules.foodCap << '\n';
+	std::cout << "maxFood - " << simulationRules.maxFood << '\n';
 	std::cout << "size - " << simulationRules.size << '\n';
 	std::cout << "gridResolution - " << simulationRules.gridResolution << '\n';
 	std::cout << "maxEggs - " << simulationRules.maxEggs << '\n';
@@ -410,8 +411,8 @@ int main()
 							 {"Select", 150 - 16 * 2},								   //
 							 {"Kill", 150 - 16 * 2},								   //
 							 {"FdEnDn", std::to_string(simulation.foodEnergyDensity)}, //
-							 {"MtEnDn", std::to_string(simulation.meatEnergyDensity)},  //
-							 {"maxFd", std::to_string(simulation.maxFood)}  //
+							 {"MtEnDn", std::to_string(simulation.meatEnergyDensity)}, //
+							 {"maxFd", std::to_string(simulation.foodCap)}			   //
 	);
 
 	printf("entering sim loop\n");
@@ -501,7 +502,12 @@ int main()
 
 		for (int i = 0; i < simulation.existingMeat->length; i++)
 		{
-			meatShape.setPosition(simulation.existingMeat->get(i)->position);
+			Meat *meat = simulation.existingMeat->get(i);
+
+			meatShape.setPosition(meat->position);
+			meatShape.setSize({meat->radius * 2, meat->radius * 2});
+			meatShape.setOffset({-meat->radius, -meat->radius });
+			meatShape.setRotation({0, 0, meat->rotation});
 			window.drawShape(meatShape);
 		}
 
@@ -748,7 +754,7 @@ int main()
 		}
 		if (quitMenuPointers.cancel->state)
 		{
-			quiting					= false;
+			quiting						   = false;
 			quitMenuPointers.cancel->state = false;
 		}
 
@@ -832,7 +838,7 @@ int main()
 
 					if (distance < existingCreatures->get(i)->radius)
 					{
-						simulation.addMeat(existingCreatures->get(i)->position);
+						simulation.addMeat(existingCreatures->get(i)->position, existingCreatures->get(i)->maxHealth / 2);
 						existingCreatures->pop(i);
 
 						break;
@@ -927,10 +933,8 @@ int main()
 		guiCamera.setOrthographicProjection(0, windowSize.x, windowSize.y, 0, 0.1, 100);
 
 		simulation.foodEnergyDensity = std::stof(actionMenuPointers.foodDen->value);
-		simulation.meatEnergyDensity = std::stof(actionMenuPointers.foodDen->value);
-		simulation.maxFood = std::stof(actionMenuPointers.maxFood->value);
-
-		std::cout << simulation.maxFood << '\n';
+		simulation.meatEnergyDensity = std::stof(actionMenuPointers.meatDen->value);
+		simulation.foodCap			 = std::stof(actionMenuPointers.maxFood->value);
 
 		milliDiff = getMillisecond() - start;
 	}
