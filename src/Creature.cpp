@@ -55,14 +55,16 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->maxHealth = 100 * size * size * size;
 	this->maxLife	= 60 * 60 * size * size * size;
 
-	this->maxBiomass = 100 * size * size * size;
-	this->biomass = 0;
+	this->maxBiomass	= 100 * size * size * size;
+	this->biomass		= 0;
 	this->energyDensity = 0.0;
 
 	this->radius = 12.5 * size;
 
-	this->eggCost = (this->maxHealth / 2) + (this->maxEnergy / 4);
-	this->eggDesposit = 0;
+	this->eggHealthCost = ((this->maxHealth / 5) * 2);
+	this->eggEnergyCost = (this->maxEnergy / 5);
+	this->eggTotalCost	= eggHealthCost + eggEnergyCost;
+	this->eggDesposit	= 0;
 
 	this->energy = creatureData.startEnergy;
 
@@ -321,7 +323,7 @@ void Creature::updateActions()
 	}
 
 	// energy loss
-	energy -= (sight + (moveForce * moveForce * size * size)) / 400;
+	energy -= (sight + (moveForce * moveForce * size * size * size)) / 300;
 
 	life--;
 

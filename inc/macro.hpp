@@ -19,17 +19,17 @@
 
 #define THREADS	  2
 #define EATRADIUS 5
-#define DAMAGE	  10
+#define DAMAGE	  3
 
-#define FOODVOL	 25
-#define MEATVOL	 25
-#define LEACHVOL .25
+#define FOODVOL	 40
+#define MEATVOL	 60
+#define LEACHVOL 1
 
 #define BITEDELAY 20
 
 #define MAXMEAT	   2000
-#define FOODENERGY .5
-#define MEATENERGY 2
+#define FOODENERGY 1
+#define MEATENERGY 1
 
 #define RAY_LENGTH 1000
 
@@ -61,7 +61,7 @@
 #define LAYEGG_OUTPUT (TOTAL_INPUT + 4)
 
 #define PREGNANCY_COST 1
-#define METABOLISM	   .25
+#define METABOLISM	   1
 
 #define MENU_PADDING 1
 

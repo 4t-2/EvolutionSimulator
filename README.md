@@ -6,21 +6,32 @@ This project was inspired by [Bibits](https://www.youtube.com/@TheBibitesDigital
 ## How to compile
 Run
 ```bash
-# download latest AGL - doesnt need to be ran every time
+# download libraries - only needed to be done once
 cd lib
 ./updateAGL.sh
+./updatePHY.sh
 cd ..
 
 # compile
-cmake -S . -B build
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
 ```
+
+## Roadmap
+1.0 - Basics, Initial release
+1.1 - Predation, digestion and tweaks
+
+*FUTURE*
+
+1.1.1 - Windows port
+1.2 - AI Overhaul
 
 ## TODO
 - Add a tree diagram of how the creatures evolved
 - Evolving plants (probably make plants evolve into creatures)
 - Evolving bodies (not just size, speed, etc but actual limbs and shape)
+- Windows port
 - Saving and loading
 - Better UI
 - Predation

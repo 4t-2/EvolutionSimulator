@@ -394,7 +394,7 @@ int main()
 		creatureInfoPointers.hue->value			  = &focusCreature->hue;
 		creatureInfoPointers.biomass->value		  = &focusCreature->biomass;
 		creatureInfoPointers.energyDensity->value = &focusCreature->energyDensity;
-		creatureInfoPointers.eggCost->value		  = &focusCreature->eggCost;
+		creatureInfoPointers.eggCost->value		  = &focusCreature->eggTotalCost;
 		creatureInfoPointers.preference->value	  = &focusCreature->preference;
 	};
 
@@ -434,7 +434,7 @@ int main()
 		{
 			mHeld = false;
 
-			CreatureData creatureData(1, 2, 1, 60, 15);
+			CreatureData creatureData(1, 1, 1, 60, 15);
 
 			creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 			creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);

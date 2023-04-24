@@ -48,12 +48,12 @@ Simulation::Simulation(SimulationRules simulationRules)
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
-		CreatureData creatureData(.1, .5, 1, 0, connections);
+		CreatureData creatureData(1, .5, 1, 0, connections);
 
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
 		creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
-		// creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, 1);
+		creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, 1);
 		// creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -1);
 
 		creatureData.preference = 1;
@@ -271,6 +271,7 @@ void Simulation::removeFood(Food *food)
 
 void Simulation::addMeat(agl::Vec<float, 2> position, float energy)
 {
+	return;
 	bool alreadyExists;
 
 	for (int i = 0; i < MAXMEAT; i++)
@@ -338,24 +339,24 @@ float mutShift(float f, float min, float max)
 
 void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 {
-	creatureData->sight		 = mutShift(creatureData->sight, .5, 4);
-	creatureData->speed		 = mutShift(creatureData->speed, .5, 4);
-	creatureData->size		 = mutShift(creatureData->size, .5, 4);
-	creatureData->hue		 = mutShift(creatureData->hue / 60., 0, 359. / 60) * 60;
-	creatureData->preference = mutShift(creatureData->preference, 0, 1);
+	// creatureData->sight		 = mutShift(creatureData->sight, .5, 4);
+	// creatureData->speed		 = mutShift(creatureData->speed, .5, 4);
+	// creatureData->size		 = mutShift(creatureData->size, .5, 4);
+	// creatureData->hue		 = mutShift(creatureData->hue / 60., 0, 359. / 60) * 60;
+	// creatureData->preference = mutShift(creatureData->preference, 0, 1);
 
-	// Buffer buf(EXTRA_BYTES);
-	// buf.data[0] = 255 * (creatureData->sight / 2);
-	// buf.data[1] = 255 * (creatureData->speed / 2);
-	// buf.data[2] = 255 * (creatureData->size / 2);
-	// buf.data[3] = 255 * (creatureData->hue / 359.);
-	//
-	// Simulation::mutateBuffer(&buf, bodyMutation);
-	//
-	// creatureData->sight = (buf.data[0] * 2) / 255.;
-	// creatureData->speed = (buf.data[1] * 2) / 255.;
-	// creatureData->size	= (buf.data[2] * 2) / 255.;
-	// creatureData->hue	= (buf.data[3] * 359.) / 255.;
+	Buffer buf(EXTRA_BYTES);
+	buf.data[0] = 255 * (creatureData->sight / 2);
+	buf.data[1] = 255 * (creatureData->speed / 2);
+	buf.data[2] = 255 * (creatureData->size / 2);
+	buf.data[3] = 255 * (creatureData->hue / 359.);
+
+	Simulation::mutateBuffer(&buf, bodyMutation);
+
+	creatureData->sight = (buf.data[0] * 2) / 255.;
+	creatureData->speed = (buf.data[1] * 2) / 255.;
+	creatureData->size	= (buf.data[2] * 2) / 255.;
+	creatureData->hue	= (buf.data[3] * 359.) / 255.;
 
 	for (int i = 0; i < networkCycles; i++)
 	{
@@ -778,7 +779,7 @@ void Simulation::updateSimulation()
 		// egg laying
 		if (creature->layingEgg)
 		{
-			if (creature->energy > creature->eggCost)
+			if (creature->energy > creature->eggTotalCost)
 			{
 				creature->incubating = true;
 			}
@@ -789,13 +790,13 @@ void Simulation::updateSimulation()
 			creature->energy -= PREGNANCY_COST;
 			creature->eggDesposit += PREGNANCY_COST;
 
-			if (creature->eggDesposit >= creature->eggCost)
+			if (creature->eggDesposit >= creature->eggTotalCost)
 			{
 				CreatureData creatureData = creature->creatureData;
 
 				mutate(&creatureData, 50, 3);
 
-				creatureData.startEnergy = creature->eggCost - (sizeToHealth(creatureData.size) / 2);
+				creatureData.startEnergy = creature->eggEnergyCost;
 
 				this->addEgg(creatureData, creature->position);
 

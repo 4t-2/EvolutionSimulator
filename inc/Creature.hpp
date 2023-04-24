@@ -42,7 +42,9 @@ class Creature : public phy::Circle
 		float biomass		= 0;
 		float energyDensity = 0;
 
-		float eggCost	  = 0;
+		float eggTotalCost	  = 0;
+		float eggHealthCost = 0;
+		float eggEnergyCost = 0;
 		float eggDesposit = 0;
 
 		float &preference = creatureData.preference; // plant = 1
