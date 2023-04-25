@@ -25,6 +25,7 @@ cmake --build build
 *FUTURE*
 
 1.1.1 - Windows port
+1.1.2 - More creature traits, balancing, and optimization
 1.2 - AI Overhaul
 
 ## TODO
@@ -34,5 +35,4 @@ cmake --build build
 - Windows port
 - Saving and loading
 - Better UI
-- Predation
 - Better AI?

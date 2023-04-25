@@ -271,7 +271,6 @@ void Simulation::removeFood(Food *food)
 
 void Simulation::addMeat(agl::Vec<float, 2> position, float energy)
 {
-	return;
 	bool alreadyExists;
 
 	for (int i = 0; i < MAXMEAT; i++)
@@ -339,24 +338,24 @@ float mutShift(float f, float min, float max)
 
 void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 {
-	// creatureData->sight		 = mutShift(creatureData->sight, .5, 4);
-	// creatureData->speed		 = mutShift(creatureData->speed, .5, 4);
-	// creatureData->size		 = mutShift(creatureData->size, .5, 4);
-	// creatureData->hue		 = mutShift(creatureData->hue / 60., 0, 359. / 60) * 60;
-	// creatureData->preference = mutShift(creatureData->preference, 0, 1);
+	creatureData->sight		 = mutShift(creatureData->sight, .5, 4);
+	creatureData->speed		 = mutShift(creatureData->speed, .5, 4);
+	creatureData->size		 = mutShift(creatureData->size, .5, 4);
+	creatureData->hue		 = mutShift(creatureData->hue / 60., 0, 359. / 60) * 60;
+	creatureData->preference = mutShift(creatureData->preference, 0, 1);
 
-	Buffer buf(EXTRA_BYTES);
-	buf.data[0] = 255 * (creatureData->sight / 2);
-	buf.data[1] = 255 * (creatureData->speed / 2);
-	buf.data[2] = 255 * (creatureData->size / 2);
-	buf.data[3] = 255 * (creatureData->hue / 359.);
-
-	Simulation::mutateBuffer(&buf, bodyMutation);
-
-	creatureData->sight = (buf.data[0] * 2) / 255.;
-	creatureData->speed = (buf.data[1] * 2) / 255.;
-	creatureData->size	= (buf.data[2] * 2) / 255.;
-	creatureData->hue	= (buf.data[3] * 359.) / 255.;
+	// Buffer buf(EXTRA_BYTES);
+	// buf.data[0] = 255 * (creatureData->sight / 2);
+	// buf.data[1] = 255 * (creatureData->speed / 2);
+	// buf.data[2] = 255 * (creatureData->size / 2);
+	// buf.data[3] = 255 * (creatureData->hue / 359.);
+	//
+	// Simulation::mutateBuffer(&buf, bodyMutation);
+	//
+	// creatureData->sight = (buf.data[0] * 2) / 255.;
+	// creatureData->speed = (buf.data[1] * 2) / 255.;
+	// creatureData->size	= (buf.data[2] * 2) / 255.;
+	// creatureData->hue	= (buf.data[3] * 359.) / 255.;
 
 	for (int i = 0; i < networkCycles; i++)
 	{
