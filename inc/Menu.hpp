@@ -58,6 +58,13 @@ class MenuElement : public agl::Drawable
 			{
 				size.y = text->getHeight() * text->getScale();
 			}
+
+			extraInit();
+		}
+
+		virtual void extraInit()
+		{
+
 		}
 
 		// void drawFunction(agl::RenderWindow &window);
@@ -163,15 +170,8 @@ class ButtonElement : public MenuElement
 			this->size.x = width;
 		}
 
-		void init(agl::Text *text, agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank, agl::Event *event,
-				  bool *focused)
+		void extraInit()
 		{
-			this->text	 = text;
-			this->rect	 = rect;
-			this->border = border;
-			this->blank	 = blank;
-			this->event	 = event;
-
 			size.y = text->getHeight() * text->getScale() + MENU_BORDEREDGE * 2;
 		}
 
