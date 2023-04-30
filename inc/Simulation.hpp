@@ -5,10 +5,9 @@
 #include "Egg.hpp"
 #include "Food.hpp"
 #include "Grid.hpp"
-#include "SimulationRules.hpp"
 #include "Meat.hpp"
+#include "SimulationRules.hpp"
 #include "macro.hpp"
-
 
 class Simulation
 {
@@ -26,21 +25,26 @@ class Simulation
 		List<Food *> *existingFood;
 		Grid<Food *> *foodGrid;
 
-		std::vector<int> creaturePopData;
+		std::vector<int>   creaturePopData;
 		std::vector<float> creatureSightData;
 		std::vector<float> creatureSpeedData;
 		std::vector<float> creatureSizeData;
 
-		Meat *meatBuffer;
+		Meat		 *meatBuffer;
 		List<Meat *> *existingMeat;
-		Grid<Meat*> *meatGrid;
+		Grid<Meat *> *meatGrid;
 
-		int frame =0 ;
+		int frame = 0;
 
 		float foodEnergyDensity = FOODENERGY;
 		float meatEnergyDensity = MEATENERGY;
 
 		int foodCap;
+
+		float foodVol  = FOODVOL;
+		float leachVol = LEACHVOL;
+		float damage = DAMAGE;
+		float energyCostMultiplier = ENERGYCOSTMULTIPLIER;
 
 		Simulation(SimulationRules simulationRules);
 		void destroy();

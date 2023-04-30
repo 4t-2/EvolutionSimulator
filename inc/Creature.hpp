@@ -50,6 +50,8 @@ class Creature : public phy::Circle
 		float &preference = creatureData.preference; // plant = 1
 													 // meat  = 0
 
+		float &metabolism = creatureData.metabolism;
+
 		float maxForce	  = 0;
 		float maxRotation = 0;
 
@@ -73,5 +75,5 @@ class Creature : public phy::Circle
 		void clear();
 
 		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat *> *meatGrid);
-		void updateActions();
+		void updateActions(float energyCostMultiplier);
 };

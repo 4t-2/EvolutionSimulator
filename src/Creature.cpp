@@ -61,8 +61,8 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 
 	this->radius = 12.5 * size;
 
-	this->eggHealthCost = ((this->maxHealth / 5) * 2);
-	this->eggEnergyCost = (this->maxEnergy / 5);
+	this->eggHealthCost = (this->maxHealth / 2);
+	this->eggEnergyCost = (this->maxEnergy / 10);
 	this->eggTotalCost	= eggHealthCost + eggEnergyCost;
 	this->eggDesposit	= 0;
 
@@ -273,7 +273,7 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 	return;
 }
 
-void Creature::updateActions()
+void Creature::updateActions(float energyCostMultiplier)
 {
 	float moveForce = 0;
 
@@ -314,8 +314,8 @@ void Creature::updateActions()
 
 	if (biomass > 0)
 	{
-		biomass -= METABOLISM;
-		energy += energyDensity * METABOLISM;
+		biomass -= metabolism;
+		energy += energyDensity * metabolism;
 	}
 	else
 	{
@@ -323,7 +323,7 @@ void Creature::updateActions()
 	}
 
 	// energy loss
-	energy -= (sight + (moveForce * moveForce * size * size * size)) / 300;
+	energy -= (sight + (moveForce * moveForce * size * size * size)) * energyCostMultiplier;
 
 	life--;
 

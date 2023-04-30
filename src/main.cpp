@@ -174,7 +174,7 @@ int main()
 			SpacerElement			  *s6;
 			ValueElement<float>		  *biomass;
 			ValueElement<float>		  *energyDensity;
-			ValueElement<float>		  *eggCost;
+			ValueElement<float>		  *metabolism;
 			ValueElement<float>		  *preference;
 	} creatureInfoPointers;
 
@@ -215,7 +215,7 @@ int main()
 							   {},							//
 							   {"Biomass", nullptr},		//
 							   {"Energy Density", nullptr}, //
-							   {"Egg Cost", nullptr},		//
+							   {"Metabolism", nullptr},		//
 							   {"Preference", nullptr}		//
 	);
 
@@ -227,14 +227,18 @@ int main()
 			ButtonElement *select;
 			ButtonElement *kill;
 			FieldElement  *foodDen;
+			FieldElement  *foodVol;
 			FieldElement  *meatDen;
+			FieldElement  *leachVol;
 			FieldElement  *maxFood;
+			FieldElement  *damage;
+			FieldElement  *energyCostMultiplier;
 	} actionMenuPointers;
 
 	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement, FieldElement,
-		 FieldElement>
+		 FieldElement, FieldElement, FieldElement, FieldElement, FieldElement>
 		actionMenu(&blank, &font, &event);
-	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 250});
+	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 360});
 	actionMenu.bindPointers(&actionMenuPointers);
 
 	struct
@@ -394,7 +398,7 @@ int main()
 		creatureInfoPointers.hue->value			  = &focusCreature->hue;
 		creatureInfoPointers.biomass->value		  = &focusCreature->biomass;
 		creatureInfoPointers.energyDensity->value = &focusCreature->energyDensity;
-		creatureInfoPointers.eggCost->value		  = &focusCreature->eggTotalCost;
+		creatureInfoPointers.metabolism->value	  = &focusCreature->metabolism;
 		creatureInfoPointers.preference->value	  = &focusCreature->preference;
 	};
 
@@ -406,13 +410,17 @@ int main()
 
 	float sizeMultiplier = 1;
 
-	actionMenu.setupElements({"Left Click"}, {"Food", 150 - 16 * 2},				   //
-							 {"Meat", 150 - 16 * 2},								   //
-							 {"Select", 150 - 16 * 2},								   //
-							 {"Kill", 150 - 16 * 2},								   //
-							 {"FdEnDn", std::to_string(simulation.foodEnergyDensity)}, //
-							 {"MtEnDn", std::to_string(simulation.meatEnergyDensity)}, //
-							 {"maxFd", std::to_string(simulation.foodCap)}			   //
+	actionMenu.setupElements({"Left Click"}, {"Food", 150 - 16 * 2},					 //
+							 {"Meat", 150 - 16 * 2},									 //
+							 {"Select", 150 - 16 * 2},									 //
+							 {"Kill", 150 - 16 * 2},									 //
+							 {"FdEnDn", std::to_string(simulation.foodEnergyDensity)},	 //
+							 {"FdVol", std::to_string(simulation.foodVol)},				 //
+							 {"MtEnDn", std::to_string(simulation.meatEnergyDensity)},	 //
+							 {"LeVol", std::to_string(simulation.leachVol)},			 //
+							 {"maxFd", std::to_string(simulation.foodCap)},				 //
+							 {"dmg", std::to_string(simulation.damage)},				 //
+							 {"EnCoMu", std::to_string(simulation.energyCostMultiplier)} //
 	);
 
 	printf("entering sim loop\n");
@@ -447,6 +455,8 @@ int main()
 			creatureData.setConnection(8, CREATURE_PREFERENCE, LEFT_OUTPUT, 1);
 
 			creatureData.preference = 0;
+			creatureData.metabolism = METABOLISM;
+
 			agl::Vec<float, 2> position;
 			position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
 			position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
@@ -506,7 +516,7 @@ int main()
 
 			meatShape.setPosition(meat->position);
 			meatShape.setSize({meat->radius * 2, meat->radius * 2});
-			meatShape.setOffset({-meat->radius, -meat->radius });
+			meatShape.setOffset({-meat->radius, -meat->radius});
 			meatShape.setRotation({0, 0, meat->rotation});
 			window.drawShape(meatShape);
 		}
@@ -838,7 +848,8 @@ int main()
 
 					if (distance < existingCreatures->get(i)->radius)
 					{
-						simulation.addMeat(existingCreatures->get(i)->position, existingCreatures->get(i)->maxHealth / 2);
+						simulation.addMeat(existingCreatures->get(i)->position,
+										   existingCreatures->get(i)->maxHealth / 4);
 						existingCreatures->pop(i);
 
 						break;
@@ -932,9 +943,13 @@ int main()
 
 		guiCamera.setOrthographicProjection(0, windowSize.x, windowSize.y, 0, 0.1, 100);
 
-		simulation.foodEnergyDensity = std::stof(actionMenuPointers.foodDen->value);
-		simulation.meatEnergyDensity = std::stof(actionMenuPointers.meatDen->value);
-		simulation.foodCap			 = std::stof(actionMenuPointers.maxFood->value);
+		simulation.foodEnergyDensity	= std::stof(actionMenuPointers.foodDen->value);
+		simulation.foodVol				= std::stof(actionMenuPointers.foodVol->value);
+		simulation.meatEnergyDensity	= std::stof(actionMenuPointers.meatDen->value);
+		simulation.leachVol				= std::stof(actionMenuPointers.leachVol->value);
+		simulation.foodCap				= std::stof(actionMenuPointers.maxFood->value);
+		simulation.damage				= std::stof(actionMenuPointers.damage->value);
+		simulation.energyCostMultiplier = std::stof(actionMenuPointers.energyCostMultiplier->value);
 
 		milliDiff = getMillisecond() - start;
 	}

@@ -19,7 +19,7 @@
 
 #define THREADS	  2
 #define EATRADIUS 5
-#define DAMAGE	  3
+#define DAMAGE	  4
 
 #define FOODVOL	 40
 #define MEATVOL	 60
@@ -96,3 +96,5 @@
 	{                  \
 		210, 210, 210  \
 	}
+
+#define ENERGYCOSTMULTIPLIER 0.05

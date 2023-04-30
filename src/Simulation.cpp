@@ -57,6 +57,7 @@ Simulation::Simulation(SimulationRules simulationRules)
 		// creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -1);
 
 		creatureData.preference = 1;
+		creatureData.metabolism = METABOLISM;
 
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
@@ -343,6 +344,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	creatureData->size		 = mutShift(creatureData->size, .5, 4);
 	creatureData->hue		 = mutShift(creatureData->hue / 60., 0, 359. / 60) * 60;
 	creatureData->preference = mutShift(creatureData->preference, 0, 1);
+	creatureData->metabolism = mutShift(creatureData->metabolism, 0, 2);
 
 	// Buffer buf(EXTRA_BYTES);
 	// buf.data[0] = 255 * (creatureData->sight / 2);
@@ -656,7 +658,7 @@ void Simulation::updateSimulation()
 	{
 		Creature *creature = existingCreatures->get(i);
 
-		creature->updateActions();
+		creature->updateActions(energyCostMultiplier);
 
 		creature->gridPosition = foodGrid->toGridPosition(creature->position, simulationRules.size);
 
@@ -829,9 +831,9 @@ void Simulation::updateSimulation()
 							foodEnergyDensity * creature->preference * creature->preference * creature->preference;
 
 						creature->energyDensity =
-							newEnergyDensity(creature->biomass, creature->energyDensity, FOODVOL, energy);
+							newEnergyDensity(creature->biomass, creature->energyDensity, foodVol, energy);
 
-						creature->biomass += FOODVOL;
+						creature->biomass += foodVol;
 
 						food->exists = false;
 						this->removeFood(food);
@@ -859,9 +861,9 @@ void Simulation::updateSimulation()
 						float energy = (meatEnergyDensity * (1 - creature->preference));
 
 						creature->energyDensity =
-							newEnergyDensity(creature->biomass, creature->energyDensity, MEATVOL, energy);
+							newEnergyDensity(creature->biomass, creature->energyDensity, meat->energyVol, energy);
 
-						creature->biomass += MEATVOL;
+						creature->biomass += meat->energyVol;
 
 						meat->exists = false;
 						this->removeMeat(meat);
@@ -892,11 +894,11 @@ void Simulation::updateSimulation()
 							float energy = (meatEnergyDensity * (1 - creature->preference));
 
 							creature->energyDensity =
-								newEnergyDensity(creature->biomass, creature->energyDensity, LEACHVOL, energy);
+								newEnergyDensity(creature->biomass, creature->energyDensity, leachVol, energy);
 
-							creature->biomass += LEACHVOL;
+							creature->biomass += leachVol;
 
-							eatenCreature->health -= DAMAGE;
+							eatenCreature->health -= damage;
 						}
 					}
 				});
@@ -918,7 +920,7 @@ void Simulation::updateSimulation()
 		// killing creature
 		if (creature->health <= 0)
 		{
-			this->addMeat(creature->position, creature->maxHealth / 2);
+			this->addMeat(creature->position, creature->maxHealth / 4);
 			this->removeCreature(creature);
 			i--;
 		}

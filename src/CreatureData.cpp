@@ -44,6 +44,7 @@ CreatureData::CreatureData(const CreatureData &creatureData)
 	hue	  = creatureData.hue;
 	startEnergy = creatureData.startEnergy;
 	preference = creatureData.preference;
+	metabolism = creatureData.metabolism;
 }
 
 void CreatureData::operator=(CreatureData &creatureData)
@@ -64,6 +65,7 @@ void CreatureData::operator=(CreatureData &creatureData)
 	hue	  = creatureData.hue;
 	startEnergy = creatureData.startEnergy;
 	preference = creatureData.preference;
+	metabolism = creatureData.metabolism;
 }
 
 CreatureData::~CreatureData()

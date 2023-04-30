@@ -16,6 +16,7 @@ class CreatureData
 
 		float startEnergy;
 		float preference; // 1 = plant, -1 = meat
+		float metabolism;
 
 		CreatureData();
 		CreatureData(float sight, float speed, float size, int hue, int totalConnections);
