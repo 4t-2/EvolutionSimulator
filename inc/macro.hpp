@@ -1,5 +1,11 @@
 #pragma once
 
+// sets the max FPS, set to 0 to disable
+// disable vsync to go above monitor refresh rate
+#define TARGETFPS 0
+// sets if vysnc should be on
+#define VSYNC true
+
 // output av pop, size, speed, sight in a format interprettable be something
 // like gnuplot
 #define LOGCREATUREDATA

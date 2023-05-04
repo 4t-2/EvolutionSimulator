@@ -75,12 +75,17 @@ int main()
 	agl::RenderWindow window;
 	window.setup({WIDTH, HEIGHT}, "EvolutionSimulator");
 	window.setClearColor(CLEARCOLOR);
-	// window.setFPS(60);
+	window.setFPS(TARGETFPS);
 
 	glDisable(GL_DEPTH_TEST);
 
 	// window.GLEnable(GL_ALPHA_TEST);
 	// glAlphaFunc(GL_GREATER, 0.1f);
+
+	PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI =
+		(PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddress((const GLubyte *)"glXSwapIntervalSGI");
+
+	glXSwapIntervalSGI(VSYNC);
 
 	agl::Event event;
 	event.setWindow(window);
