@@ -665,9 +665,9 @@ int main()
 			window.drawShape(networkBackground);
 
 			// draw node connections
-			for (int i = 0; i < focusCreature->network->getTotalConnections(); i++)
+			for (int i = 0; i < focusCreature->network->structure.totalConnections; i++)
 			{
-				Connection connection = focusCreature->network->getConnection(i);
+				in::Connection connection = focusCreature->network->getConnection(i);
 
 				if (!connection.valid)
 				{

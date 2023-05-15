@@ -5,7 +5,6 @@
 #include "Food.hpp"
 #include "Grid.hpp"
 #include "Meat.hpp"
-#include "NeuralNetwork.hpp"
 #include "SimulationRules.hpp"
 #include "other.hpp"
 #include "macro.hpp"
@@ -19,7 +18,7 @@ class Creature : public phy::Circle
 
 		agl::Vec<int, 2> gridPosition = {0, 0};
 
-		NeuralNetwork *network = nullptr;
+		in::NeuralNetwork *network = nullptr;
 
 		bool eating	   = false;
 		bool layingEgg = false;

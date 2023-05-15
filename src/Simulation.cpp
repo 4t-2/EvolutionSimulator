@@ -363,7 +363,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	{
 		int nonExistIndex = -1;
 
-		Connection *connection = creatureData->connection;
+		in::Connection *connection = creatureData->connection;
 
 		for (int i = 0; i < creatureData->totalConnections; i++)
 		{
