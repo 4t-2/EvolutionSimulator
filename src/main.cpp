@@ -325,18 +325,19 @@ int main()
 	nodeNames[ENERGY_INPUT]		 = "Energy";
 	nodeNames[HEALTH_INPUT]		 = "Health";
 	nodeNames[LIFE_INPUT]		 = "Life Left";
-	nodeNames[FOWARD_OUTPUT]	 = "Move Foward";
-	nodeNames[RIGHT_OUTPUT]		 = "Turn Right";
-	nodeNames[LEFT_OUTPUT]		 = "Turn Left";
-	nodeNames[EAT_OUTPUT]		 = "Eat";
-	nodeNames[LAYEGG_OUTPUT]	 = "Lay Egg";
-	nodeNames[MEAT_ROTATION]	 = "Rotation To Meat";
-	nodeNames[MEAT_DISTANCE]	 = "Distance To Meat";
 
-	for (int i = (TOTAL_INPUT + TOTAL_OUTPUT); i < TOTAL_NODES; i++)
+	for (int i = TOTAL_INPUT; i < TOTAL_INPUT + TOTAL_HIDDEN; i++)
 	{
 		nodeNames[i] = "Hidden";
 	}
+
+	nodeNames[FOWARD_OUTPUT] = "Move Foward";
+	nodeNames[RIGHT_OUTPUT]	 = "Turn Right";
+	nodeNames[LEFT_OUTPUT]	 = "Turn Left";
+	nodeNames[EAT_OUTPUT]	 = "Eat";
+	nodeNames[LAYEGG_OUTPUT] = "Lay Egg";
+	nodeNames[MEAT_ROTATION] = "Rotation To Meat";
+	nodeNames[MEAT_DISTANCE] = "Distance To Meat";
 
 	printf("loading simulation rules from sim.conf\n");
 

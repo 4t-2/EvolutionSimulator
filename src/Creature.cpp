@@ -83,6 +83,8 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 								   connection);
 
 	network = new in::NeuralNetwork(structure);
+
+	network->setActivation(in::tanh);
 }
 
 void Creature::clear()
