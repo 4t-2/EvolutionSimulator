@@ -124,7 +124,10 @@ int main()
 	blank.setBlank();
 
 	agl::Font font;
-	font.setup("./font/VCR_OSD_MONO_1.001.ttf", 24);
+	font.setup("./font/font.ttf", 24);
+
+	agl::Font smallFont;
+	smallFont.setup("./font/font.ttf", 12);
 
 	agl::Rectangle background;
 	background.setTexture(&blank);
@@ -132,10 +135,12 @@ int main()
 
 	background.setPosition({0, 0, 0});
 
+	MenuShare::init(&blank, &font, &smallFont, &event);
+
 	// menu shapes
 	Menu<ValueElement<int>, ValueElement<int>, ValueElement<int>, ValueElement<int>, ValueElement<int>,
 		 ValueElement<float>>
-		simulationInfo(&blank, &font, &event);
+		simulationInfo("Statistics");
 	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 175});
 
 	struct
@@ -189,7 +194,7 @@ int main()
 		 ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>, ValueElement<float>,
 		 ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>, ValueElement<float>,
 		 ValueElement<float>>
-		creatureInfo(&blank, &font, &event);
+		creatureInfo("CreatureInfo");
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 	creatureInfo.bindPointers(&creatureInfoPointers);
 
@@ -242,7 +247,7 @@ int main()
 
 	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement, FieldElement,
 		 FieldElement, FieldElement, FieldElement, FieldElement, FieldElement>
-		actionMenu(&blank, &font, &event);
+		actionMenu("ActionMenu");
 	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 360});
 	actionMenu.bindPointers(&actionMenuPointers);
 
@@ -253,7 +258,7 @@ int main()
 			ButtonElement *cancel;
 	} quitMenuPointers;
 
-	Menu<TextElement, ButtonElement, ButtonElement> quitMenu(&blank, &font, &event);
+	Menu<TextElement, ButtonElement, ButtonElement> quitMenu("QuitMenu");
 	quitMenu.setup({0, 0}, {150, 115});
 	quitMenu.bindPointers(&quitMenuPointers);
 	quitMenu.setupElements({"Quit?"},				  //
@@ -934,10 +939,10 @@ int main()
 			cameraPosition = cameraPosition + offset;
 		}
 
-		simulationInfo.setPosition({windowSize.x - 260, 10, 9});
-		actionMenu.setPosition(
-			{windowSize.x - actionMenu.size.x - 10, simulationInfo.position.y + simulationInfo.size.y + 10, 9});
-		quitMenu.setPosition({(windowSize.x - quitMenu.size.x) / 2, (windowSize.y - quitMenu.size.y) / 2});
+		simulationInfo.position = {windowSize.x - 260, 10, 9};
+		actionMenu.position		= {windowSize.x - actionMenu.size.x - 10,
+								   simulationInfo.position.y + simulationInfo.size.y + 10, 9};
+		quitMenu.position		= {(windowSize.x - quitMenu.size.x) / 2, (windowSize.y - quitMenu.size.y) / 2};
 
 		window.setViewport(0, 0, windowSize.x, windowSize.y);
 
@@ -961,8 +966,7 @@ int main()
 
 	simulation.destroy();
 
-	simulationInfo.destroy();
-	creatureInfo.destroy();
+	MenuShare::destroy();
 
 	font.deleteFont();
 

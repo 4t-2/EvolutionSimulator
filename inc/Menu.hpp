@@ -27,20 +27,65 @@ inline bool pointInArea(agl::Vec<float, 2> point, agl::Vec<float, 2> position, a
 	return true;
 }
 
-class OuterArea : public agl::Drawable
+class MenuShare
+{
+	public:
+		static agl::Event	  *event;
+		static agl::Text	  *text;
+		static agl::Text	  *smallText;
+		static agl::Rectangle *rect;
+		static agl::Texture	  *border;
+		static agl::Texture	  *blank;
+
+		static void init(agl::Texture *blank, agl::Font *font, agl::Font *smallFont, agl::Event *event)
+		{
+			// left
+			// right
+			// up
+			// down
+			// tr
+			// br
+			// tl
+			// bl
+
+			border = new agl::Texture();
+			border->loadFromFile("img/border.png");
+
+			text = new agl::Text();
+			text->setFont(font);
+			text->setColor(agl::Color::Black);
+			text->setScale(1);
+
+			smallText = new agl::Text();
+			smallText->setFont(font);
+			smallText->setColor(agl::Color::Black);
+			smallText->setScale(1);
+
+			rect = new agl::Rectangle();
+			rect->setTexture(blank);
+
+			MenuShare::blank = blank;
+			MenuShare::event = event;
+		}
+
+		static void destroy()
+		{
+			text->clearText();
+			smallText->clearText();
+			border->deleteTexture();
+
+			delete text;
+			delete smallText;
+			delete border;
+			delete rect;
+		}
+};
+
+class OuterArea : public agl::Drawable, public MenuShare
 {
 	public:
 		agl::Vec<float, 2> position;
 		agl::Vec<float, 2> size;
-
-		agl::Rectangle *rect;
-		agl::Texture   *border;
-		agl::Texture   *blank;
-
-		OuterArea(agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank)
-			: rect(rect), border(border), blank(blank)
-		{
-		}
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
@@ -124,20 +169,11 @@ class OuterArea : public agl::Drawable
 		}
 };
 
-class InnerArea : public agl::Drawable
+class InnerArea : public agl::Drawable, public MenuShare
 {
 	public:
 		agl::Vec<float, 2> position;
 		agl::Vec<float, 2> size;
-
-		agl::Rectangle *rect;
-		agl::Texture   *border;
-		agl::Texture   *blank;
-
-		InnerArea(agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank)
-			: rect(rect), border(border), blank(blank)
-		{
-		}
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
@@ -156,7 +192,7 @@ class InnerArea : public agl::Drawable
 			// left
 			rect->setTextureTranslation({1 - ((1 / MENU_BORDERTHICKNESS) * 2), 0});
 			rect->setTextureScaling({1. / MENU_BORDERTHICKNESS, 1. / MENU_DECORATIONHEIGHT});
-			rect->setSize({1, size.y-1});
+			rect->setSize({1, size.y - 1});
 			rect->setPosition(position);
 			window.drawShape(*rect);
 
@@ -182,20 +218,11 @@ class InnerArea : public agl::Drawable
 		}
 };
 
-class PressedArea : public agl::Drawable
+class PressedArea : public agl::Drawable, public MenuShare
 {
 	public:
 		agl::Vec<float, 2> position;
 		agl::Vec<float, 2> size;
-
-		agl::Rectangle *rect;
-		agl::Texture   *border;
-		agl::Texture   *blank;
-
-		PressedArea(agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank)
-			: rect(rect), border(border), blank(blank)
-		{
-		}
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
@@ -280,16 +307,11 @@ class PressedArea : public agl::Drawable
 		}
 };
 
-class MenuElement : public agl::Drawable
+class MenuElement : public agl::Drawable, public MenuShare
 {
 	public:
 		agl::Vec<float, 3> position = {0, 0, 0};
 		agl::Vec<float, 2> size		= {0, 0};
-		agl::Text		  *text		= nullptr;
-		agl::Rectangle	  *rect		= nullptr;
-		agl::Texture	  *border	= nullptr;
-		agl::Texture	  *blank	= nullptr;
-		agl::Event		  *event	= nullptr;
 		bool			  *focused	= nullptr;
 
 		bool pointInElement(agl::Vec<float, 2> point)
@@ -297,14 +319,8 @@ class MenuElement : public agl::Drawable
 			return pointInArea(point, position, size);
 		}
 
-		void init(agl::Text *text, agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank, agl::Event *event,
-				  bool *focused)
+		void init(bool *focused)
 		{
-			this->text	  = text;
-			this->rect	  = rect;
-			this->border  = border;
-			this->blank	  = blank;
-			this->event	  = event;
 			this->focused = focused;
 
 			if (size.y == 0)
@@ -416,15 +432,8 @@ class ButtonElement : public MenuElement
 			this->size.x = width;
 		}
 
-		void init(agl::Text *text, agl::Rectangle *rect, agl::Texture *border, agl::Texture *blank, agl::Event *event,
-				  bool *focused)
+		void init(				  bool *focused)
 		{
-			this->text	 = text;
-			this->rect	 = rect;
-			this->border = border;
-			this->blank	 = blank;
-			this->event	 = event;
-
 			size.y = text->getHeight() * text->getScale() + MENU_BORDEREDGE * 2;
 		}
 
@@ -435,16 +444,18 @@ class ButtonElement : public MenuElement
 				state = !state;
 			}
 
-			if(state)
+			if (state)
 			{
-				PressedArea pressedArea(rect, border, blank);
-				pressedArea.size = size;
+				PressedArea pressedArea;
+				pressedArea.size	 = size;
 				pressedArea.position = position;
 
 				window.draw(pressedArea);
-			} else {
-				OuterArea outerArea(rect, border, blank);
-				outerArea.size = size;
+			}
+			else
+			{
+				OuterArea outerArea;
+				outerArea.size	   = size;
 				outerArea.position = position;
 
 				window.draw(outerArea);
@@ -574,25 +585,12 @@ class FieldElement : public MenuElement
 };
 
 // template hell
-template <typename... ElementType> class Menu : public agl::Drawable
+template <typename... ElementType> class Menu : public agl::Drawable, public MenuShare
 {
 	private:
-		// agl::Rectangle outerShadowShape;
-		// agl::Rectangle borderShape;
-		// agl::Rectangle bodyShape;
-		// agl::Rectangle innerShadowShape;
-
-		agl::Texture  border;
-		agl::Texture *blank;
-
-		agl::Rectangle body;
-
 		bool focused = false;
 
-		agl::Text	   text;
-		agl::Rectangle rect;
-
-		agl::Event *event;
+		std::string title;
 
 		std::tuple<ElementType...> element;
 
@@ -603,7 +601,7 @@ template <typename... ElementType> class Menu : public agl::Drawable
 
 		template <size_t i = 0> typename std::enable_if < i<sizeof...(ElementType), void>::type initTuple()
 		{
-			this->get<i>().init(&text, &rect, &border, blank, event, &focused);
+			this->get<i>().init(&focused);
 
 			initTuple<i + 1>();
 		}
@@ -636,14 +634,14 @@ template <typename... ElementType> class Menu : public agl::Drawable
 		template <size_t i = 0, typename Element> void assign(Element newElement)
 		{
 			this->get<i>() = newElement;
-			this->get<i>().init(&text, &rect, &border, blank, event, &focused);
+			this->get<i>().init(&focused);
 		}
 
 		template <size_t i = 0, typename Element, typename... Elements>
 		void assign(Element newElement, Elements... newElements)
 		{
 			this->get<i>() = newElement;
-			this->get<i>().init(&text, &rect, &border, blank, event, &focused);
+			this->get<i>().init(&focused);
 
 			assign<i + 1>(newElements...);
 		}
@@ -670,29 +668,9 @@ template <typename... ElementType> class Menu : public agl::Drawable
 		agl::Vec<float, 3> position;
 		agl::Vec<float, 2> size;
 
-		Menu(agl::Texture *texture, agl::Font *font, agl::Event *event)
-			: element(make_default_tuple(std::index_sequence_for<ElementType...>{}))
+		Menu(std::string title) : element(make_default_tuple(std::index_sequence_for<ElementType...>{})), title(title)
 
 		{
-			// left
-			// right
-			// up
-			// down
-			// tr
-			// br
-			// tl
-			// bl
-			border.loadFromFile("img/border.png");
-
-			text.setFont(font);
-			text.setColor(agl::Color::Black);
-			text.setScale(1);
-
-			rect.setTexture(texture);
-
-			this->blank = texture;
-			this->event = event;
-
 			initTuple();
 		}
 
@@ -700,10 +678,6 @@ template <typename... ElementType> class Menu : public agl::Drawable
 		{
 			this->position = position;
 			this->size	   = size;
-
-			this->setPosition(position);
-
-			body.setSize(size);
 
 			return;
 		}
@@ -723,35 +697,23 @@ template <typename... ElementType> class Menu : public agl::Drawable
 			return std::get<i>(element);
 		}
 
-		void setPosition(agl::Vec<float, 3> position)
-		{
-			this->position = position;
-
-		}
-
 		void drawFunction(agl::RenderWindow &window) override
 		{
 			agl::Vec<float, 3> pen = {MENU_BORDERTHICKNESS + MENU_PADDING, MENU_BORDERTHICKNESS + MENU_PADDING};
 			pen					   = pen + position;
 
-			OuterArea outerArea(&rect, &border, blank);
+			OuterArea outerArea;
 			outerArea.position = position;
-			outerArea.size = size;
+			outerArea.size	   = size;
 
 			window.draw(outerArea);
 
-			InnerArea innerArea(&rect, &border, blank);
+			InnerArea innerArea;
 			innerArea.position = position + agl::Vec<float, 2>{4, 4};
-			innerArea.size = size + agl::Vec<float,2>{-8, -8};
+			innerArea.size	   = size + agl::Vec<float, 2>{-8, -8};
 
 			window.draw(innerArea);
 
 			draw(window, pen);
-		}
-
-		void destroy()
-		{
-			text.clearText();
-			border.deleteTexture();
 		}
 };
