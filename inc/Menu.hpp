@@ -57,7 +57,7 @@ class MenuShare
 			text->setScale(1);
 
 			smallText = new agl::Text();
-			smallText->setFont(font);
+			smallText->setFont(smallFont);
 			smallText->setColor(agl::Color::Black);
 			smallText->setScale(1);
 
@@ -154,6 +154,93 @@ class OuterArea : public agl::Drawable, public MenuShare
 			rect->setRotation({0, 0, 0});
 			rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT)});
 			rect->setPosition(position + agl::Vec<float, 2>{0, size.y - MENU_BORDERTHICKNESS});
+			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
+			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
+			window.drawShape(*rect);
+
+			// body
+			rect->setRotation({0, 0, 0});
+			rect->setTexture(blank);
+			rect->setSize(agl::Vec<float, 2>{size.x, size.y} -
+						  agl::Vec<float, 2>{MENU_BORDEREDGE, MENU_BORDEREDGE} * 2);
+			rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDEREDGE, MENU_BORDEREDGE});
+			rect->setColor({0xc0, 0xc0, 0xc0});
+			window.drawShape(*rect);
+		}
+};
+
+class DipArea : public agl::Drawable, public MenuShare
+{
+	public:
+		agl::Vec<float, 2> position;
+		agl::Vec<float, 2> size;
+
+		void drawFunction(agl::RenderWindow &window) override
+		{
+			rect->setTexture(border);
+			rect->setColor(agl::Color::White);
+
+			// right
+			rect->setTextureTranslation({0, 0});
+			rect->setSize({MENU_BORDERTHICKNESS, size.y});
+			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
+			rect->setPosition(position + agl::Vec<float, 2>{size.x, size.y});
+			rect->setRotation({0, 0, 180});
+			window.drawShape(*rect);
+
+			// left
+			rect->setSize({MENU_BORDERTHICKNESS, size.y});
+			rect->setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 1});
+			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
+			rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDERTHICKNESS, size.y});
+			window.drawShape(*rect);
+
+			// down
+			rect->setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 2});
+			rect->setSize({MENU_BORDERTHICKNESS, size.x});
+			rect->setRotation({0, 0, -90});
+			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
+			rect->setPosition(position + agl::Vec<float, 2>{size.x, size.y - MENU_BORDERTHICKNESS});
+			window.drawShape(*rect);
+
+			// up
+			rect->setSize({MENU_BORDERTHICKNESS, size.x});
+			rect->setRotation({0, 0, -90});
+			rect->setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 3});
+			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
+			rect->setPosition(position + agl::Vec<float, 2>{size.x, 0});
+			window.drawShape(*rect);
+
+			rect->setRotation({0, 0, 0});
+
+			// bl
+			rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 4});
+			rect->setRotation({0, 0, 180});
+			rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDERTHICKNESS, size.y});
+			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
+			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
+			window.drawShape(*rect);
+
+			// tl
+			rect->setRotation({0, 0, 180});
+			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
+			rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 3});
+			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
+			rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
+			window.drawShape(*rect);
+
+			// br
+			rect->setRotation({0, 0, 180});
+			rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 2});
+			rect->setPosition(position + size);
+			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
+			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
+			window.drawShape(*rect);
+
+			// tr
+			rect->setRotation({0, 0, 180});
+			rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT)});
+			rect->setPosition(position + agl::Vec<float, 2>{size.x, MENU_BORDERTHICKNESS});
 			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
 			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
 			window.drawShape(*rect);
@@ -312,17 +399,14 @@ class MenuElement : public agl::Drawable, public MenuShare
 	public:
 		agl::Vec<float, 3> position = {0, 0, 0};
 		agl::Vec<float, 2> size		= {0, 0};
-		bool			  *focused	= nullptr;
 
 		bool pointInElement(agl::Vec<float, 2> point)
 		{
 			return pointInArea(point, position, size);
 		}
 
-		void init(bool *focused)
+		void init()
 		{
-			this->focused = focused;
-
 			if (size.y == 0)
 			{
 				size.y = text->getHeight() * text->getScale();
@@ -432,7 +516,7 @@ class ButtonElement : public MenuElement
 			this->size.x = width;
 		}
 
-		void init(				  bool *focused)
+		void init()
 		{
 			size.y = text->getHeight() * text->getScale() + MENU_BORDEREDGE * 2;
 		}
@@ -562,20 +646,13 @@ class FieldElement : public MenuElement
 
 			text->clearText();
 
-			if (textFocus)
-			{
-				rect->setColor({200, 200, 200});
-			}
-			else
-			{
-				rect->setColor(agl::Color::Gray);
-			}
-			rect->setPosition(position + agl::Vec<float, 2>{size.x - fieldWidth, 0});
-			rect->setSize({fieldWidth, size.y});
+			InnerArea innerArea;
+			innerArea.position = position + agl::Vec<float, 2>{size.x - fieldWidth, 3};
+			innerArea.size = {fieldWidth, size.y};
 
-			window.drawShape(*rect);
+			window.draw(innerArea);
 
-			text->setPosition(position + agl::Vec<float, 2>{size.x - fieldWidth, 0});
+			text->setPosition(position + agl::Vec<float, 2>{size.x - fieldWidth + 2, 0});
 			text->setText(liveValue);
 
 			window.drawText(*text);
@@ -601,7 +678,7 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Men
 
 		template <size_t i = 0> typename std::enable_if < i<sizeof...(ElementType), void>::type initTuple()
 		{
-			this->get<i>().init(&focused);
+			this->get<i>().init();
 
 			initTuple<i + 1>();
 		}
@@ -634,14 +711,14 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Men
 		template <size_t i = 0, typename Element> void assign(Element newElement)
 		{
 			this->get<i>() = newElement;
-			this->get<i>().init(&focused);
+			this->get<i>().init();
 		}
 
 		template <size_t i = 0, typename Element, typename... Elements>
 		void assign(Element newElement, Elements... newElements)
 		{
 			this->get<i>() = newElement;
-			this->get<i>().init(&focused);
+			this->get<i>().init();
 
 			assign<i + 1>(newElements...);
 		}
@@ -665,8 +742,8 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Men
 		}
 
 	public:
-		agl::Vec<float, 3> position;
-		agl::Vec<float, 2> size;
+		agl::Vec<int, 3> position;
+		agl::Vec<int, 2> size;
 
 		Menu(std::string title) : element(make_default_tuple(std::index_sequence_for<ElementType...>{})), title(title)
 
@@ -699,20 +776,27 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Men
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
-			agl::Vec<float, 3> pen = {MENU_BORDERTHICKNESS + MENU_PADDING, MENU_BORDERTHICKNESS + MENU_PADDING};
+			agl::Vec<float, 3> pen = {MENU_BORDERTHICKNESS + MENU_PADDING,
+									  MENU_BORDERTHICKNESS + MENU_PADDING + smallText->getHeight()};
 			pen					   = pen + position;
 
 			OuterArea outerArea;
 			outerArea.position = position;
-			outerArea.size	   = size;
+			outerArea.size	   = size + agl::Vec<float, 2>{0, (float)smallText->getHeight()};
 
 			window.draw(outerArea);
 
-			InnerArea innerArea;
-			innerArea.position = position + agl::Vec<float, 2>{4, 4};
+			DipArea innerArea;
+			innerArea.position = position + agl::Vec<float, 2>{4, 4 + (float)smallText->getHeight()};
 			innerArea.size	   = size + agl::Vec<float, 2>{-8, -8};
 
 			window.draw(innerArea);
+
+			smallText->clearText();
+			smallText->setText(title);
+			smallText->setColor(agl::Color::Black);
+			smallText->setPosition(position + agl::Vec<float, 2>{3.5, 0});
+			window.drawText(*smallText);
 
 			draw(window, pen);
 		}

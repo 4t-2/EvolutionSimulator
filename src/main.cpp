@@ -124,7 +124,7 @@ int main()
 	blank.setBlank();
 
 	agl::Font font;
-	font.setup("./font/font.ttf", 24);
+	font.setup("./font/font.ttf", 16);
 
 	agl::Font smallFont;
 	smallFont.setup("./font/font.ttf", 12);
@@ -271,7 +271,7 @@ int main()
 	networkBackground.setColor({15, 15, 15});
 	networkBackground.setSize(agl::Vec<float, 3>{150, 150, 0});
 	networkBackground.setPosition(agl::Vec<float, 3>{
-		creatureInfo.position.x + (creatureInfo.size.x / 2),
+		creatureInfo.position.x + ((float)creatureInfo.size.x / 2),
 		creatureInfo.position.y + MENU_BORDERTHICKNESS + MENU_PADDING + networkBackground.getSize().y, 10});
 
 	agl::Circle nodeShape(10);
@@ -939,10 +939,10 @@ int main()
 			cameraPosition = cameraPosition + offset;
 		}
 
-		simulationInfo.position = {windowSize.x - 260, 10, 9};
-		actionMenu.position		= {windowSize.x - actionMenu.size.x - 10,
+		simulationInfo.position = {(int)windowSize.x - 260, 10, 9};
+		actionMenu.position		= {(int)windowSize.x - actionMenu.size.x - 10,
 								   simulationInfo.position.y + simulationInfo.size.y + 10, 9};
-		quitMenu.position		= {(windowSize.x - quitMenu.size.x) / 2, (windowSize.y - quitMenu.size.y) / 2};
+		quitMenu.position		= agl::Vec<int, 2>{int(windowSize.x - quitMenu.size.x) / 2, int(windowSize.y - quitMenu.size.y) / 2};
 
 		window.setViewport(0, 0, windowSize.x, windowSize.y);
 
