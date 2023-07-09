@@ -1,6 +1,6 @@
 #include "../lib/AGL/agl.hpp"
 
-#include "../inc/Menu.hpp"
+#include "../inc/MenuBar.hpp"
 #include "../inc/Simulation.hpp"
 
 #include <X11/X.h>
@@ -77,6 +77,10 @@ int main()
 	window.setClearColor(CLEARCOLOR);
 	window.setFPS(TARGETFPS);
 
+	agl::Vec<float, 2> windowSize;
+	windowSize.x = window.getWindowAttributes().width;
+	windowSize.y = window.getWindowAttributes().height;
+
 	glDisable(GL_DEPTH_TEST);
 
 	// window.GLEnable(GL_ALPHA_TEST);
@@ -142,6 +146,7 @@ int main()
 		 ValueElement<float>>
 		simulationInfo("Statistics");
 	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 175});
+	simulationInfo.open({(int)windowSize.x - 260, 10, 9});
 
 	struct
 	{
@@ -157,6 +162,7 @@ int main()
 
 	struct
 	{
+			NetworkGraph			  *netGraph;
 			SpacerElement			  *s1;
 			ValueElement<std::string> *node;
 			SpacerElement			  *s2;
@@ -188,17 +194,19 @@ int main()
 			ValueElement<float>		  *preference;
 	} creatureInfoPointers;
 
-	Menu<SpacerElement, ValueElement<std::string>, SpacerElement, TextElement, ValueElement<float>, ValueElement<float>,
-		 TextElement, ValueElement<float>, ValueElement<float>, TextElement, ValueElement<float>, ValueElement<float>,
-		 SpacerElement, ValueElement<bool>, ValueElement<bool>, SpacerElement, ValueElement<float>, ValueElement<float>,
-		 ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>, ValueElement<float>,
-		 ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>, ValueElement<float>,
-		 ValueElement<float>>
+	Menu<NetworkGraph, SpacerElement, ValueElement<std::string>, SpacerElement, TextElement, ValueElement<float>,
+		 ValueElement<float>, TextElement, ValueElement<float>, ValueElement<float>, TextElement, ValueElement<float>,
+		 ValueElement<float>, SpacerElement, ValueElement<bool>, ValueElement<bool>, SpacerElement, ValueElement<float>,
+		 ValueElement<float>, ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>,
+		 ValueElement<float>, ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>,
+		 ValueElement<float>, ValueElement<float>>
 		creatureInfo("CreatureInfo");
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 	creatureInfo.bindPointers(&creatureInfoPointers);
+	creatureInfo.open({10, 10});
 
-	creatureInfo.setupElements({325},						//
+	creatureInfo.setupElements({nullptr},					//
+							   {25},						//
 							   {"Node", nullptr},			//
 							   {},							//
 							   {"- Position -"},			//
@@ -250,6 +258,8 @@ int main()
 		actionMenu("ActionMenu");
 	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 360});
 	actionMenu.bindPointers(&actionMenuPointers);
+	actionMenu.open(
+		{(int)windowSize.x - actionMenu.size.x - 10, simulationInfo.position.y + simulationInfo.size.y + 10, 9});
 
 	struct
 	{
@@ -266,25 +276,7 @@ int main()
 						   {"Cancel", 150 - 16 * 2}	  //
 	);
 
-	agl::Circle networkBackground(60);
-	networkBackground.setTexture(&blank);
-	networkBackground.setColor({15, 15, 15});
-	networkBackground.setSize(agl::Vec<float, 3>{150, 150, 0});
-	networkBackground.setPosition(agl::Vec<float, 3>{
-		creatureInfo.position.x + ((float)creatureInfo.size.x / 2),
-		creatureInfo.position.y + MENU_BORDERTHICKNESS + MENU_PADDING + networkBackground.getSize().y, 10});
-
-	agl::Circle nodeShape(10);
-	nodeShape.setTexture(&blank);
-	nodeShape.setSize(agl::Vec<float, 3>{10, 10, 0});
-	nodeShape.setPosition(agl::Vec<float, 3>{500, 500, 3});
-	nodeShape.setOffset({0, 0, float(networkBackground.getPosition().z + 0.2)});
-
-	agl::Rectangle connectionShape;
-	connectionShape.setTexture(&blank);
-	connectionShape.setColor(agl::Color::Red);
-	connectionShape.setSize(agl::Vec<float, 3>{1, 50, 2});
-	connectionShape.setOffset({0, 0, float(networkBackground.getPosition().z + 0.1)});
+	MenuBar menuBar;
 
 	// simulation entities
 	agl::Rectangle foodShape;
@@ -390,6 +382,7 @@ int main()
 	creatureInfoPointers.size->value = (float *)0;
 
 	auto setValues = [&]() {
+		creatureInfoPointers.netGraph->network	  = focusCreature->network;
 		creatureInfoPointers.node->value		  = &nodeName;
 		creatureInfoPointers.posx->value		  = &focusCreature->position.x;
 		creatureInfoPointers.posy->value		  = &focusCreature->position.y;
@@ -436,6 +429,8 @@ int main()
 	printf("entering sim loop\n");
 
 	bool quiting = false;
+
+	quitMenu.open({});
 
 	while (!event.windowClose())
 	{
@@ -659,102 +654,15 @@ int main()
 			window.draw(quitMenu);
 		}
 
+		window.draw(menuBar);
+
 		if (existingCreatures->find(focusCreature) != -1)
 		{
-			static int selectedID = 0;
-			nodeName			  = nodeNames[selectedID];
+			nodeName			  = nodeNames[creatureInfoPointers.netGraph->selectedID];
 
 			setValues();
 
 			window.draw(creatureInfo);
-			window.drawShape(networkBackground);
-
-			// draw node connections
-			for (int i = 0; i < focusCreature->network->getTotalConnections(); i++)
-			{
-				Connection connection = focusCreature->network->getConnection(i);
-
-				if (!connection.valid)
-				{
-					continue;
-				}
-
-				float startAngle = connection.startNode + 1;
-				startAngle /= focusCreature->network->getTotalNodes();
-				startAngle *= PI * 2;
-
-				float endAngle = connection.endNode + 1;
-				endAngle /= focusCreature->network->getTotalNodes();
-				endAngle *= PI * 2;
-
-				agl::Vec<float, 2> startPosition = agl::pointOnCircle(startAngle);
-				startPosition.x = (startPosition.x * (networkBackground.getSize().x - NETWORK_PADDING)) +
-								  networkBackground.getPosition().x;
-				startPosition.y = (startPosition.y * (networkBackground.getSize().x - NETWORK_PADDING)) +
-								  networkBackground.getPosition().y;
-
-				agl::Vec<float, 2> endPosition = agl::pointOnCircle(endAngle);
-				endPosition.x				   = (endPosition.x * (networkBackground.getSize().x - NETWORK_PADDING)) +
-								networkBackground.getPosition().x;
-				endPosition.y = (endPosition.y * (networkBackground.getSize().x - NETWORK_PADDING)) +
-								networkBackground.getPosition().y;
-
-				agl::Vec<float, 2> offset = startPosition - endPosition;
-
-				float angle = agl::radianToDegree(vectorAngle(offset)) + 180;
-
-				float weight = connection.weight;
-
-				if (weight > 0)
-				{
-					connectionShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-				}
-				else
-				{
-					connectionShape.setColor({(unsigned char)(-weight * 255), 0, BASE_B_VALUE});
-				}
-
-				connectionShape.setSize(agl::Vec<float, 2>{2, offset.length()});
-				connectionShape.setPosition(startPosition);
-				connectionShape.setRotation(agl::Vec<float, 3>{0, 0, angle});
-				window.drawShape(connectionShape);
-			}
-
-			// draw nodes
-			for (int i = 0; i < focusCreature->network->getTotalNodes(); i++)
-			{
-				float angle = (360. / focusCreature->network->getTotalNodes()) * (i + 1);
-
-				float x = cos(angle * (3.14159 / 180));
-				float y = sin(angle * (3.14159 / 180));
-
-				agl::Vec<float, 2> pos;
-				pos.x = x * (networkBackground.getSize().x - NETWORK_PADDING);
-				pos.y = y * (networkBackground.getSize().x - NETWORK_PADDING);
-
-				pos.x += networkBackground.getPosition().x;
-				pos.y += networkBackground.getPosition().y;
-
-				nodeShape.setPosition(pos);
-
-				float nodeValue = focusCreature->network->getNode(i).value;
-
-				if (nodeValue > 0)
-				{
-					nodeShape.setColor({0, (unsigned char)(nodeValue * 255), BASE_B_VALUE});
-				}
-				else
-				{
-					nodeShape.setColor({(unsigned char)(-nodeValue * 255), 0, BASE_B_VALUE});
-				}
-
-				if ((pos - event.getPointerWindowPosition()).length() < 10)
-				{
-					selectedID = i;
-				}
-
-				window.drawShape(nodeShape);
-			}
 		}
 		else
 		{
@@ -789,10 +697,6 @@ int main()
 		{
 			quiting = true;
 		}
-
-		static agl::Vec<float, 2> windowSize;
-		windowSize.x = window.getWindowAttributes().width;
-		windowSize.y = window.getWindowAttributes().height;
 
 		if (event.isPointerButtonPressed(Button1Mask))
 		{
@@ -939,10 +843,8 @@ int main()
 			cameraPosition = cameraPosition + offset;
 		}
 
-		simulationInfo.position = {(int)windowSize.x - 260, 10, 9};
-		actionMenu.position		= {(int)windowSize.x - actionMenu.size.x - 10,
-								   simulationInfo.position.y + simulationInfo.size.y + 10, 9};
-		quitMenu.position		= agl::Vec<int, 2>{int(windowSize.x - quitMenu.size.x) / 2, int(windowSize.y - quitMenu.size.y) / 2};
+		quitMenu.position =
+			agl::Vec<int, 2>{int(windowSize.x - quitMenu.size.x) / 2, int(windowSize.y - quitMenu.size.y) / 2};
 
 		window.setViewport(0, 0, windowSize.x, windowSize.y);
 

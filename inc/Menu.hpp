@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../inc/NeuralNetwork.hpp"
 #include "../lib/AGL/agl.hpp"
 #include "macro.hpp"
 
@@ -34,8 +35,10 @@ class MenuShare
 		static agl::Text	  *text;
 		static agl::Text	  *smallText;
 		static agl::Rectangle *rect;
+		static agl::Circle	  *circ;
 		static agl::Texture	  *border;
 		static agl::Texture	  *blank;
+		static void			  *focusedMenu;
 
 		static void init(agl::Texture *blank, agl::Font *font, agl::Font *smallFont, agl::Event *event)
 		{
@@ -64,6 +67,9 @@ class MenuShare
 			rect = new agl::Rectangle();
 			rect->setTexture(blank);
 
+			circ = new agl::Circle(30);
+			circ->setTexture(blank);
+
 			MenuShare::blank = blank;
 			MenuShare::event = event;
 		}
@@ -78,6 +84,7 @@ class MenuShare
 			delete smallText;
 			delete border;
 			delete rect;
+			delete circ;
 		}
 };
 
@@ -166,6 +173,57 @@ class OuterArea : public agl::Drawable, public MenuShare
 			rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDEREDGE, MENU_BORDEREDGE});
 			rect->setColor({0xc0, 0xc0, 0xc0});
 			window.drawShape(*rect);
+		}
+};
+
+class ThinAreaOut : public agl::Drawable, public MenuShare
+{
+	public:
+		agl::Vec<float, 2> position;
+		agl::Vec<float, 2> size;
+
+		void drawFunction(agl::RenderWindow &window) override
+		{
+			rect->setTexture(blank);
+
+			rect->setColor({0xFF, 0xFF, 0xFF});
+			rect->setPosition(position);
+			rect->setSize(size);
+			window.drawShape(*rect);
+
+			rect->setColor({0x80, 0x80, 0x80});
+			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
+			rect->setSize(size - agl::Vec<float, 2>{1, 1});
+			window.drawShape(*rect);
+
+			rect->setColor({0xC0, 0xC0, 0xC0});
+			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
+			rect->setSize(size - agl::Vec<float, 2>{2, 2});
+			window.drawShape(*rect);
+		}
+};
+
+class ThinAreaIn : public agl::Drawable, public MenuShare
+{
+	public:
+		agl::Vec<float, 2> position;
+		agl::Vec<float, 2> size;
+
+		void drawFunction(agl::RenderWindow &window) override
+		{
+			rect->setTexture(blank);
+
+			rect->setColor({0x80, 0x80, 0x80});
+			rect->setPosition(position);
+			rect->setSize(size);
+
+			rect->setColor({0xFF, 0xFF, 0xFF});
+			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
+			rect->setSize(size - agl::Vec<float, 2>{1, 1});
+
+			rect->setColor({0xC0, 0xC0, 0xC0});
+			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
+			rect->setSize(size - agl::Vec<float, 2>{2, 2});
 		}
 };
 
@@ -577,6 +635,11 @@ class FieldElement : public MenuElement
 			this->liveValue = startValue;
 		}
 
+		void init()
+		{
+			size.y = text->getHeight() + 7;
+		}
+
 		void drawFunction(agl::RenderWindow &window)
 		{
 			size.x	   = 225;
@@ -638,7 +701,7 @@ class FieldElement : public MenuElement
 				}
 			}
 
-			text->setPosition(position);
+			text->setPosition(position + agl::Vec<float, 2>{0, 3});
 			text->clearText();
 			text->setText(label);
 
@@ -648,11 +711,11 @@ class FieldElement : public MenuElement
 
 			InnerArea innerArea;
 			innerArea.position = position + agl::Vec<float, 2>{size.x - fieldWidth, 3};
-			innerArea.size = {fieldWidth, size.y};
+			innerArea.size	   = {fieldWidth, size.y};
 
 			window.draw(innerArea);
 
-			text->setPosition(position + agl::Vec<float, 2>{size.x - fieldWidth + 2, 0});
+			text->setPosition(position + agl::Vec<float, 2>{size.x - fieldWidth + 5, 3});
 			text->setText(liveValue);
 
 			window.drawText(*text);
@@ -661,13 +724,133 @@ class FieldElement : public MenuElement
 		}
 };
 
+class NetworkGraph : public MenuElement
+{
+	public:
+		int selectedID;
+
+		NeuralNetwork *network;
+
+		NetworkGraph()
+		{
+		}
+
+		NetworkGraph(NeuralNetwork *network) : network(network)
+		{
+		}
+
+		void init()
+		{
+			size = {300, 300};
+		}
+
+		void drawFunction(agl::RenderWindow &window) override
+		{
+			circ->setTexture(blank);
+			circ->setColor({15, 15, 15});
+			circ->setSize(agl::Vec<float, 3>{150, 150, 0});
+			circ->setPosition(position + agl::Vec<float, 2>{150, 150});
+			window.drawShape(*circ);
+
+			// draw node connections
+			for (int i = 0; i < network->getTotalConnections(); i++)
+			{
+				Connection connection = network->getConnection(i);
+
+				if (!connection.valid)
+				{
+					continue;
+				}
+
+				float startAngle = connection.startNode + 1;
+				startAngle /= network->getTotalNodes();
+				startAngle *= PI * 2;
+
+				float endAngle = connection.endNode + 1;
+				endAngle /= network->getTotalNodes();
+				endAngle *= PI * 2;
+
+				agl::Vec<float, 2> startPosition = agl::pointOnCircle(startAngle);
+				startPosition.x = (startPosition.x * (circ->getSize().x - NETWORK_PADDING)) + circ->getPosition().x;
+				startPosition.y = (startPosition.y * (circ->getSize().x - NETWORK_PADDING)) + circ->getPosition().y;
+
+				agl::Vec<float, 2> endPosition = agl::pointOnCircle(endAngle);
+				endPosition.x = (endPosition.x * (circ->getSize().x - NETWORK_PADDING)) + circ->getPosition().x;
+				endPosition.y = (endPosition.y * (circ->getSize().x - NETWORK_PADDING)) + circ->getPosition().y;
+
+				agl::Vec<float, 2> offset = startPosition - endPosition;
+
+				float angle = agl::radianToDegree(-offset.angle());
+
+				float weight = connection.weight;
+
+				rect->setTexture(blank);
+
+				if (weight > 0)
+				{
+					rect->setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
+				}
+				else
+				{
+					rect->setColor({(unsigned char)(-weight * 255), 0, BASE_B_VALUE});
+				}
+
+				rect->setSize(agl::Vec<float, 2>{2, offset.length()});
+				rect->setPosition(startPosition);
+				rect->setRotation(agl::Vec<float, 3>{0, 0, angle});
+				window.drawShape(*rect);
+			}
+
+			// draw nodes
+			for (int i = 0; i < network->getTotalNodes(); i++)
+			{
+				float angle = (360. / network->getTotalNodes()) * (i + 1);
+
+				float x = cos(angle * (3.14159 / 180));
+				float y = sin(angle * (3.14159 / 180));
+
+				agl::Vec<float, 2> pos;
+				pos.x = x * (150 - NETWORK_PADDING);
+				pos.y = y * (150 - NETWORK_PADDING);
+
+				pos.x += position.x + 150;
+				pos.y += position.y + 150;
+
+				circ->setSize({10, 10});
+
+				circ->setPosition(pos);
+
+				float nodeValue = network->getNode(i).value;
+
+				if (nodeValue > 0)
+				{
+					circ->setColor({0, (unsigned char)(nodeValue * 255), BASE_B_VALUE});
+				}
+				else
+				{
+					circ->setColor({(unsigned char)(-nodeValue * 255), 0, BASE_B_VALUE});
+				}
+
+				if ((pos - event->getPointerWindowPosition()).length() < 10)
+				{
+					selectedID = i;
+				}
+
+				window.drawShape(*circ);
+			}
+
+			rect->setRotation({0, 0, 0});
+		}
+};
+
 // template hell
 template <typename... ElementType> class Menu : public agl::Drawable, public MenuShare
 {
-	private:
-		bool focused = false;
-
-		std::string title;
+	public:
+		bool			 exists;
+		std::string		 title;
+		agl::Vec<int, 3> position;
+		agl::Vec<int, 2> size;
 
 		std::tuple<ElementType...> element;
 
@@ -741,10 +924,6 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Men
 			pointerAssign<i + 1>(pointerStruct);
 		}
 
-	public:
-		agl::Vec<int, 3> position;
-		agl::Vec<int, 2> size;
-
 		Menu(std::string title) : element(make_default_tuple(std::index_sequence_for<ElementType...>{})), title(title)
 
 		{
@@ -776,6 +955,34 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Men
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
+			if (!exists)
+			{
+				return;
+			}
+
+			static agl::Vec<float, 2> offset;
+
+			if (event->isPointerButtonPressed(Button1Mask))
+			{
+				if (pointInArea(event->getPointerWindowPosition(), position,
+								{size.x, 4 + (float)smallText->getHeight()}) &&
+					focusedMenu == nullptr)
+				{
+					offset = position - event->getPointerWindowPosition();
+
+					focusedMenu = this;
+				}
+			}
+			else if (focusedMenu == this)
+			{
+				focusedMenu = nullptr;
+			}
+
+			if (focusedMenu == this)
+			{
+				position = event->getPointerWindowPosition() + offset;
+			}
+
 			agl::Vec<float, 3> pen = {MENU_BORDERTHICKNESS + MENU_PADDING,
 									  MENU_BORDERTHICKNESS + MENU_PADDING + smallText->getHeight()};
 			pen					   = pen + position;
@@ -799,5 +1006,21 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Men
 			window.drawText(*smallText);
 
 			draw(window, pen);
+		}
+
+		void open(agl::Vec<int, 2> position)
+		{
+			exists		   = true;
+			this->position = position;
+		}
+
+		void close()
+		{
+			exists = false;
+
+			if (focusedMenu == this)
+			{
+				focusedMenu = nullptr;
+			}
 		}
 };
