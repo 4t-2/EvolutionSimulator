@@ -146,7 +146,6 @@ int main()
 		 ValueElement<float>>
 		simulationInfo("Statistics");
 	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 175});
-	simulationInfo.open({(int)windowSize.x - 260, 10, 9});
 
 	struct
 	{
@@ -203,7 +202,7 @@ int main()
 		creatureInfo("CreatureInfo");
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 	creatureInfo.bindPointers(&creatureInfoPointers);
-	creatureInfo.open({10, 10});
+	// creatureInfo.open({10, 10});
 
 	creatureInfo.setupElements({nullptr},					//
 							   {25},						//
@@ -258,8 +257,6 @@ int main()
 		actionMenu("ActionMenu");
 	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 360});
 	actionMenu.bindPointers(&actionMenuPointers);
-	actionMenu.open(
-		{(int)windowSize.x - actionMenu.size.x - 10, simulationInfo.position.y + simulationInfo.size.y + 10, 9});
 
 	struct
 	{
@@ -276,7 +273,10 @@ int main()
 						   {"Cancel", 150 - 16 * 2}	  //
 	);
 
-	MenuBar menuBar;
+	MenuBar menuBar(3);
+	menuBar.barButton[0] = {"Quit", &quitMenu};
+	menuBar.barButton[1] = {"SimInfo", &simulationInfo};
+	menuBar.barButton[2] = {"ActionMenu", &actionMenu};
 
 	// simulation entities
 	agl::Rectangle foodShape;
@@ -429,8 +429,6 @@ int main()
 	printf("entering sim loop\n");
 
 	bool quiting = false;
-
-	quitMenu.open({});
 
 	while (!event.windowClose())
 	{
@@ -646,19 +644,14 @@ int main()
 		window.updateMvp(guiCamera);
 
 		window.draw(simulationInfo);
-
 		window.draw(actionMenu);
-
-		if (quiting)
-		{
-			window.draw(quitMenu);
-		}
+		window.draw(quitMenu);
 
 		window.draw(menuBar);
 
 		if (existingCreatures->find(focusCreature) != -1)
 		{
-			nodeName			  = nodeNames[creatureInfoPointers.netGraph->selectedID];
+			nodeName = nodeNames[creatureInfoPointers.netGraph->selectedID];
 
 			setValues();
 
