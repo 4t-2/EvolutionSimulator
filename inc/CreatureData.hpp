@@ -1,12 +1,12 @@
 #pragma once
 
 #include "../lib/AGL/agl.hpp"
-#include "NeuralNetwork.hpp"
+#include "../lib/IN/intnet.hpp"
 
 class CreatureData
 {
 	public:
-		Connection *connection = nullptr; // NOTE maybe store as List<Connection>,
+		in::Connection *connection = nullptr; // NOTE maybe store as List<Connection>,
 										  // would make mutation easier
 		int	  totalConnections;
 		float sight; // 0 - 2

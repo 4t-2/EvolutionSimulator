@@ -16,7 +16,7 @@ CreatureData::CreatureData(float sight, float speed, float size, int hue, int to
 	this->hue			   = hue;
 	this->startEnergy		   = 25 * size * size * size;
 
-	connection = new Connection[totalConnections];
+	connection = new in::Connection[totalConnections];
 
 	for (int i = 0; i < totalConnections; i++)
 	{
@@ -31,7 +31,7 @@ CreatureData::CreatureData(const CreatureData &creatureData)
 	totalConnections = creatureData.totalConnections;
 
 	delete[] connection;
-	connection = new Connection[totalConnections];
+	connection = new in::Connection[totalConnections];
 
 	for (int i = 0; i < totalConnections; i++)
 	{
@@ -52,7 +52,7 @@ void CreatureData::operator=(CreatureData &creatureData)
 	totalConnections = creatureData.totalConnections;
 	
 	delete[] connection;
-	connection = new Connection[totalConnections];
+	connection = new in::Connection[totalConnections];
 
 	for (int i = 0; i < totalConnections; i++)
 	{

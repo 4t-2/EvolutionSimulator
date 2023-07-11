@@ -76,8 +76,15 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	endGridOffset.x	  = xOffset;
 	endGridOffset.y	  = yOffset;
 
-	network =
-		new NeuralNetwork(TOTAL_NODES, TOTAL_INPUT, this->creatureData.connection, this->creatureData.totalConnections);
+	std::vector<in::Connection> connection(creatureData.connection,
+										   creatureData.connection + creatureData.totalConnections);
+
+	in::NetworkStructure structure(this->creatureData.totalConnections, TOTAL_INPUT, TOTAL_HIDDEN, TOTAL_OUTPUT,
+								   connection);
+
+	network = new in::NeuralNetwork(structure);
+
+	network->setActivation(in::tanh);
 }
 
 void Creature::clear()

@@ -5,6 +5,7 @@ project(EvolutionSimulator)
 file(GLOB_RECURSE SRC ./src/*.cpp)
 file(GLOB_RECURSE AGL ./lib/AGL/src/*.cpp)
 file(GLOB_RECURSE PHY ./lib/PHY/src/*.cpp)
+file(GLOB_RECURSE IN ./lib/IN/src/*.cpp)
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -22,7 +23,7 @@ elseif(CMAKE_BUILD_TYPE MATCHES Release)
 	message(STATUS "Building with release flags")
 endif()
 
-add_executable(EvolutionSimulator.out ${SRC} ${AGL} ${PHY})
+add_executable(EvolutionSimulator.out ${SRC} ${AGL} ${PHY} ${IN})
 
 target_link_libraries(EvolutionSimulator.out -lX11 -lGL -lGLEW -lSOIL -lfreetype)
 include_directories("/usr/include/freetype2")
