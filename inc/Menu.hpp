@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../inc/NeuralNetwork.hpp"
 #include "../lib/AGL/agl.hpp"
+#include "../lib/IN/intnet.hpp"
 #include "macro.hpp"
 
 #include <type_traits>
@@ -638,13 +638,13 @@ class NetworkGraph : public MenuElement
 	public:
 		int selectedID;
 
-		NeuralNetwork *network;
+		in::NeuralNetwork **network;
 
 		NetworkGraph()
 		{
 		}
 
-		NetworkGraph(NeuralNetwork *network) : network(network)
+		NetworkGraph(in::NeuralNetwork **network) : network(network)
 		{
 		}
 
@@ -662,9 +662,9 @@ class NetworkGraph : public MenuElement
 			window.drawShape(*circ);
 
 			// draw node connections
-			for (int i = 0; i < network->getTotalConnections(); i++)
+			for (int i = 0; i < (*network)->structure.totalConnections; i++)
 			{
-				Connection connection = network->getConnection(i);
+				in::Connection connection = (*network)->getConnection(i);
 
 				if (!connection.valid)
 				{
@@ -672,11 +672,11 @@ class NetworkGraph : public MenuElement
 				}
 
 				float startAngle = connection.startNode + 1;
-				startAngle /= network->getTotalNodes();
+				startAngle /= (*network)->getTotalNodes();
 				startAngle *= PI * 2;
 
 				float endAngle = connection.endNode + 1;
-				endAngle /= network->getTotalNodes();
+				endAngle /= (*network)->getTotalNodes();
 				endAngle *= PI * 2;
 
 				agl::Vec<float, 2> startPosition = agl::pointOnCircle(startAngle);
@@ -711,9 +711,9 @@ class NetworkGraph : public MenuElement
 			}
 
 			// draw nodes
-			for (int i = 0; i < network->getTotalNodes(); i++)
+			for (int i = 0; i < (*network)->getTotalNodes(); i++)
 			{
-				float angle = (360. / network->getTotalNodes()) * (i + 1);
+				float angle = (360. / (*network)->getTotalNodes()) * (i + 1);
 
 				float x = cos(angle * (3.14159 / 180));
 				float y = sin(angle * (3.14159 / 180));
@@ -729,7 +729,7 @@ class NetworkGraph : public MenuElement
 
 				circ->setPosition(pos);
 
-				float nodeValue = network->getNode(i).value;
+				float nodeValue = (*network)->getNode(i).value;
 
 				if (nodeValue > 0)
 				{
@@ -757,6 +757,7 @@ class ToggleableMenu : public MenuShare
 	public:
 		bool			 exists;
 		agl::Vec<int, 3> position;
+		std::string		 title;
 
 		void open(agl::Vec<int, 2> position)
 		{
@@ -779,10 +780,11 @@ class ToggleableMenu : public MenuShare
 template <typename... ElementType> class Menu : public agl::Drawable, public ToggleableMenu
 {
 	public:
-		std::string		 title;
 		agl::Vec<int, 2> size;
 
 		std::tuple<ElementType...> element;
+
+		std::function<bool()> requirement = []() { return true; };
 
 		template <size_t i = 0> typename std::enable_if<i == sizeof...(ElementType), void>::type initTuple()
 		{
@@ -854,9 +856,9 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Tog
 			pointerAssign<i + 1>(pointerStruct);
 		}
 
-		Menu(std::string title) : element(make_default_tuple(std::index_sequence_for<ElementType...>{})), title(title)
-
+		Menu(std::string title) : element(make_default_tuple(std::index_sequence_for<ElementType...>{}))
 		{
+			this->title = title;
 			initTuple();
 		}
 
@@ -935,6 +937,9 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Tog
 			smallText->setPosition(position + agl::Vec<float, 2>{3.5, 0});
 			window.drawText(*smallText);
 
-			draw(window, pen);
+			if (requirement())
+			{
+				draw(window, pen);
+			}
 		}
 };

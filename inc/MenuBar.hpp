@@ -2,23 +2,15 @@
 
 #define BARHEIGHT 22
 
-class BarButton
-{
-	public:
-		std::string		title;
-		ToggleableMenu *menu;
-		bool			state;
-};
-
 class MenuBar : public agl::Drawable, public MenuShare
 {
 	public:
 		int		   length;
-		BarButton *barButton;
+		ToggleableMenu **menu;
 
 		MenuBar(int length) : length(length)
 		{
-			barButton = new BarButton[length];
+			menu = new ToggleableMenu*[length];
 		}
 
 		void drawFunction(agl::RenderWindow &window) override
@@ -39,7 +31,7 @@ class MenuBar : public agl::Drawable, public MenuShare
 				agl::Vec<float, 2> oldPen = pen;
 
 				text->clearText();
-				text->setText(barButton[i].title);
+				text->setText(menu[i]->title);
 				text->setPosition(oldPen + agl::Vec<float, 2>{9, 0});
 				text->setColor(agl::Color::Black);
 				pen = window.drawText(*text) + text->getPosition();
@@ -56,15 +48,14 @@ class MenuBar : public agl::Drawable, public MenuShare
 						if (!prev)
 						{
 							prev			   = true;
-							barButton[i].state = !barButton[i].state;
 
-							if (barButton[i].state)
+							if (!menu[i]->exists)
 							{
-								barButton[i].menu->open({500, 500});
+								menu[i]->open({500, 500});
 							}
 							else
 							{
-								barButton[i].menu->close();
+								menu[i]->close();
 							}
 						}
 					}
@@ -73,7 +64,7 @@ class MenuBar : public agl::Drawable, public MenuShare
 						prev = false;
 					}
 
-					if (!barButton[i].state)
+					if (!menu[i]->exists)
 					{
 						ThinAreaOut area;
 						area.position = oldPen;
@@ -83,7 +74,7 @@ class MenuBar : public agl::Drawable, public MenuShare
 					}
 				}
 
-				if (barButton[i].state)
+				if (menu[i]->exists)
 				{
 					ThinAreaIn area;
 					area.position = oldPen;
@@ -98,6 +89,6 @@ class MenuBar : public agl::Drawable, public MenuShare
 
 		~MenuBar()
 		{
-			delete[] barButton;
+			delete[] menu;
 		}
 };

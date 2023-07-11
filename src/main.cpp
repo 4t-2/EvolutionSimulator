@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <math.h>
@@ -144,7 +145,7 @@ int main()
 	// menu shapes
 	Menu<ValueElement<int>, ValueElement<int>, ValueElement<int>, ValueElement<int>, ValueElement<int>,
 		 ValueElement<float>>
-		simulationInfo("Statistics");
+		simulationInfo("SimInfo");
 	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 175});
 
 	struct
@@ -202,39 +203,6 @@ int main()
 		creatureInfo("CreatureInfo");
 	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
 	creatureInfo.bindPointers(&creatureInfoPointers);
-	// creatureInfo.open({10, 10});
-
-	creatureInfo.setupElements({nullptr},					//
-							   {25},						//
-							   {"Node", nullptr},			//
-							   {},							//
-							   {"- Position -"},			//
-							   {"X", nullptr},				//
-							   {"Y", nullptr},				//
-							   {"- Velocity -"},			//
-							   {"X", nullptr},				//
-							   {"Y", nullptr},				//
-							   {"- Force -"},				//
-							   {"X", nullptr},				//
-							   {"Y", nullptr},				//
-							   {},							//
-							   {"Eating", nullptr},			//
-							   {"Laying Egg", nullptr},		//
-							   {},							//
-							   {"Health", nullptr},			//
-							   {"Energy", nullptr},			//
-							   {"Life Left", nullptr},		//
-							   {},							//
-							   {"Sight", nullptr},			//
-							   {"Speed", nullptr},			//
-							   {"Size", nullptr},			//
-							   {"Hue", nullptr},			//
-							   {},							//
-							   {"Biomass", nullptr},		//
-							   {"Energy Density", nullptr}, //
-							   {"Metabolism", nullptr},		//
-							   {"Preference", nullptr}		//
-	);
 
 	struct
 	{
@@ -265,7 +233,7 @@ int main()
 			ButtonElement *cancel;
 	} quitMenuPointers;
 
-	Menu<TextElement, ButtonElement, ButtonElement> quitMenu("QuitMenu");
+	Menu<TextElement, ButtonElement, ButtonElement> quitMenu("Quit");
 	quitMenu.setup({0, 0}, {150, 115});
 	quitMenu.bindPointers(&quitMenuPointers);
 	quitMenu.setupElements({"Quit?"},				  //
@@ -273,10 +241,11 @@ int main()
 						   {"Cancel", 150 - 16 * 2}	  //
 	);
 
-	MenuBar menuBar(3);
-	menuBar.barButton[0] = {"Quit", &quitMenu};
-	menuBar.barButton[1] = {"SimInfo", &simulationInfo};
-	menuBar.barButton[2] = {"ActionMenu", &actionMenu};
+	MenuBar menuBar(4);
+	menuBar.menu[0] = &quitMenu;
+	menuBar.menu[1] = &simulationInfo;
+	menuBar.menu[2] = &actionMenu;
+	menuBar.menu[3] = &creatureInfo;
 
 	// simulation entities
 	agl::Rectangle foodShape;
@@ -368,6 +337,7 @@ int main()
 	Food			 *food				= simulation.foodBuffer;
 
 	Creature *focusCreature = nullptr;
+	Creature  *copyCreature = new Creature();
 
 	float		fps = 0;
 	std::string nodeName;
@@ -382,28 +352,47 @@ int main()
 
 	creatureInfoPointers.size->value = (float *)0;
 
-	auto setValues = [&]() {
-		creatureInfoPointers.netGraph->network	  = focusCreature->network;
-		creatureInfoPointers.node->value		  = &nodeName;
-		creatureInfoPointers.posx->value		  = &focusCreature->position.x;
-		creatureInfoPointers.posy->value		  = &focusCreature->position.y;
-		creatureInfoPointers.velx->value		  = &focusCreature->velocity.x;
-		creatureInfoPointers.vely->value		  = &focusCreature->velocity.y;
-		creatureInfoPointers.forx->value		  = &focusCreature->force.x;
-		creatureInfoPointers.fory->value		  = &focusCreature->force.y;
-		creatureInfoPointers.eating->value		  = &focusCreature->eating;
-		creatureInfoPointers.layingEgg->value	  = &focusCreature->layingEgg;
-		creatureInfoPointers.health->value		  = &focusCreature->health;
-		creatureInfoPointers.energy->value		  = &focusCreature->energy;
-		creatureInfoPointers.lifeLeft->value	  = &focusCreature->life;
-		creatureInfoPointers.sight->value		  = &focusCreature->sight;
-		creatureInfoPointers.speed->value		  = &focusCreature->speed;
-		creatureInfoPointers.size->value		  = &focusCreature->size;
-		creatureInfoPointers.hue->value			  = &focusCreature->hue;
-		creatureInfoPointers.biomass->value		  = &focusCreature->biomass;
-		creatureInfoPointers.energyDensity->value = &focusCreature->energyDensity;
-		creatureInfoPointers.metabolism->value	  = &focusCreature->metabolism;
-		creatureInfoPointers.preference->value	  = &focusCreature->preference;
+	creatureInfo.setupElements({&copyCreature->network},							//
+							   {25},											//
+							   {"Node", &nodeName},								//
+							   {},												//
+							   {"- Position -"},								//
+							   {"X", &copyCreature->position.x},					//
+							   {"Y", &copyCreature->position.y},					//
+							   {"- Velocity -"},								//
+							   {"X", &copyCreature->velocity.x},					//
+							   {"Y", &copyCreature->velocity.y},					//
+							   {"- Force -"},									//
+							   {"X", &copyCreature->force.x},					//
+							   {"Y", &copyCreature->force.y},					//
+							   {},												//
+							   {"Eating", &copyCreature->eating},				//
+							   {"Laying Egg", &copyCreature->layingEgg},			//
+							   {},												//
+							   {"Health", &copyCreature->health},				//
+							   {"Energy", &copyCreature->energy},				//
+							   {"Life Left", &copyCreature->life},				//
+							   {},												//
+							   {"Sight", &copyCreature->sight},					//
+							   {"Speed", &copyCreature->speed},					//
+							   {"Size", &copyCreature->size},					//
+							   {"Hue", &copyCreature->hue},						//
+							   {},												//
+							   {"Biomass", &copyCreature->biomass},				//
+							   {"Energy Density", &copyCreature->energyDensity}, //
+							   {"Metabolism", &copyCreature->metabolism},		//
+							   {"Preference", &copyCreature->preference}			//
+	);
+
+	creatureInfo.requirement = [&]() {
+		if (focusCreature != nullptr)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	};
 
 	bool mHeld		= false;
@@ -654,14 +643,14 @@ int main()
 		{
 			nodeName = nodeNames[creatureInfoPointers.netGraph->selectedID];
 
-			setValues();
-
-			window.draw(creatureInfo);
+			memcpy((void *)copyCreature, (void *)focusCreature, sizeof(Creature));
 		}
 		else
 		{
 			focusCreature = nullptr;
 		}
+
+		window.draw(creatureInfo);
 
 		window.display();
 
@@ -863,6 +852,8 @@ int main()
 	simulation.destroy();
 
 	MenuShare::destroy();
+	
+	::operator delete(copyCreature);
 
 	font.deleteFont();
 
