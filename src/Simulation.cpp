@@ -22,11 +22,14 @@ void randomData(Buffer *buffer)
 	return;
 }
 
-Simulation::Simulation(SimulationRules simulationRules)
+void Simulation::create(SimulationRules simulationRules, int seed)
 {
+	active = true;
+	frame = 0;
+
 	this->simulationRules = simulationRules;
 
-	srand(0);
+	srand(seed);
 
 	creatureBuffer	  = new Creature[simulationRules.maxCreatures];
 	existingCreatures = new List<Creature *>(simulationRules.maxCreatures);
@@ -81,6 +84,8 @@ Simulation::Simulation(SimulationRules simulationRules)
 
 void Simulation::destroy()
 {
+	active = false;
+
 	delete foodGrid;
 	delete creatureGrid;
 	delete meatGrid;
@@ -658,7 +663,7 @@ void Simulation::updateSimulation()
 	{
 		Creature *creature = existingCreatures->get(i);
 
-		creature->updateActions(energyCostMultiplier);
+		creature->updateActions();
 
 		creature->gridPosition = foodGrid->toGridPosition(creature->position, simulationRules.size);
 
@@ -952,32 +957,35 @@ void Simulation::updateSimulation()
 		}
 	}
 
-	static int penalty = 0;
-
-	int adjustedMaxFood =
-		int(simulationRules.maxFood * ((float)simulationRules.preferedCreatures / existingCreatures->length));
-	adjustedMaxFood = std::min(adjustedMaxFood, simulationRules.maxFood);
-
-	if (existingCreatures->length > simulationRules.preferedCreatures)
-	{
-		penalty++;
-
-		if (penalty > ((adjustedMaxFood + simulationRules.penaltyBuffer) * simulationRules.penaltyPeriod))
-		{
-			penalty = ((adjustedMaxFood + simulationRules.penaltyBuffer) * simulationRules.penaltyPeriod);
-		}
-	}
-	else
-	{
-		penalty--;
-
-		if (penalty < 0)
-		{
-			penalty = 0;
-		}
-	}
-
-	adjustedMaxFood -= (penalty / simulationRules.penaltyPeriod);
+	// static int penalty = 0;
+	//
+	// int adjustedMaxFood =
+	// 	int(simulationRules.maxFood * ((float)simulationRules.preferedCreatures
+	// / existingCreatures->length)); adjustedMaxFood = std::min(adjustedMaxFood,
+	// simulationRules.maxFood);
+	//
+	// if (existingCreatures->length > simulationRules.preferedCreatures)
+	// {
+	// 	penalty++;
+	//
+	// 	if (penalty > ((adjustedMaxFood + simulationRules.penaltyBuffer) *
+	// simulationRules.penaltyPeriod))
+	// 	{
+	// 		penalty = ((adjustedMaxFood + simulationRules.penaltyBuffer) *
+	// simulationRules.penaltyPeriod);
+	// 	}
+	// }
+	// else
+	// {
+	// 	penalty--;
+	//
+	// 	if (penalty < 0)
+	// 	{
+	// 		penalty = 0;
+	// 	}
+	// }
+	//
+	// adjustedMaxFood -= (penalty / simulationRules.penaltyPeriod);
 
 	// adding more food
 	// int max = std::min(simulationRules.maxFood, adjustedMaxFood);

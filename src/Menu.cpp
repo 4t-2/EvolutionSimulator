@@ -7,3 +7,4 @@ agl::Circle	   *MenuShare::circ;
 agl::Texture   *MenuShare::border;
 agl::Texture   *MenuShare::blank;
 void		   *MenuShare::focusedMenu;
+

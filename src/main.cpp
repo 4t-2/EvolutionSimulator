@@ -13,6 +13,7 @@
 #include <fstream>
 #include <math.h>
 #include <string>
+#include <thread>
 #include <unistd.h>
 
 int getMillisecond()
@@ -60,9 +61,6 @@ void loadRules(std::string path, SimulationRules *simulationRules)
 	simulationRules->maxCreatures	   = stoi(buffer[6]);
 	simulationRules->maxFood		   = stoi(buffer[7]);
 	simulationRules->maxEggs		   = stoi(buffer[8]);
-	simulationRules->preferedCreatures = stoi(buffer[9]);
-	simulationRules->penaltyBuffer	   = stoi(buffer[10]);
-	simulationRules->penaltyPeriod	   = stoi(buffer[11]);
 
 	stream.close();
 
@@ -76,21 +74,16 @@ int main()
 	agl::RenderWindow window;
 	window.setup({WIDTH, HEIGHT}, "EvolutionSimulator");
 	window.setClearColor(CLEARCOLOR);
-	window.setFPS(TARGETFPS);
+	window.setFPS(0);
 
 	agl::Vec<float, 2> windowSize;
-	windowSize.x = window.getWindowAttributes().width;
-	windowSize.y = window.getWindowAttributes().height;
 
 	glDisable(GL_DEPTH_TEST);
 
 	// window.GLEnable(GL_ALPHA_TEST);
 	// glAlphaFunc(GL_GREATER, 0.1f);
 
-	PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI =
-		(PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddress((const GLubyte *)"glXSwapIntervalSGI");
-
-	glXSwapIntervalSGI(VSYNC);
+	window.setSwapInterval(1);
 
 	agl::Event event;
 	event.setWindow(window);
@@ -137,117 +130,8 @@ int main()
 	agl::Rectangle background;
 	background.setTexture(&blank);
 	background.setColor(CLEARCOLOR);
-
 	background.setPosition({0, 0, 0});
 
-	MenuShare::init(&blank, &font, &smallFont, &event);
-
-	// menu shapes
-	Menu<ValueElement<int>, ValueElement<int>, ValueElement<int>, ValueElement<int>, ValueElement<int>,
-		 ValueElement<float>>
-		simulationInfo("SimInfo");
-	simulationInfo.setup({WIDTH - 260, 10, 9}, {250, 175});
-
-	struct
-	{
-			ValueElement<int> *creatures;
-			ValueElement<int> *eggs;
-			ValueElement<int> *food;
-			ValueElement<int> *meat;
-			ValueElement<int> *frame;
-			ValueElement<int> *fps;
-	} simulationInfoPointers;
-
-	simulationInfo.bindPointers(&simulationInfoPointers);
-
-	struct
-	{
-			NetworkGraph			  *netGraph;
-			SpacerElement			  *s1;
-			ValueElement<std::string> *node;
-			SpacerElement			  *s2;
-			TextElement				  *posText;
-			ValueElement<float>		  *posx;
-			ValueElement<float>		  *posy;
-			TextElement				  *velText;
-			ValueElement<float>		  *velx;
-			ValueElement<float>		  *vely;
-			TextElement				  *forText;
-			ValueElement<float>		  *forx;
-			ValueElement<float>		  *fory;
-			SpacerElement			  *s3;
-			ValueElement<bool>		  *eating;
-			ValueElement<bool>		  *layingEgg;
-			SpacerElement			  *s4;
-			ValueElement<float>		  *health;
-			ValueElement<float>		  *energy;
-			ValueElement<int>		  *lifeLeft;
-			SpacerElement			  *s5;
-			ValueElement<float>		  *sight;
-			ValueElement<float>		  *speed;
-			ValueElement<float>		  *size;
-			ValueElement<int>		  *hue;
-			SpacerElement			  *s6;
-			ValueElement<float>		  *biomass;
-			ValueElement<float>		  *energyDensity;
-			ValueElement<float>		  *metabolism;
-			ValueElement<float>		  *preference;
-	} creatureInfoPointers;
-
-	Menu<NetworkGraph, SpacerElement, ValueElement<std::string>, SpacerElement, TextElement, ValueElement<float>,
-		 ValueElement<float>, TextElement, ValueElement<float>, ValueElement<float>, TextElement, ValueElement<float>,
-		 ValueElement<float>, SpacerElement, ValueElement<bool>, ValueElement<bool>, SpacerElement, ValueElement<float>,
-		 ValueElement<float>, ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>,
-		 ValueElement<float>, ValueElement<int>, SpacerElement, ValueElement<float>, ValueElement<float>,
-		 ValueElement<float>, ValueElement<float>>
-		creatureInfo("CreatureInfo");
-	creatureInfo.setup({10, 10, 9}, {400, HEIGHT - (20)});
-	creatureInfo.bindPointers(&creatureInfoPointers);
-
-	struct
-	{
-			TextElement	  *leftclick;
-			ButtonElement *food;
-			ButtonElement *meat;
-			ButtonElement *select;
-			ButtonElement *kill;
-			FieldElement  *foodDen;
-			FieldElement  *foodVol;
-			FieldElement  *meatDen;
-			FieldElement  *leachVol;
-			FieldElement  *maxFood;
-			FieldElement  *damage;
-			FieldElement  *energyCostMultiplier;
-	} actionMenuPointers;
-
-	Menu<TextElement, ButtonElement, ButtonElement, ButtonElement, ButtonElement, FieldElement, FieldElement,
-		 FieldElement, FieldElement, FieldElement, FieldElement, FieldElement>
-		actionMenu("ActionMenu");
-	actionMenu.setup({WIDTH - 150, 10 + 160, 9}, {250, 360});
-	actionMenu.bindPointers(&actionMenuPointers);
-
-	struct
-	{
-			TextElement	  *text;
-			ButtonElement *confirm;
-			ButtonElement *cancel;
-	} quitMenuPointers;
-
-	Menu<TextElement, ButtonElement, ButtonElement> quitMenu("Quit");
-	quitMenu.setup({0, 0}, {150, 115});
-	quitMenu.bindPointers(&quitMenuPointers);
-	quitMenu.setupElements({"Quit?"},				  //
-						   {"Confirm", 150 - 16 * 2}, //
-						   {"Cancel", 150 - 16 * 2}	  //
-	);
-
-	MenuBar menuBar(4);
-	menuBar.menu[0] = &quitMenu;
-	menuBar.menu[1] = &simulationInfo;
-	menuBar.menu[2] = &actionMenu;
-	menuBar.menu[3] = &creatureInfo;
-
-	// simulation entities
 	agl::Rectangle foodShape;
 	foodShape.setTexture(&foodTexture);
 	foodShape.setColor(agl::Color::Green);
@@ -318,9 +202,6 @@ int main()
 	std::cout << "size - " << simulationRules.size << '\n';
 	std::cout << "gridResolution - " << simulationRules.gridResolution << '\n';
 	std::cout << "maxEggs - " << simulationRules.maxEggs << '\n';
-	std::cout << "preferedCreatures - " << simulationRules.preferedCreatures << '\n';
-	std::cout << "penaltyBuffer- " << simulationRules.penaltyBuffer << '\n';
-	std::cout << "penaltyPeriod- " << simulationRules.penaltyPeriod << '\n';
 
 	background.setSize(simulationRules.size);
 
@@ -328,7 +209,8 @@ int main()
 
 	// background.setPosition(simulationRules.size * .5);
 
-	Simulation simulation(simulationRules);
+	Simulation simulation;
+	simulation.create(simulationRules, 0);
 
 	Creature		 *creature			= simulation.creatureBuffer;
 	List<Creature *> *existingCreatures = simulation.existingCreatures;
@@ -337,52 +219,112 @@ int main()
 	Food			 *food				= simulation.foodBuffer;
 
 	Creature *focusCreature = nullptr;
-	Creature  *copyCreature = new Creature();
+	Creature *copyCreature	= new Creature();
 
 	float		fps = 0;
 	std::string nodeName;
 
-	simulationInfo.setupElements({"Creatures", &simulation.existingCreatures->length}, //
-								 {"Eggs", &simulation.existingEggs->length},		   //
-								 {"Food", &simulation.existingFood->length},		   //
-								 {"Meat", &simulation.existingMeat->length},		   //
-								 {"Frame", &simulation.frame},						   //
-								 {"FPS", &fps}										   //
+	// menu shit
+
+	MenuShare::init(&blank, &font, &smallFont, &event);
+
+	// simulation info
+
+	struct
+	{
+			ValueElement<int>	*creatures;
+			ValueElement<int>	*eggs;
+			ValueElement<int>	*food;
+			ValueElement<int>	*meat;
+			ValueElement<int>	*frame;
+			ValueElement<float> *fps;
+	} simulationInfoPointers;
+
+	Menu simulationInfo("SimInfo", 125,														   //
+						ValueElement<int>{"Creatures", &simulation.existingCreatures->length}, //
+						ValueElement<int>{"Eggs", &simulation.existingEggs->length},		   //
+						ValueElement<int>{"Food", &simulation.existingFood->length},		   //
+						ValueElement<int>{"Meat", &simulation.existingMeat->length},		   //
+						ValueElement<int>{"Frame", &simulation.frame},						   //
+						ValueElement<float>{"FPS", &fps}									   //
 	);
 
-	creatureInfoPointers.size->value = (float *)0;
+	simulationInfo.bindPointers(&simulationInfoPointers);
+	
+	simulationInfo.requirement = [&](){
+		return simulation.active;
+	};
 
-	creatureInfo.setupElements({&copyCreature->network},							//
-							   {25},											//
-							   {"Node", &nodeName},								//
-							   {},												//
-							   {"- Position -"},								//
-							   {"X", &copyCreature->position.x},					//
-							   {"Y", &copyCreature->position.y},					//
-							   {"- Velocity -"},								//
-							   {"X", &copyCreature->velocity.x},					//
-							   {"Y", &copyCreature->velocity.y},					//
-							   {"- Force -"},									//
-							   {"X", &copyCreature->force.x},					//
-							   {"Y", &copyCreature->force.y},					//
-							   {},												//
-							   {"Eating", &copyCreature->eating},				//
-							   {"Laying Egg", &copyCreature->layingEgg},			//
-							   {},												//
-							   {"Health", &copyCreature->health},				//
-							   {"Energy", &copyCreature->energy},				//
-							   {"Life Left", &copyCreature->life},				//
-							   {},												//
-							   {"Sight", &copyCreature->sight},					//
-							   {"Speed", &copyCreature->speed},					//
-							   {"Size", &copyCreature->size},					//
-							   {"Hue", &copyCreature->hue},						//
-							   {},												//
-							   {"Biomass", &copyCreature->biomass},				//
-							   {"Energy Density", &copyCreature->energyDensity}, //
-							   {"Metabolism", &copyCreature->metabolism},		//
-							   {"Preference", &copyCreature->preference}			//
+	// creatureinfo
+
+	struct
+	{
+			NetworkGraph			  *netGraph;
+			SpacerElement			  *s1;
+			ValueElement<std::string> *node;
+			SpacerElement			  *s2;
+			TextElement				  *posText;
+			ValueElement<float>		  *posx;
+			ValueElement<float>		  *posy;
+			TextElement				  *velText;
+			ValueElement<float>		  *velx;
+			ValueElement<float>		  *vely;
+			TextElement				  *forText;
+			ValueElement<float>		  *forx;
+			ValueElement<float>		  *fory;
+			SpacerElement			  *s3;
+			ValueElement<bool>		  *eating;
+			ValueElement<bool>		  *layingEgg;
+			SpacerElement			  *s4;
+			ValueElement<float>		  *health;
+			ValueElement<float>		  *energy;
+			ValueElement<int>		  *lifeLeft;
+			SpacerElement			  *s5;
+			ValueElement<float>		  *sight;
+			ValueElement<float>		  *speed;
+			ValueElement<float>		  *size;
+			ValueElement<int>		  *hue;
+			SpacerElement			  *s6;
+			ValueElement<float>		  *biomass;
+			ValueElement<float>		  *energyDensity;
+			ValueElement<float>		  *metabolism;
+			ValueElement<float>		  *preference;
+	} creatureInfoPointers;
+
+	Menu creatureInfo("CreatureInfo", 400,												   //
+					  NetworkGraph{&copyCreature->network},								   //
+					  SpacerElement{25},												   //
+					  ValueElement<std::string>{"Node", &nodeName},						   //
+					  SpacerElement{},													   //
+					  TextElement{"- Position -"},										   //
+					  ValueElement<float>{"X", &copyCreature->position.x},				   //
+					  ValueElement<float>{"Y", &copyCreature->position.y},				   //
+					  TextElement{"- Velocity -"},										   //
+					  ValueElement<float>{"X", &copyCreature->velocity.x},				   //
+					  ValueElement<float>{"Y", &copyCreature->velocity.y},				   //
+					  TextElement{"- Force -"},											   //
+					  ValueElement<float>{"X", &copyCreature->force.x},					   //
+					  ValueElement<float>{"Y", &copyCreature->force.y},					   //
+					  SpacerElement{},													   //
+					  ValueElement<bool>{"Eating", &copyCreature->eating},				   //
+					  ValueElement<bool>{"Laying Egg", &copyCreature->layingEgg},		   //
+					  SpacerElement{},													   //
+					  ValueElement<float>{"Health", &copyCreature->health},				   //
+					  ValueElement<float>{"Energy", &copyCreature->energy},				   //
+					  ValueElement<int>{"Life Left", &copyCreature->life},				   //
+					  SpacerElement{},													   //
+					  ValueElement<float>{"Sight", &copyCreature->sight},				   //
+					  ValueElement<float>{"Speed", &copyCreature->speed},				   //
+					  ValueElement<float>{"Size", &copyCreature->size},					   //
+					  ValueElement<int>{"Hue", &copyCreature->hue},						   //
+					  SpacerElement{},													   //
+					  ValueElement<float>{"Biomass", &copyCreature->biomass},			   //
+					  ValueElement<float>{"Energy Density", &copyCreature->energyDensity}, //
+					  ValueElement<float>{"Metabolism", &copyCreature->metabolism},		   //
+					  ValueElement<float>{"Preference", &copyCreature->preference}		   //
 	);
+
+	creatureInfo.bindPointers(&creatureInfoPointers);
 
 	creatureInfo.requirement = [&]() {
 		if (focusCreature != nullptr)
@@ -395,6 +337,105 @@ int main()
 		}
 	};
 
+	// actionmenu
+
+	struct
+	{
+			TextElement			  *leftclick;
+			ButtonElement<Toggle> *food;
+			ButtonElement<Toggle> *meat;
+			ButtonElement<Toggle> *select;
+			ButtonElement<Toggle> *kill;
+			FieldElement<float>	  *foodDen;
+			FieldElement<float>	  *foodVol;
+			FieldElement<float>	  *meatDen;
+			FieldElement<float>	  *leachVol;
+			FieldElement<float>	  *maxFood;
+			FieldElement<float>	  *damage;
+			FieldElement<float>	  *energyCostMultiplier;
+	} actionMenuPointers;
+
+	Menu actionMenu("ActionMenu", 200,												 //
+					TextElement{"Left Click"},										 //
+					ButtonElement<Toggle>{"Food"},									 //
+					ButtonElement<Toggle>{"Meat"},									 //
+					ButtonElement<Toggle>{"Select"},								 //
+					ButtonElement<Toggle>{"Kill"},									 //
+					FieldElement<float>{"FdEnDn", simulation.foodEnergyDensity},	 //
+					FieldElement<float>{"FdVol", (simulation.foodVol)},				 //
+					FieldElement<float>{"MtEnDn", (simulation.meatEnergyDensity)},	 //
+					FieldElement<float>{"LeVol", (simulation.leachVol)},			 //
+					FieldElement<int>{"maxFd", (simulation.foodCap)},				 //
+					FieldElement<float>{"dmg", (simulation.damage)},				 //
+					FieldElement<float>{"EnCoMu", (simulation.energyCostMultiplier)} //
+	);
+
+	actionMenu.bindPointers(&actionMenuPointers);
+
+	// quitmenu
+
+	struct
+	{
+			TextElement			*text;
+			ButtonElement<Hold> *confirm;
+			ButtonElement<Hold> *cancel;
+	} quitMenuPointers;
+
+	Menu quitMenu("Quit", 100,					  //
+				  TextElement{"Quit"},			  //
+				  ButtonElement<Hold>{"Confirm"}, //
+				  ButtonElement<Hold>{"Cancel"}	  //
+	);
+	quitMenu.bindPointers(&quitMenuPointers);
+
+	// simMenu
+
+	struct
+	{
+			FieldElement<int>	  *sizeX;
+			FieldElement<int>	  *sizeY;
+			FieldElement<int>	  *gridX;
+			FieldElement<int>	  *gridY;
+			FieldElement<int>	  *startingCreatures;
+			FieldElement<int>	  *maxCreatures;
+			FieldElement<int>	  *maxFood;
+			FieldElement<int>	  *maxEggs;
+			FieldElement<int>	  *seed;
+			FieldElement<float>	  *simCycles;
+			ButtonElement<Hold>	  *start;
+			ButtonElement<Hold>	  *kill;
+			ButtonElement<Toggle> *pause;
+	} simMenuPointers;
+
+	Menu simMenu("simMenu", 175,														  //
+				 FieldElement<int>{"sizeX", (simulationRules.size.x)},					  //
+				 FieldElement<int>{"sizeY", (simulationRules.size.y)},					  //
+				 FieldElement<int>{"gridX", (simulationRules.gridResolution.x)},		  //
+				 FieldElement<int>{"gridY", (simulationRules.gridResolution.y)},		  //
+				 FieldElement<int>{"startCreature", (simulationRules.startingCreatures)}, //
+				 FieldElement<int>{"maxCreature", (simulationRules.maxCreatures)},		  //
+				 FieldElement<int>{"maxFood", (simulationRules.maxFood)},				  //
+				 FieldElement<int>{"maxEgg", (simulationRules.maxEggs)},				  //
+				 FieldElement<int>{"seed", 0},											  //
+				 FieldElement<float>{"simCycles", 1.0},									  //
+				 ButtonElement<Hold>{"START"},											  //
+				 ButtonElement<Hold>{"KILL"},											  //
+				 ButtonElement<Toggle>{"PAUSE"}											  //
+	);
+
+	simMenu.bindPointers(&simMenuPointers);
+
+	// menubar
+
+	MenuBar menuBar(5);
+	menuBar.menu[0] = &quitMenu;
+	menuBar.menu[1] = &simulationInfo;
+	menuBar.menu[2] = &simMenu;
+	menuBar.menu[3] = &actionMenu;
+	menuBar.menu[4] = &creatureInfo;
+
+	creatureInfoPointers.size->value = (float *)0;
+
 	bool mHeld		= false;
 	bool b1Held		= false;
 	bool ReturnHeld = false;
@@ -402,19 +443,6 @@ int main()
 	bool skipRender = false;
 
 	float sizeMultiplier = 1;
-
-	actionMenu.setupElements({"Left Click"}, {"Food", 150 - 16 * 2},					 //
-							 {"Meat", 150 - 16 * 2},									 //
-							 {"Select", 150 - 16 * 2},									 //
-							 {"Kill", 150 - 16 * 2},									 //
-							 {"FdEnDn", std::to_string(simulation.foodEnergyDensity)},	 //
-							 {"FdVol", std::to_string(simulation.foodVol)},				 //
-							 {"MtEnDn", std::to_string(simulation.meatEnergyDensity)},	 //
-							 {"LeVol", std::to_string(simulation.leachVol)},			 //
-							 {"maxFd", std::to_string(simulation.foodCap)},				 //
-							 {"dmg", std::to_string(simulation.damage)},				 //
-							 {"EnCoMu", std::to_string(simulation.energyCostMultiplier)} //
-	);
 
 	printf("entering sim loop\n");
 
@@ -467,9 +495,17 @@ int main()
 			skipRender = !skipRender;
 		}
 
-		if (!event.isKeyPressed(XK_space))
+		if (!simMenuPointers.pause->state && simulation.active)
 		{
-			simulation.update();
+			static float cycle = 0;
+
+			cycle += simMenuPointers.simCycles->value;
+
+			for (int i = 0; i < cycle; i++)
+			{
+				cycle--;
+				simulation.update();
+			}
 		}
 
 		if (skipRender)
@@ -492,6 +528,11 @@ int main()
 
 		window.getShaderUniforms(simpleShader);
 		simpleShader.use();
+
+		if (!simulation.active)
+		{
+			goto skipSimRender;
+		}
 
 		window.updateMvp(camera);
 
@@ -627,6 +668,8 @@ int main()
 			window.drawShape(creatureShape);
 		}
 
+	skipSimRender:;
+
 		// gui rendering
 
 		fps = (1000. / milliDiff);
@@ -636,18 +679,22 @@ int main()
 		window.draw(simulationInfo);
 		window.draw(actionMenu);
 		window.draw(quitMenu);
+		window.draw(simMenu);
 
 		window.draw(menuBar);
 
-		if (existingCreatures->find(focusCreature) != -1)
+		if (focusCreature != nullptr)
 		{
-			nodeName = nodeNames[creatureInfoPointers.netGraph->selectedID];
+			if (existingCreatures->find(focusCreature) != -1)
+			{
+				nodeName = nodeNames[creatureInfoPointers.netGraph->selectedID];
 
-			memcpy((void *)copyCreature, (void *)focusCreature, sizeof(Creature));
-		}
-		else
-		{
-			focusCreature = nullptr;
+				memcpy((void *)copyCreature, (void *)focusCreature, sizeof(Creature));
+			}
+			else
+			{
+				focusCreature = nullptr;
+			}
 		}
 
 		window.draw(creatureInfo);
@@ -660,12 +707,11 @@ int main()
 
 		if (quitMenuPointers.confirm->state)
 		{
-			window.close();
 			break;
 		}
 		if (quitMenuPointers.cancel->state)
 		{
-			quiting						   = false;
+			quitMenu.close();
 			quitMenuPointers.cancel->state = false;
 		}
 
@@ -674,11 +720,6 @@ int main()
 		if (event.isKeyPressed(XK_r))
 		{
 			focusCreature = nullptr;
-		}
-
-		if (event.isKeyPressed(XK_Escape))
-		{
-			quiting = true;
 		}
 
 		if (event.isPointerButtonPressed(Button1Mask))
@@ -757,6 +798,32 @@ int main()
 		endif:;
 		}
 
+		if (simMenuPointers.kill->state && simulation.active)
+		{
+			simulation.destroy();
+			focusCreature = nullptr;
+		}
+		else if (simMenuPointers.start->state && !simulation.active)
+		{
+			SimulationRules simulationRules;
+			simulationRules.size.x			  = simMenuPointers.sizeX->value;
+			simulationRules.size.y			  = simMenuPointers.sizeY->value;
+			simulationRules.gridResolution.x  = simMenuPointers.gridX->value;
+			simulationRules.gridResolution.y  = simMenuPointers.gridY->value;
+			simulationRules.startingCreatures = simMenuPointers.startingCreatures->value;
+			simulationRules.maxCreatures	  = simMenuPointers.maxCreatures->value;
+			simulationRules.maxFood			  = simMenuPointers.maxFood->value;
+			simulationRules.maxEggs			  = simMenuPointers.maxEggs->value;
+
+			simulation.create(simulationRules, simMenuPointers.seed->value);
+
+			creature		  = simulation.creatureBuffer;
+			existingCreatures = simulation.existingCreatures;
+			egg				  = simulation.eggBuffer;
+			existingEggs	  = simulation.existingEggs;
+			food			  = simulation.foodBuffer;
+		}
+
 		// camera movement
 
 		static agl::Vec<float, 2> cameraOffset;
@@ -826,9 +893,6 @@ int main()
 			cameraPosition = cameraPosition + offset;
 		}
 
-		quitMenu.position =
-			agl::Vec<int, 2>{int(windowSize.x - quitMenu.size.x) / 2, int(windowSize.y - quitMenu.size.y) / 2};
-
 		window.setViewport(0, 0, windowSize.x, windowSize.y);
 
 		camera.setOrthographicProjection(-((windowSize.x / 2.) * sizeMultiplier),
@@ -838,13 +902,16 @@ int main()
 
 		guiCamera.setOrthographicProjection(0, windowSize.x, windowSize.y, 0, 0.1, 100);
 
-		simulation.foodEnergyDensity	= std::stof(actionMenuPointers.foodDen->value);
-		simulation.foodVol				= std::stof(actionMenuPointers.foodVol->value);
-		simulation.meatEnergyDensity	= std::stof(actionMenuPointers.meatDen->value);
-		simulation.leachVol				= std::stof(actionMenuPointers.leachVol->value);
-		simulation.foodCap				= std::stof(actionMenuPointers.maxFood->value);
-		simulation.damage				= std::stof(actionMenuPointers.damage->value);
-		simulation.energyCostMultiplier = std::stof(actionMenuPointers.energyCostMultiplier->value);
+		simulation.foodEnergyDensity	= actionMenuPointers.foodDen->value;
+		simulation.foodVol				= actionMenuPointers.foodVol->value;
+		simulation.meatEnergyDensity	= actionMenuPointers.meatDen->value;
+		simulation.leachVol				= actionMenuPointers.leachVol->value;
+		simulation.foodCap				= actionMenuPointers.maxFood->value;
+		simulation.damage				= actionMenuPointers.damage->value;
+		simulation.energyCostMultiplier = actionMenuPointers.energyCostMultiplier->value;
+
+		windowSize.x = window.getWindowAttributes().width;
+		windowSize.y = window.getWindowAttributes().height;
 
 		milliDiff = getMillisecond() - start;
 	}
@@ -852,7 +919,7 @@ int main()
 	simulation.destroy();
 
 	MenuShare::destroy();
-	
+
 	::operator delete(copyCreature);
 
 	font.deleteFont();
@@ -866,10 +933,7 @@ int main()
 	simpleShader.deleteProgram();
 	gridShader.deleteProgram();
 
-	if (!quiting)
-	{
-		window.close();
-	}
+	window.close();
 
 	return 0;
 }

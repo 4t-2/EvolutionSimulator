@@ -5,12 +5,12 @@
 class MenuBar : public agl::Drawable, public MenuShare
 {
 	public:
-		int		   length;
+		int				 length;
 		ToggleableMenu **menu;
 
 		MenuBar(int length) : length(length)
 		{
-			menu = new ToggleableMenu*[length];
+			menu = new ToggleableMenu *[length];
 		}
 
 		void drawFunction(agl::RenderWindow &window) override
@@ -47,7 +47,7 @@ class MenuBar : public agl::Drawable, public MenuShare
 					{
 						if (!prev)
 						{
-							prev			   = true;
+							prev = true;
 
 							if (!menu[i]->exists)
 							{

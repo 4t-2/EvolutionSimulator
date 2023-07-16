@@ -372,12 +372,14 @@ class MenuElement : public agl::Drawable, public MenuShare
 			return pointInArea(point, position, size);
 		}
 
-		void init()
+		virtual void init(float width)
 		{
 			if (size.y == 0)
 			{
 				size.y = text->getHeight() * text->getScale();
 			}
+
+			size.x = width;
 		}
 
 		// void drawFunction(agl::RenderWindow &window);
@@ -413,6 +415,11 @@ template <typename T> inline std::string toString(T value)
 }
 
 template <> inline std::string toString<std::string>(std::string value)
+{
+	return value;
+}
+
+template <> inline std::string toString<const char *>(const char *value)
 {
 	return value;
 }
@@ -466,7 +473,13 @@ class SpacerElement : public MenuElement
 		}
 };
 
-class ButtonElement : public MenuElement
+enum ButtonType
+{
+	Toggle,
+	Hold,
+};
+
+template <ButtonType buttonType> class ButtonElement : public MenuElement
 {
 	public:
 		float		mouseHeld = false;
@@ -477,22 +490,37 @@ class ButtonElement : public MenuElement
 		{
 		}
 
-		ButtonElement(std::string label, float width)
+		ButtonElement(std::string label)
 		{
-			this->label	 = label;
-			this->size.x = width;
+			this->label = label;
 		}
 
-		void init()
+		void init(float width) override
 		{
-			size.y = text->getHeight() * text->getScale() + MENU_BORDEREDGE * 2;
+			size.y = text->getHeight() * text->getScale() + 7;
+			size.x = width;
 		}
 
-		void drawFunction(agl::RenderWindow &window)
+		void drawFunction(agl::RenderWindow &window) override
 		{
-			if (event->pointerButton == 1 && this->pointInElement(event->getPointerWindowPosition()))
+			if constexpr (buttonType == ButtonType::Toggle)
 			{
-				state = !state;
+				if (event->pointerButton == 1 && this->pointInElement(event->getPointerWindowPosition()))
+				{
+					state = !state;
+				}
+			}
+			else if constexpr (buttonType == ButtonType::Hold)
+			{
+				if (event->isPointerButtonPressed(Button1Mask) &&
+					this->pointInElement(event->getPointerWindowPosition()))
+				{
+					state = true;
+				}
+				else
+				{
+					state = false;
+				}
 			}
 
 			if (state)
@@ -520,40 +548,39 @@ class ButtonElement : public MenuElement
 		}
 };
 
-class FieldElement : public MenuElement
+template <typename T> class FieldElement : public MenuElement
 {
 	public:
-		std::string label	  = "null";
-		std::string value	  = "";
+		std::string label = "null";
+		T			value;
 		std::string liveValue = "";
 
-		float fieldWidth = 0;
+		float labelBuffer = 0;
 
 		bool textFocus = false;
-
-		bool hovered = false;
+		bool valid	   = true;
+		bool hovered   = false;
 
 		FieldElement()
 		{
 		}
 
-		FieldElement(std::string label, std::string startValue)
+		FieldElement(std::string label, T startValue)
 		{
 			this->label		= label;
 			this->value		= startValue;
-			this->liveValue = startValue;
+			this->liveValue = toString(this->value);
 		}
 
-		void init()
+		void init(float width) override
 		{
-			size.y = text->getHeight() + 7;
+			size.y		= text->getHeight() + 7;
+			size.x		= width;
+			labelBuffer = 80;
 		}
 
-		void drawFunction(agl::RenderWindow &window)
+		void drawFunction(agl::RenderWindow &window) override
 		{
-			size.x	   = 225;
-			fieldWidth = 125;
-
 			// bad fix, too lazy to add utf-8 fonts yet
 
 			bool utf8 = false;
@@ -572,7 +599,31 @@ class FieldElement : public MenuElement
 				if (event->pointerButton == 1)
 				{
 					textFocus = !textFocus;
-					value	  = liveValue;
+
+					if (!textFocus)
+					{
+						try
+						{
+							if constexpr (std::is_same_v<T, std::string>)
+							{
+								value = liveValue;
+							}
+							else if constexpr (std::is_same_v<T, int>)
+							{
+								value = std::stoi(liveValue);
+							}
+							else if constexpr (std::is_same_v<T, float>)
+							{
+								value = std::stof(liveValue);
+							}
+
+							valid = true;
+						}
+						catch (const std::invalid_argument &)
+						{
+							valid = false;
+						}
+					}
 				}
 
 				if (hovered) // holding
@@ -610,7 +661,7 @@ class FieldElement : public MenuElement
 				}
 			}
 
-			text->setPosition(position + agl::Vec<float, 2>{0, 3});
+			text->setPosition(position + agl::Vec<float, 2>{0, 0});
 			text->clearText();
 			text->setText(label);
 
@@ -619,15 +670,26 @@ class FieldElement : public MenuElement
 			text->clearText();
 
 			InnerArea innerArea;
-			innerArea.position = position + agl::Vec<float, 2>{size.x - fieldWidth, 3};
-			innerArea.size	   = {fieldWidth, size.y};
+			innerArea.position = position + agl::Vec<float, 2>{labelBuffer, 0};
+			innerArea.size	   = {size.x - labelBuffer, size.y};
 
 			window.draw(innerArea);
 
-			text->setPosition(position + agl::Vec<float, 2>{size.x - fieldWidth + 5, 3});
+			text->setPosition(position + agl::Vec<float, 2>{labelBuffer + 5, 0});
 			text->setText(liveValue);
 
+			if (valid)
+			{
+				text->setColor(agl::Color::Black);
+			}
+			else
+			{
+				text->setColor(agl::Color::Red);
+			}
+
 			window.drawText(*text);
+
+			text->setColor(agl::Color::Black);
 
 			text->clearText();
 		}
@@ -648,7 +710,7 @@ class NetworkGraph : public MenuElement
 		{
 		}
 
-		void init()
+		void init(float width) override
 		{
 			size = {300, 300};
 		}
@@ -786,21 +848,20 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Tog
 
 		std::function<bool()> requirement = []() { return true; };
 
-		template <size_t i = 0> typename std::enable_if<i == sizeof...(ElementType), void>::type initTuple()
+		template <size_t i = 0> typename std::enable_if<i == sizeof...(ElementType), int>::type initTuple()
 		{
-			return;
+			return 0;
 		}
 
-		template <size_t i = 0> typename std::enable_if < i<sizeof...(ElementType), void>::type initTuple()
+		template <size_t i = 0> typename std::enable_if < i<sizeof...(ElementType), int>::type initTuple()
 		{
-			this->get<i>().init();
+			this->get<i>().init(size.x - (2 * (MENU_BORDERTHICKNESS + MENU_PADDING)));
 
-			initTuple<i + 1>();
-		}
+			int height = this->get<i>().size.y + MENU_PADDING;
 
-		template <std::size_t... Indices> static auto make_default_tuple(std::index_sequence<Indices...>)
-		{
-			return std::make_tuple(ElementType{}...);
+			height += initTuple<i + 1>();
+
+			return height;
 		}
 
 		template <size_t i = 0>
@@ -826,14 +887,14 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Tog
 		template <size_t i = 0, typename Element> void assign(Element newElement)
 		{
 			this->get<i>() = newElement;
-			this->get<i>().init();
+			this->get<i>().init(size.x - (2 * (MENU_BORDERTHICKNESS + MENU_PADDING)));
 		}
 
 		template <size_t i = 0, typename Element, typename... Elements>
 		void assign(Element newElement, Elements... newElements)
 		{
 			this->get<i>() = newElement;
-			this->get<i>().init();
+			this->get<i>().init(size.x - (2 * (MENU_BORDERTHICKNESS + MENU_PADDING)));
 
 			assign<i + 1>(newElements...);
 		}
@@ -856,18 +917,14 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Tog
 			pointerAssign<i + 1>(pointerStruct);
 		}
 
-		Menu(std::string title) : element(make_default_tuple(std::index_sequence_for<ElementType...>{}))
+		Menu(std::string title, int width, ElementType... args) : element(std::make_tuple(args...))
 		{
-			this->title = title;
-			initTuple();
-		}
+			this->title	 = title;
+			this->size.x = width;
 
-		void setup(agl::Vec<float, 3> position, agl::Vec<float, 2> size)
-		{
-			this->position = position;
-			this->size	   = size;
+			int height = initTuple();
 
-			return;
+			this->size.y = height + (2 * (MENU_BORDERTHICKNESS + MENU_PADDING));
 		}
 
 		void setupElements(ElementType... Element)
@@ -897,7 +954,7 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Tog
 			if (event->isPointerButtonPressed(Button1Mask))
 			{
 				if (pointInArea(event->getPointerWindowPosition(), position,
-								{size.x, 4 + (float)smallText->getHeight()}) &&
+								agl::Vec<int, 2>{size.x, 4 + (int)smallText->getHeight()}) &&
 					focusedMenu == nullptr)
 				{
 					offset = position - event->getPointerWindowPosition();

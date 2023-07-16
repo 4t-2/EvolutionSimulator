@@ -14,6 +14,8 @@ class Simulation
 	public:
 		SimulationRules simulationRules;
 
+		bool active;
+
 		Creature		 *creatureBuffer;
 		List<Creature *> *existingCreatures;
 		Grid<Creature *> *creatureGrid;
@@ -25,10 +27,10 @@ class Simulation
 		List<Food *> *existingFood;
 		Grid<Food *> *foodGrid;
 
-		std::vector<int>   creaturePopData;
-		std::vector<float> creatureSightData;
-		std::vector<float> creatureSpeedData;
-		std::vector<float> creatureSizeData;
+		// std::vector<int>   creaturePopData;
+		// std::vector<float> creatureSightData;
+		// std::vector<float> creatureSpeedData;
+		// std::vector<float> creatureSizeData;
 
 		Meat		 *meatBuffer;
 		List<Meat *> *existingMeat;
@@ -36,17 +38,15 @@ class Simulation
 
 		int frame = 0;
 
-		float foodEnergyDensity = FOODENERGY;
-		float meatEnergyDensity = MEATENERGY;
+		float &foodEnergyDensity	= simulationRules.foodEnergyDensity;
+		float &meatEnergyDensity	= simulationRules.meatEnergyDensity;
+		int	  &foodCap				= simulationRules.foodCap;
+		float &foodVol				= simulationRules.foodVol;
+		float &leachVol				= simulationRules.leachVol;
+		float &damage				= simulationRules.damage;
+		float &energyCostMultiplier = simulationRules.energyCostMultiplier;
 
-		int foodCap;
-
-		float foodVol  = FOODVOL;
-		float leachVol = LEACHVOL;
-		float damage = DAMAGE;
-		float energyCostMultiplier = ENERGYCOSTMULTIPLIER;
-
-		Simulation(SimulationRules simulationRules);
+		void create(SimulationRules simulationRules, int seed);
 		void destroy();
 
 		void threadableUpdate();

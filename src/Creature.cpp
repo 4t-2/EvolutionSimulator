@@ -280,7 +280,7 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 	return;
 }
 
-void Creature::updateActions(float energyCostMultiplier)
+void Creature::updateActions()
 {
 	float moveForce = 0;
 
@@ -330,7 +330,7 @@ void Creature::updateActions(float energyCostMultiplier)
 	}
 
 	// energy loss
-	energy -= (sight + (moveForce * moveForce * size * size * size)) * energyCostMultiplier;
+	energy -= (sight + (moveForce * moveForce * size * size * size)) * simulationRules->energyCostMultiplier;
 
 	life--;
 

@@ -74,5 +74,5 @@ class Creature : public phy::Circle
 		void clear();
 
 		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat *> *meatGrid);
-		void updateActions(float energyCostMultiplier);
+		void updateActions();
 };
