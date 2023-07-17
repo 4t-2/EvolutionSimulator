@@ -4,21 +4,52 @@
 
 class MenuBar : public agl::Drawable, public MenuShare
 {
+	private:
+		template<int i, typename T>
+		void assign(T menu)
+		{
+			this->menu[i] = menu;
+		}
+
+		template<int i, typename T, typename...Ts>
+		void assign(T menu, Ts... menus)
+		{
+			this->menu[i] = menu;
+
+			assign<i+1>(menus...);
+		}
+
 	public:
 		int				 length;
-		ToggleableMenu **menu;
+		SimpleMenu **menu;
 
-		MenuBar(int length) : length(length)
+		
+
+		template<typename...Ts>
+		MenuBar(Ts...menus)
 		{
-			menu = new ToggleableMenu *[length];
+			length = sizeof...(menus);
+
+			this->menu = new SimpleMenu*[length];
+
+			assign<0>(menus...);
 		}
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
+			// draw child menus
+
+			for(int i = 0; i < length; i++)
+			{
+				window.draw(*menu[i]);
+			}
+
+			// draw bar
+
 			OuterArea background;
 
 			background.position = {-2, -2};
-			background.size		= {(float)window.getWindowAttributes().width + 4, BARHEIGHT + 2};
+			background.size		= {(float)window.getWindowAttributes().width + 4, BARHEIGHT + 4};
 
 			window.draw(background);
 
@@ -68,7 +99,7 @@ class MenuBar : public agl::Drawable, public MenuShare
 					{
 						ThinAreaOut area;
 						area.position = oldPen;
-						area.size	  = {(pen.x - oldPen.x) + 9, 20};
+						area.size	  = {(pen.x - oldPen.x) + 9, 22};
 						window.draw(area);
 						window.drawText(*text);
 					}
@@ -78,7 +109,7 @@ class MenuBar : public agl::Drawable, public MenuShare
 				{
 					ThinAreaIn area;
 					area.position = oldPen;
-					area.size	  = {(pen.x - oldPen.x) + 9, 20};
+					area.size	  = {(pen.x - oldPen.x) + 9, 22};
 					window.draw(area);
 					window.drawText(*text);
 				}

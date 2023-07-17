@@ -219,7 +219,6 @@ int main()
 	Food			 *food				= simulation.foodBuffer;
 
 	Creature *focusCreature = nullptr;
-	Creature *copyCreature	= new Creature();
 
 	float		fps = 0;
 	std::string nodeName;
@@ -240,93 +239,35 @@ int main()
 			ValueElement<float> *fps;
 	} simulationInfoPointers;
 
-	Menu simulationInfo("SimInfo", 125,														   //
-						ValueElement<int>{"Creatures", &simulation.existingCreatures->length}, //
-						ValueElement<int>{"Eggs", &simulation.existingEggs->length},		   //
-						ValueElement<int>{"Food", &simulation.existingFood->length},		   //
-						ValueElement<int>{"Meat", &simulation.existingMeat->length},		   //
-						ValueElement<int>{"Frame", &simulation.frame},						   //
-						ValueElement<float>{"FPS", &fps}									   //
+	Menu simulationInfo("SimInfo", 125,																			 //
+						ValueElement<int>{"Creatures", [&]() { return &simulation.existingCreatures->length; }}, //
+						ValueElement<int>{"Eggs", [&]() { return &simulation.existingEggs->length; }},			 //
+						ValueElement<int>{"Food", [&]() { return &simulation.existingFood->length; }},			 //
+						ValueElement<int>{"Meat", [&]() { return &simulation.existingMeat->length; }},			 //
+						ValueElement<int>{"Frame", [&]() { return &simulation.frame; }},						 //
+						ValueElement<float>{"FPS", [&]() { return &fps; }}										 //
 	);
 
 	simulationInfo.bindPointers(&simulationInfoPointers);
-	
-	simulationInfo.requirement = [&](){
-		return simulation.active;
-	};
 
-	// creatureinfo
+	simulationInfo.requirement = [&]() { return simulation.active; };
+
+	// creatureNetwork
 
 	struct
 	{
-			NetworkGraph			  *netGraph;
-			SpacerElement			  *s1;
+			NetworkGraph			  *network;
 			ValueElement<std::string> *node;
-			SpacerElement			  *s2;
-			TextElement				  *posText;
-			ValueElement<float>		  *posx;
-			ValueElement<float>		  *posy;
-			TextElement				  *velText;
-			ValueElement<float>		  *velx;
-			ValueElement<float>		  *vely;
-			TextElement				  *forText;
-			ValueElement<float>		  *forx;
-			ValueElement<float>		  *fory;
-			SpacerElement			  *s3;
-			ValueElement<bool>		  *eating;
-			ValueElement<bool>		  *layingEgg;
-			SpacerElement			  *s4;
-			ValueElement<float>		  *health;
-			ValueElement<float>		  *energy;
-			ValueElement<int>		  *lifeLeft;
-			SpacerElement			  *s5;
-			ValueElement<float>		  *sight;
-			ValueElement<float>		  *speed;
-			ValueElement<float>		  *size;
-			ValueElement<int>		  *hue;
-			SpacerElement			  *s6;
-			ValueElement<float>		  *biomass;
-			ValueElement<float>		  *energyDensity;
-			ValueElement<float>		  *metabolism;
-			ValueElement<float>		  *preference;
-	} creatureInfoPointers;
+	} creatureNetworkPointers;
 
-	Menu creatureInfo("CreatureInfo", 400,												   //
-					  NetworkGraph{&copyCreature->network},								   //
-					  SpacerElement{25},												   //
-					  ValueElement<std::string>{"Node", &nodeName},						   //
-					  SpacerElement{},													   //
-					  TextElement{"- Position -"},										   //
-					  ValueElement<float>{"X", &copyCreature->position.x},				   //
-					  ValueElement<float>{"Y", &copyCreature->position.y},				   //
-					  TextElement{"- Velocity -"},										   //
-					  ValueElement<float>{"X", &copyCreature->velocity.x},				   //
-					  ValueElement<float>{"Y", &copyCreature->velocity.y},				   //
-					  TextElement{"- Force -"},											   //
-					  ValueElement<float>{"X", &copyCreature->force.x},					   //
-					  ValueElement<float>{"Y", &copyCreature->force.y},					   //
-					  SpacerElement{},													   //
-					  ValueElement<bool>{"Eating", &copyCreature->eating},				   //
-					  ValueElement<bool>{"Laying Egg", &copyCreature->layingEgg},		   //
-					  SpacerElement{},													   //
-					  ValueElement<float>{"Health", &copyCreature->health},				   //
-					  ValueElement<float>{"Energy", &copyCreature->energy},				   //
-					  ValueElement<int>{"Life Left", &copyCreature->life},				   //
-					  SpacerElement{},													   //
-					  ValueElement<float>{"Sight", &copyCreature->sight},				   //
-					  ValueElement<float>{"Speed", &copyCreature->speed},				   //
-					  ValueElement<float>{"Size", &copyCreature->size},					   //
-					  ValueElement<int>{"Hue", &copyCreature->hue},						   //
-					  SpacerElement{},													   //
-					  ValueElement<float>{"Biomass", &copyCreature->biomass},			   //
-					  ValueElement<float>{"Energy Density", &copyCreature->energyDensity}, //
-					  ValueElement<float>{"Metabolism", &copyCreature->metabolism},		   //
-					  ValueElement<float>{"Preference", &copyCreature->preference}		   //
+	Menu creatureNetwork("CreatureNetwork", 325,										//
+						 NetworkGraph{[&]() { return &focusCreature->network; }},		//
+						 ValueElement<std::string>{"Node", [&]() { return &nodeName; }} //
 	);
 
-	creatureInfo.bindPointers(&creatureInfoPointers);
+	creatureNetwork.bindPointers(&creatureNetworkPointers);
 
-	creatureInfo.requirement = [&]() {
+	creatureNetwork.requirement = [&]() {
 		if (focusCreature != nullptr)
 		{
 			return true;
@@ -337,40 +278,134 @@ int main()
 		}
 	};
 
-	// actionmenu
+	// creatureVectors
 
 	struct
 	{
-			TextElement			  *leftclick;
+			TextElement			*posText;
+			ValueElement<float> *posX;
+			ValueElement<float> *posY;
+			TextElement			*velText;
+			ValueElement<float> *velX;
+			ValueElement<float> *velY;
+			TextElement			*forText;
+			ValueElement<float> *forX;
+			ValueElement<float> *fooY;
+
+	} creatureVectorsPointers;
+
+	Menu creatureVectors("CreatureVectors", 200,												 //
+						 TextElement{"- Position -"},											 //
+						 ValueElement<float>{"X", [&]() { return &focusCreature->position.x; }}, //
+						 ValueElement<float>{"Y", [&]() { return &focusCreature->position.y; }}, //
+						 TextElement{"- Velocity -"},											 //
+						 ValueElement<float>{"X", [&]() { return &focusCreature->velocity.x; }}, //
+						 ValueElement<float>{"Y", [&]() { return &focusCreature->velocity.y; }}, //
+						 TextElement{"- Force -"},												 //
+						 ValueElement<float>{"X", [&]() { return &focusCreature->force.x; }},	 //
+						 ValueElement<float>{"Y", [&]() { return &focusCreature->force.y; }}	 //
+	);
+
+	creatureVectors.bindPointers(&creatureVectorsPointers);
+
+	creatureVectors.requirement = creatureNetwork.requirement;
+
+	// creatureMisc
+
+	struct
+	{
+			ValueElement<bool>	*eating;
+			ValueElement<bool>	*layingEgg;
+			SpacerElement		*sp1;
+			ValueElement<float> *health;
+			ValueElement<float> *energy;
+			ValueElement<float> *lifeLeft;
+			SpacerElement		*sp2;
+			ValueElement<float> *sight;
+			ValueElement<float> *speed;
+			ValueElement<float> *size;
+			ValueElement<int>	*hue;
+			SpacerElement		*sp3;
+			ValueElement<float> *biomass;
+			ValueElement<float> *energyDensity;
+			ValueElement<float> *metabolism;
+			ValueElement<float> *preference;
+	} creatureMiscPointers;
+
+	Menu creatureMisc("CreatureMisc", 200,																	  //
+					  ValueElement<bool>{"Eating", [&]() { return &focusCreature->eating; }},				  //
+					  ValueElement<bool>{"Laying Egg", [&]() { return &focusCreature->layingEgg; }},		  //
+					  SpacerElement{},																		  //
+					  ValueElement<float>{"Health", [&]() { return &focusCreature->health; }},				  //
+					  ValueElement<float>{"Energy", [&]() { return &focusCreature->energy; }},				  //
+					  ValueElement<int>{"Life Left", [&]() { return &focusCreature->life; }},				  //
+					  SpacerElement{},																		  //
+					  ValueElement<float>{"Sight", [&]() { return &focusCreature->sight; }},				  //
+					  ValueElement<float>{"Speed", [&]() { return &focusCreature->speed; }},				  //
+					  ValueElement<float>{"Size", [&]() { return &focusCreature->size; }},					  //
+					  ValueElement<int>{"Hue", [&]() { return &focusCreature->hue; }},						  //
+					  SpacerElement{},																		  //
+					  ValueElement<float>{"Biomass", [&]() { return &focusCreature->biomass; }},			  //
+					  ValueElement<float>{"Energy Density", [&]() { return &focusCreature->energyDensity; }}, //
+					  ValueElement<float>{"Metabolism", [&]() { return &focusCreature->metabolism; }},		  //
+					  ValueElement<float>{"Preference", [&]() { return &focusCreature->preference; }}		  //
+	);
+
+	creatureMisc.bindPointers(&creatureMiscPointers);
+
+	creatureMisc.requirement = creatureVectors.requirement;
+
+	// leftMenu
+
+	struct
+	{
 			ButtonElement<Toggle> *food;
 			ButtonElement<Toggle> *meat;
 			ButtonElement<Toggle> *select;
 			ButtonElement<Toggle> *kill;
-			FieldElement<float>	  *foodDen;
-			FieldElement<float>	  *foodVol;
-			FieldElement<float>	  *meatDen;
-			FieldElement<float>	  *leachVol;
-			FieldElement<float>	  *maxFood;
-			FieldElement<float>	  *damage;
-			FieldElement<float>	  *energyCostMultiplier;
-	} actionMenuPointers;
+			ButtonElement<Toggle> *forceFood;
+			ButtonElement<Toggle> *forceMeat;
+			ButtonElement<Toggle> *forceCreature;
+			FieldElement<float>	  *forceMultiplier;
+	} leftMenuPointers;
 
-	Menu actionMenu("ActionMenu", 200,												 //
-					TextElement{"Left Click"},										 //
-					ButtonElement<Toggle>{"Food"},									 //
-					ButtonElement<Toggle>{"Meat"},									 //
-					ButtonElement<Toggle>{"Select"},								 //
-					ButtonElement<Toggle>{"Kill"},									 //
-					FieldElement<float>{"FdEnDn", simulation.foodEnergyDensity},	 //
-					FieldElement<float>{"FdVol", (simulation.foodVol)},				 //
-					FieldElement<float>{"MtEnDn", (simulation.meatEnergyDensity)},	 //
-					FieldElement<float>{"LeVol", (simulation.leachVol)},			 //
-					FieldElement<int>{"maxFd", (simulation.foodCap)},				 //
-					FieldElement<float>{"dmg", (simulation.damage)},				 //
-					FieldElement<float>{"EnCoMu", (simulation.energyCostMultiplier)} //
+	Menu leftMenu("LeftMenu", 200,						  //
+				  ButtonElement<Toggle>{"Food"},		  //
+				  ButtonElement<Toggle>{"Meat"},		  //
+				  ButtonElement<Toggle>{"Select"},		  //
+				  ButtonElement<Toggle>{"Kill"},		  //
+				  ButtonElement<Toggle>{"ForceFood"},	  //
+				  ButtonElement<Toggle>{"ForceMeat"},	  //
+				  ButtonElement<Toggle>{"ForceCreature"}, //
+				  FieldElement<float>{"ForceMult", 1.0}	  //
 	);
 
-	actionMenu.bindPointers(&actionMenuPointers);
+	leftMenu.bindPointers(&leftMenuPointers);
+
+	// simRules
+
+	struct
+	{
+			FieldElement<float> *foodDen;
+			FieldElement<float> *foodVol;
+			FieldElement<float> *meatDen;
+			FieldElement<float> *leachVol;
+			FieldElement<float> *maxFood;
+			FieldElement<float> *damage;
+			FieldElement<float> *energyCostMultiplier;
+	} simRulesPointers;
+
+	Menu simRules("SimRules", 200,												   //
+				  FieldElement<float>{"FdEnDn", simulation.foodEnergyDensity},	   //
+				  FieldElement<float>{"FdVol", (simulation.foodVol)},			   //
+				  FieldElement<float>{"MtEnDn", (simulation.meatEnergyDensity)},   //
+				  FieldElement<float>{"LeVol", (simulation.leachVol)},			   //
+				  FieldElement<int>{"maxFd", (simulation.foodCap)},				   //
+				  FieldElement<float>{"dmg", (simulation.damage)},				   //
+				  FieldElement<float>{"EnCoMu", (simulation.energyCostMultiplier)} //
+	);
+
+	simRules.bindPointers(&simRulesPointers);
 
 	// quitmenu
 
@@ -425,16 +460,49 @@ int main()
 
 	simMenu.bindPointers(&simMenuPointers);
 
+	// debugLog
+
+	struct
+	{
+			TextElement *t1;
+			TextElement *t2;
+			TextElement *t3;
+			TextElement *t4;
+			TextElement *t5;
+			TextElement *t6;
+			TextElement *t7;
+			TextElement *t8;
+	} debugLogPointers;
+
+	Menu debugLog("DebugLog", 400, TextElement{""}, TextElement{""}, TextElement{""}, TextElement{""}, TextElement{""},
+				  TextElement{""}, TextElement{""}, TextElement{""});
+
+	debugLog.bindPointers(&debugLogPointers);
+
+	auto sendDebugLog = [&](std::string str) {
+		debugLogPointers.t1->str = debugLogPointers.t2->str;
+		debugLogPointers.t2->str = debugLogPointers.t3->str;
+		debugLogPointers.t3->str = debugLogPointers.t4->str;
+		debugLogPointers.t4->str = debugLogPointers.t5->str;
+		debugLogPointers.t5->str = debugLogPointers.t6->str;
+		debugLogPointers.t6->str = debugLogPointers.t7->str;
+		debugLogPointers.t7->str = debugLogPointers.t8->str;
+
+		debugLogPointers.t8->str = str;
+	};
+
 	// menubar
 
-	MenuBar menuBar(5);
-	menuBar.menu[0] = &quitMenu;
-	menuBar.menu[1] = &simulationInfo;
-	menuBar.menu[2] = &simMenu;
-	menuBar.menu[3] = &actionMenu;
-	menuBar.menu[4] = &creatureInfo;
-
-	creatureInfoPointers.size->value = (float *)0;
+	MenuBar menuBar(&quitMenu,		  //
+					&simulationInfo,  //
+					&simMenu,		  //
+					&leftMenu,		  //
+					&simRules,		  //
+					&creatureNetwork, //
+					&creatureVectors, //
+					&creatureMisc,	  //
+					&debugLog		  //
+	);
 
 	bool mHeld		= false;
 	bool b1Held		= false;
@@ -676,20 +744,11 @@ int main()
 
 		window.updateMvp(guiCamera);
 
-		window.draw(simulationInfo);
-		window.draw(actionMenu);
-		window.draw(quitMenu);
-		window.draw(simMenu);
-
-		window.draw(menuBar);
-
 		if (focusCreature != nullptr)
 		{
 			if (existingCreatures->find(focusCreature) != -1)
 			{
-				nodeName = nodeNames[creatureInfoPointers.netGraph->selectedID];
-
-				memcpy((void *)copyCreature, (void *)focusCreature, sizeof(Creature));
+				nodeName = nodeNames[creatureNetworkPointers.network->selectedID];
 			}
 			else
 			{
@@ -697,7 +756,7 @@ int main()
 			}
 		}
 
-		window.draw(creatureInfo);
+		window.draw(menuBar);
 
 		window.display();
 
@@ -713,89 +772,6 @@ int main()
 		{
 			quitMenu.close();
 			quitMenuPointers.cancel->state = false;
-		}
-
-		// input
-
-		if (event.isKeyPressed(XK_r))
-		{
-			focusCreature = nullptr;
-		}
-
-		if (event.isPointerButtonPressed(Button1Mask))
-		{
-			if (pointInArea(event.getPointerWindowPosition(), simulationInfo.position, simulationInfo.size))
-			{
-				goto endif;
-			}
-			if (pointInArea(event.getPointerWindowPosition(), actionMenu.position, actionMenu.size))
-			{
-				goto endif;
-			}
-			if (focusCreature != nullptr &&
-				pointInArea(event.getPointerWindowPosition(), creatureInfo.position, creatureInfo.size))
-			{
-				goto endif;
-			}
-			if (quiting && pointInArea(event.getPointerWindowPosition(), quitMenu.position, quitMenu.size))
-			{
-				goto endif;
-			}
-
-			if (actionMenuPointers.food->state) // add food
-			{
-				simulation.addFood(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
-														  cameraPosition));
-			}
-			if (actionMenuPointers.meat->state) // add meat
-			{
-				simulation.addMeat(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
-														  cameraPosition));
-			}
-			if (actionMenuPointers.select->state) // select creature
-			{
-				for (int i = 0; i < existingCreatures->length; i++)
-				{
-					agl::Vec<float, 2> mouse;
-					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
-							  cameraPosition.x;
-					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
-							  cameraPosition.y;
-
-					float distance = (mouse - existingCreatures->get(i)->position).length();
-
-					if (distance < existingCreatures->get(i)->radius)
-					{
-						focusCreature = existingCreatures->get(i);
-
-						break;
-					}
-				}
-			}
-			if (actionMenuPointers.kill->state) // kill creature
-			{
-				for (int i = 0; i < existingCreatures->length; i++)
-				{
-					agl::Vec<float, 2> mouse;
-					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
-							  cameraPosition.x;
-					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
-							  cameraPosition.y;
-
-					float distance = (mouse - existingCreatures->get(i)->position).length();
-
-					if (distance < existingCreatures->get(i)->radius)
-					{
-						simulation.addMeat(existingCreatures->get(i)->position,
-										   existingCreatures->get(i)->maxHealth / 4);
-						existingCreatures->pop(i);
-
-						break;
-					}
-				}
-			}
-
-		endif:;
 		}
 
 		if (simMenuPointers.kill->state && simulation.active)
@@ -823,6 +799,155 @@ int main()
 			existingEggs	  = simulation.existingEggs;
 			food			  = simulation.foodBuffer;
 		}
+
+		if (!simulation.active)
+		{
+			goto deadSim;
+		}
+
+		// input
+
+		if (event.isKeyPressed(XK_r))
+		{
+			focusCreature = nullptr;
+		}
+
+		if (event.isPointerButtonPressed(Button1Mask))
+		{
+			for (int i = 0; i < menuBar.length; i++)
+			{
+				SimpleMenu *menu = menuBar.menu[i];
+
+				if (pointInArea(event.getPointerWindowPosition(), menu->position, menu->size))
+				{
+					goto endif;
+				}
+			}
+
+			if (leftMenuPointers.food->state) // add food
+			{
+				simulation.addFood(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
+														  cameraPosition));
+			}
+			if (leftMenuPointers.meat->state) // add meat
+			{
+				simulation.addMeat(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
+														  cameraPosition));
+			}
+			if (leftMenuPointers.select->state) // select creature
+			{
+				for (int i = 0; i < existingCreatures->length; i++)
+				{
+					agl::Vec<float, 2> mouse;
+					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
+							  cameraPosition.x;
+					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
+							  cameraPosition.y;
+
+					float distance = (mouse - existingCreatures->get(i)->position).length();
+
+					if (distance < existingCreatures->get(i)->radius)
+					{
+						focusCreature = existingCreatures->get(i);
+
+						break;
+					}
+				}
+			}
+			if (leftMenuPointers.kill->state) // kill creature
+			{
+				for (int i = 0; i < existingCreatures->length; i++)
+				{
+					agl::Vec<float, 2> mouse;
+					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
+							  cameraPosition.x;
+					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
+							  cameraPosition.y;
+
+					float distance = (mouse - existingCreatures->get(i)->position).length();
+
+					if (distance < existingCreatures->get(i)->radius)
+					{
+						simulation.addMeat(existingCreatures->get(i)->position,
+										   existingCreatures->get(i)->maxHealth / 4);
+						existingCreatures->pop(i);
+
+						break;
+					}
+				}
+			}
+			if (leftMenuPointers.forceFood->state)
+			{
+				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
+																	   sizeMultiplier, cameraPosition);
+
+				agl::Vec<int, 2> gridPos =
+					simulation.foodGrid->toGridPosition(cursorRelPos, simulation.simulationRules.size);
+
+				simulation.foodGrid->updateElements(gridPos, {-1, -1}, {1, 1}, [&](Food *food) {
+					agl::Vec<float, 2> offset	= food->position - cursorRelPos;
+					float			   distance = offset.length();
+
+					float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
+
+					agl::Vec<float, 2> force = offset.normalized() * forceScalar;
+
+					food->force += force;
+				});
+			}
+			if (leftMenuPointers.forceMeat->state)
+			{
+				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
+																	   sizeMultiplier, cameraPosition);
+
+				agl::Vec<int, 2> gridPos =
+					simulation.meatGrid->toGridPosition(cursorRelPos, simulation.simulationRules.size);
+
+				simulation.meatGrid->updateElements(gridPos, {-1, -1}, {1, 1}, [&](Meat *meat) {
+					agl::Vec<float, 2> offset	= meat->position - cursorRelPos;
+					float			   distance = offset.length();
+
+					float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
+
+					agl::Vec<float, 2> force = offset.normalized() * forceScalar;
+
+					meat->force += force;
+				});
+			}
+			if (leftMenuPointers.forceCreature->state)
+			{
+				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
+																	   sizeMultiplier, cameraPosition);
+
+				agl::Vec<int, 2> gridPos =
+					simulation.creatureGrid->toGridPosition(cursorRelPos, simulation.simulationRules.size);
+
+				simulation.creatureGrid->updateElements(gridPos, {-1, -1}, {1, 1}, [&](Creature *creature) {
+					agl::Vec<float, 2> offset	= creature->position - cursorRelPos;
+					float			   distance = offset.length();
+
+					float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
+
+					agl::Vec<float, 2> force = offset.normalized() * forceScalar;
+
+					creature->force += force;
+
+					sendDebugLog(std::to_string(force.length()));
+				});
+			}
+
+		endif:;
+		}
+
+		simulation.foodEnergyDensity	= simRulesPointers.foodDen->value;
+		simulation.foodVol				= simRulesPointers.foodVol->value;
+		simulation.meatEnergyDensity	= simRulesPointers.meatDen->value;
+		simulation.leachVol				= simRulesPointers.leachVol->value;
+		simulation.foodCap				= simRulesPointers.maxFood->value;
+		simulation.damage				= simRulesPointers.damage->value;
+		simulation.energyCostMultiplier = simRulesPointers.energyCostMultiplier->value;
+
+	deadSim:;
 
 		// camera movement
 
@@ -902,14 +1027,6 @@ int main()
 
 		guiCamera.setOrthographicProjection(0, windowSize.x, windowSize.y, 0, 0.1, 100);
 
-		simulation.foodEnergyDensity	= actionMenuPointers.foodDen->value;
-		simulation.foodVol				= actionMenuPointers.foodVol->value;
-		simulation.meatEnergyDensity	= actionMenuPointers.meatDen->value;
-		simulation.leachVol				= actionMenuPointers.leachVol->value;
-		simulation.foodCap				= actionMenuPointers.maxFood->value;
-		simulation.damage				= actionMenuPointers.damage->value;
-		simulation.energyCostMultiplier = actionMenuPointers.energyCostMultiplier->value;
-
 		windowSize.x = window.getWindowAttributes().width;
 		windowSize.y = window.getWindowAttributes().height;
 
@@ -919,8 +1036,6 @@ int main()
 	simulation.destroy();
 
 	MenuShare::destroy();
-
-	::operator delete(copyCreature);
 
 	font.deleteFont();
 

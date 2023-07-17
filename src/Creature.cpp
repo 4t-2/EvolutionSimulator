@@ -334,8 +334,8 @@ void Creature::updateActions()
 
 	life--;
 
-	force.x = cos(rotation - (PI / 2)) * moveForce;
-	force.y = sin(rotation - (PI / 2)) * moveForce;
+	force.x += cos(rotation - (PI / 2)) * moveForce;
+	force.y += sin(rotation - (PI / 2)) * moveForce;
 
 	// add air resistance
 

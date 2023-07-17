@@ -427,17 +427,17 @@ template <> inline std::string toString<const char *>(const char *value)
 template <typename T> class ValueElement : public MenuElement
 {
 	public:
-		std::string label = "null";
-		T		   *value = nullptr;
+		std::string			 label = "null";
+		std::function<T *()> valueFunc;
 
 		ValueElement()
 		{
 		}
 
-		ValueElement(std::string label, T *value)
+		ValueElement(std::string label, std::function<T *()> valueFunc)
 		{
-			this->label = label;
-			this->value = value;
+			this->label		= label;
+			this->valueFunc = valueFunc;
 		}
 
 		void operator=(ValueElement valueElement)
@@ -450,7 +450,7 @@ template <typename T> class ValueElement : public MenuElement
 		{
 			text->setPosition(position);
 			text->clearText();
-			text->setText(label + " - " + toString(*value));
+			text->setText(label + " - " + toString(*valueFunc()));
 
 			window.drawText(*text);
 		}
@@ -702,11 +702,13 @@ class NetworkGraph : public MenuElement
 
 		in::NeuralNetwork **network;
 
+		std::function<in::NeuralNetwork **()> networkFunc;
+
 		NetworkGraph()
 		{
 		}
 
-		NetworkGraph(in::NeuralNetwork **network) : network(network)
+		NetworkGraph(std::function<in::NeuralNetwork **()> networkFunc) : networkFunc(networkFunc)
 		{
 		}
 
@@ -724,9 +726,9 @@ class NetworkGraph : public MenuElement
 			window.drawShape(*circ);
 
 			// draw node connections
-			for (int i = 0; i < (*network)->structure.totalConnections; i++)
+			for (int i = 0; i < (*networkFunc())->structure.totalConnections; i++)
 			{
-				in::Connection connection = (*network)->getConnection(i);
+				in::Connection connection = (*networkFunc())->getConnection(i);
 
 				if (!connection.valid)
 				{
@@ -734,11 +736,11 @@ class NetworkGraph : public MenuElement
 				}
 
 				float startAngle = connection.startNode + 1;
-				startAngle /= (*network)->getTotalNodes();
+				startAngle /= (*networkFunc())->getTotalNodes();
 				startAngle *= PI * 2;
 
 				float endAngle = connection.endNode + 1;
-				endAngle /= (*network)->getTotalNodes();
+				endAngle /= (*networkFunc())->getTotalNodes();
 				endAngle *= PI * 2;
 
 				agl::Vec<float, 2> startPosition = agl::pointOnCircle(startAngle);
@@ -773,9 +775,9 @@ class NetworkGraph : public MenuElement
 			}
 
 			// draw nodes
-			for (int i = 0; i < (*network)->getTotalNodes(); i++)
+			for (int i = 0; i < (*networkFunc())->getTotalNodes(); i++)
 			{
-				float angle = (360. / (*network)->getTotalNodes()) * (i + 1);
+				float angle = (360. / (*networkFunc())->getTotalNodes()) * (i + 1);
 
 				float x = cos(angle * (3.14159 / 180));
 				float y = sin(angle * (3.14159 / 180));
@@ -791,7 +793,7 @@ class NetworkGraph : public MenuElement
 
 				circ->setPosition(pos);
 
-				float nodeValue = (*network)->getNode(i).value;
+				float nodeValue = (*networkFunc())->getNode(i).value;
 
 				if (nodeValue > 0)
 				{
@@ -814,11 +816,12 @@ class NetworkGraph : public MenuElement
 		}
 };
 
-class ToggleableMenu : public MenuShare
+class SimpleMenu : public agl::Drawable, public MenuShare
 {
 	public:
 		bool			 exists;
 		agl::Vec<int, 3> position;
+		agl::Vec<int, 2> size;
 		std::string		 title;
 
 		void open(agl::Vec<int, 2> position)
@@ -839,11 +842,9 @@ class ToggleableMenu : public MenuShare
 };
 
 // template hell
-template <typename... ElementType> class Menu : public agl::Drawable, public ToggleableMenu
+template <typename... ElementType> class Menu : public SimpleMenu
 {
 	public:
-		agl::Vec<int, 2> size;
-
 		std::tuple<ElementType...> element;
 
 		std::function<bool()> requirement = []() { return true; };
@@ -972,31 +973,39 @@ template <typename... ElementType> class Menu : public agl::Drawable, public Tog
 				position = event->getPointerWindowPosition() + offset;
 			}
 
-			agl::Vec<float, 3> pen = {MENU_BORDERTHICKNESS + MENU_PADDING,
-									  MENU_BORDERTHICKNESS + MENU_PADDING + smallText->getHeight()};
-			pen					   = pen + position;
+			if (requirement())
+			{
+				agl::Vec<float, 3> pen = {MENU_BORDERTHICKNESS + MENU_PADDING,
+										  MENU_BORDERTHICKNESS + MENU_PADDING + smallText->getHeight()};
+				pen					   = pen + position;
 
-			OuterArea outerArea;
-			outerArea.position = position;
-			outerArea.size	   = size + agl::Vec<float, 2>{0, (float)smallText->getHeight()};
+				OuterArea outerArea;
+				outerArea.position = position;
+				outerArea.size	   = size + agl::Vec<float, 2>{0, (float)smallText->getHeight()};
 
-			window.draw(outerArea);
+				window.draw(outerArea);
 
-			DipArea innerArea;
-			innerArea.position = position + agl::Vec<float, 2>{4, 4 + (float)smallText->getHeight()};
-			innerArea.size	   = size + agl::Vec<float, 2>{-8, -8};
+				DipArea innerArea;
+				innerArea.position = position + agl::Vec<float, 2>{4, 4 + (float)smallText->getHeight()};
+				innerArea.size	   = size + agl::Vec<float, 2>{-8, -8};
 
-			window.draw(innerArea);
+				window.draw(innerArea);
+
+				draw(window, pen);
+			}
+			else
+			{
+				OuterArea outerArea;
+				outerArea.position = position;
+				outerArea.size	   = {size.x, (float)smallText->getHeight() + 6};
+
+				window.draw(outerArea);
+			}
 
 			smallText->clearText();
 			smallText->setText(title);
 			smallText->setColor(agl::Color::Black);
 			smallText->setPosition(position + agl::Vec<float, 2>{3.5, 0});
 			window.drawText(*smallText);
-
-			if (requirement())
-			{
-				draw(window, pen);
-			}
 		}
 };
