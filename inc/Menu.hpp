@@ -681,15 +681,25 @@ template <typename T> class FieldElement : public MenuElement
 			if (valid)
 			{
 				text->setColor(agl::Color::Black);
+				rect->setColor(agl::Color::Black);
 			}
 			else
 			{
 				text->setColor(agl::Color::Red);
+				rect->setColor(agl::Color::Red);
 			}
 
-			window.drawText(*text);
+			agl::Vec<float, 2> start = window.drawText(*text) + position + agl::Vec<float, 2>{labelBuffer + 5, 0};
+
+			if (textFocus)
+			{
+				rect->setPosition(start + agl::Vec<float, 2>{0, 2});
+				rect->setSize({1, (float)text->getHeight() - 1});
+				window.drawShape(*rect);
+			}
 
 			text->setColor(agl::Color::Black);
+			rect->setColor(agl::Color::Black);
 
 			text->clearText();
 		}

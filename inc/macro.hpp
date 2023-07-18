@@ -78,7 +78,7 @@
 
 #define CLEARCOLOR \
 	{              \
-		12, 12, 24 \
+		20, 20, 30 \
 	}
 
 #define NETWORK_PADDING 20

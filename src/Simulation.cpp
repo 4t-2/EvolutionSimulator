@@ -56,7 +56,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
 		creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
-		creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, 1);
+		creatureData.setConnection(3, LAYEGG_OUTPUT, RIGHT_OUTPUT, 1);
 		// creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -1);
 
 		creatureData.preference = 1;

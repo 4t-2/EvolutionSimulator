@@ -210,7 +210,7 @@ int main()
 	// background.setPosition(simulationRules.size * .5);
 
 	Simulation simulation;
-	simulation.create(simulationRules, 0);
+	// simulation.create(simulationRules, 0);
 
 	Creature		 *creature			= simulation.creatureBuffer;
 	List<Creature *> *existingCreatures = simulation.existingCreatures;
@@ -363,10 +363,13 @@ int main()
 			ButtonElement<Toggle> *meat;
 			ButtonElement<Toggle> *select;
 			ButtonElement<Toggle> *kill;
+			SpacerElement		  *sp1;
 			ButtonElement<Toggle> *forceFood;
 			ButtonElement<Toggle> *forceMeat;
 			ButtonElement<Toggle> *forceCreature;
 			FieldElement<float>	  *forceMultiplier;
+			SpacerElement		  *sp2;
+			ButtonElement<Toggle> *sendTo;
 	} leftMenuPointers;
 
 	Menu leftMenu("LeftMenu", 200,						  //
@@ -374,10 +377,13 @@ int main()
 				  ButtonElement<Toggle>{"Meat"},		  //
 				  ButtonElement<Toggle>{"Select"},		  //
 				  ButtonElement<Toggle>{"Kill"},		  //
+				  SpacerElement{},						  //
 				  ButtonElement<Toggle>{"ForceFood"},	  //
 				  ButtonElement<Toggle>{"ForceMeat"},	  //
 				  ButtonElement<Toggle>{"ForceCreature"}, //
-				  FieldElement<float>{"ForceMult", 1.0}	  //
+				  FieldElement<float>{"ForceMult", 1.0},  //
+				  SpacerElement{},						  //
+				  ButtonElement<Toggle>{"SendTo"}		  //
 	);
 
 	leftMenu.bindPointers(&leftMenuPointers);
@@ -934,6 +940,14 @@ int main()
 
 					sendDebugLog(std::to_string(force.length()));
 				});
+			}
+			if (leftMenuPointers.sendTo->state)
+			{
+				if (focusCreature != nullptr)
+				{
+					focusCreature->position = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
+																	 sizeMultiplier, cameraPosition);
+				}
 			}
 
 		endif:;
