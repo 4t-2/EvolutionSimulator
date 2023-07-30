@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../lib/AGL/agl.hpp"
-#include "../lib/PHY/fastphys.hpp"
+#include <AGL/agl.hpp>
+#include <PHY/fastphys.hpp>
 #include <cstdlib>
 #include "macro.hpp"
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "../lib/AGL/agl.hpp"
+#include <AGL/agl.hpp>
 #include "List.hpp"
 
 template <typename T> class Grid

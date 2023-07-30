@@ -1,4 +1,4 @@
-#include "../lib/AGL/agl.hpp"
+#include <AGL/agl.hpp>
 
 #include "../inc/MenuBar.hpp"
 #include "../inc/Simulation.hpp"

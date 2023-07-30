@@ -1,5 +1,5 @@
 #pragma once
-#include "../lib/AGL/agl.hpp"
+#include <AGL/agl.hpp>
 
 float loop(float min, float max, float value);
 

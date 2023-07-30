@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../lib/AGL/agl.hpp"
+#include <AGL/agl.hpp>
 #include "macro.hpp"
 
 class SimulationRules

@@ -27,3 +27,4 @@ add_executable(EvolutionSimulator.out ${SRC} ${AGL} ${PHY} ${IN})
 
 target_link_libraries(EvolutionSimulator.out -lX11 -lGL -lGLEW -lSOIL -lfreetype)
 include_directories("/usr/include/freetype2")
+include_directories("./lib")

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../lib/AGL/agl.hpp"
-#include "../lib/IN/intnet.hpp"
+#include <AGL/agl.hpp>
+#include <IN/intnet.hpp>
 #include "macro.hpp"
 
 #include <type_traits>
