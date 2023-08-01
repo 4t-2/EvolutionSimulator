@@ -49,7 +49,7 @@ class MenuBar : public agl::Drawable, public MenuShare
 			OuterArea background;
 
 			background.position = {-2, -2};
-			background.size		= {(float)window.getWindowAttributes().width + 4, BARHEIGHT + 4};
+			background.size		= {(float)window.getState().size.x + 4, BARHEIGHT + 4};
 
 			window.draw(background);
 
@@ -74,7 +74,7 @@ class MenuBar : public agl::Drawable, public MenuShare
 				{
 					static bool prev = false;
 
-					if (event->isPointerButtonPressed(Button1Mask))
+					if (event->isPointerButtonPressed(agl::Button::Left))
 					{
 						if (!prev)
 						{

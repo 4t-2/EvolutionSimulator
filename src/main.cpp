@@ -16,6 +16,48 @@
 #include <thread>
 #include <unistd.h>
 
+class Listener
+{
+	private:
+		std::function<void()> first;
+		std::function<void()> hold;
+		std::function<void()> last;
+		bool				  pastState = false;
+
+	public:
+		Listener(std::function<void()> first, std::function<void()> hold, std::function<void()> last);
+		void update(bool state);
+};
+
+Listener::Listener(std::function<void()> first, std::function<void()> hold, std::function<void()> last)
+{
+	this->first = first;
+	this->hold	= hold;
+	this->last	= last;
+}
+
+void Listener::update(bool state)
+{
+	if (state)
+	{
+		if (pastState)
+		{
+			hold();
+		}
+		else
+		{
+			first();
+
+			pastState = true;
+		}
+	}
+	else if (pastState)
+	{
+		last();
+		pastState = false;
+	}
+}
+
 int getMillisecond()
 {
 	auto timepoint = std::chrono::system_clock::now().time_since_epoch();
@@ -223,9 +265,14 @@ int main()
 	float		fps = 0;
 	std::string nodeName;
 
+	bool leftClick;
+	bool previousLeftClick;
+
+	Listener leftClickListener([&](){leftClick = true;}, [&](){leftClick = false;}, [&](){leftClick = false;});
+
 	// menu shit
 
-	MenuShare::init(&blank, &font, &smallFont, &event);
+	MenuShare::init(&blank, &font, &smallFont, &event, &leftClick);
 
 	// simulation info
 
@@ -401,6 +448,8 @@ int main()
 			FieldElement<float> *energyCostMultiplier;
 	} simRulesPointers;
 
+	simulation.foodCap = simulationRules.maxFood;
+
 	Menu simRules("SimRules", 200,												   //
 				  FieldElement<float>{"FdEnDn", simulation.foodEnergyDensity},	   //
 				  FieldElement<float>{"FdVol", (simulation.foodVol)},			   //
@@ -529,7 +578,7 @@ int main()
 
 		event.poll();
 
-		if (event.isKeyPressed(XK_m))
+		if (event.isKeyPressed(agl::Key::M))
 		{
 			mHeld = true;
 		}
@@ -559,7 +608,7 @@ int main()
 			simulation.addCreature(creatureData, position);
 		}
 
-		if (event.isKeyPressed(XK_Return))
+		if (event.isKeyPressed(agl::Key::Return))
 		{
 			ReturnHeld = true;
 		}
@@ -708,7 +757,7 @@ int main()
 
 			creatureShape.setTextureTranslation({float(1. / 3.) * textureFrame, 0});
 
-			if (event.isKeyPressed(XK_z))
+			if (event.isKeyPressed(agl::Key::Z))
 			{
 				agl::Vec<float, 3> blue =
 					agl::Vec<float, 3>{0, 0, 255} * existingCreatures->get(i)->creatureData.preference;
@@ -813,12 +862,12 @@ int main()
 
 		// input
 
-		if (event.isKeyPressed(XK_r))
+		if (event.isKeyPressed(agl::Key::R))
 		{
 			focusCreature = nullptr;
 		}
 
-		if (event.isPointerButtonPressed(Button1Mask))
+		if (event.isPointerButtonPressed(agl::Button::Left))
 		{
 			for (int i = 0; i < menuBar.length; i++)
 			{
@@ -968,7 +1017,7 @@ int main()
 		static agl::Vec<float, 2> cameraOffset;
 		static agl::Vec<float, 2> startPos;
 
-		if (event.isPointerButtonPressed(Button2Mask))
+		if (event.isPointerButtonPressed(agl::Button::Middle))
 		{
 			if (b1Held) // holding click
 			{
@@ -999,7 +1048,7 @@ int main()
 
 		const float sizeDelta = .2;
 
-		if (event.pointerButton == 4)
+		if (event.scroll == agl::Up)
 		{
 			float scale = sizeDelta * sizeMultiplier;
 
@@ -1015,7 +1064,7 @@ int main()
 
 			cameraPosition = cameraPosition + offset;
 		}
-		if (event.pointerButton == 5)
+		if (event.scroll == agl::Down)
 		{
 			float scale = sizeDelta * sizeMultiplier;
 
@@ -1041,8 +1090,9 @@ int main()
 
 		guiCamera.setOrthographicProjection(0, windowSize.x, windowSize.y, 0, 0.1, 100);
 
-		windowSize.x = window.getWindowAttributes().width;
-		windowSize.y = window.getWindowAttributes().height;
+		windowSize = window.getState().size;
+
+		leftClickListener.update(event.isPointerButtonPressed(agl::Button::Left));
 
 		milliDiff = getMillisecond() - start;
 	}

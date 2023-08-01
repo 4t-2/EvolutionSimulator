@@ -1,8 +1,8 @@
 #pragma once
 
+#include "macro.hpp"
 #include <AGL/agl.hpp>
 #include <IN/intnet.hpp>
-#include "macro.hpp"
 
 #include <type_traits>
 
@@ -39,8 +39,9 @@ class MenuShare
 		static agl::Texture	  *border;
 		static agl::Texture	  *blank;
 		static void			  *focusedMenu;
+		static bool *leftClick;
 
-		static void init(agl::Texture *blank, agl::Font *font, agl::Font *smallFont, agl::Event *event)
+		static void init(agl::Texture *blank, agl::Font *font, agl::Font *smallFont, agl::Event *event, bool *leftClick)
 		{
 			// left
 			// right
@@ -72,6 +73,7 @@ class MenuShare
 
 			MenuShare::blank = blank;
 			MenuShare::event = event;
+			MenuShare::leftClick = leftClick;
 		}
 
 		static void destroy()
@@ -505,14 +507,14 @@ template <ButtonType buttonType> class ButtonElement : public MenuElement
 		{
 			if constexpr (buttonType == ButtonType::Toggle)
 			{
-				if (event->pointerButton == 1 && this->pointInElement(event->getPointerWindowPosition()))
+				if (*leftClick && this->pointInElement(event->getPointerWindowPosition()))
 				{
 					state = !state;
 				}
 			}
 			else if constexpr (buttonType == ButtonType::Hold)
 			{
-				if (event->isPointerButtonPressed(Button1Mask) &&
+				if (event->isPointerButtonPressed(agl::Button::Left) &&
 					this->pointInElement(event->getPointerWindowPosition()))
 				{
 					state = true;
@@ -596,7 +598,7 @@ template <typename T> class FieldElement : public MenuElement
 
 			if (this->pointInElement(event->getPointerWindowPosition()))
 			{
-				if (event->pointerButton == 1)
+				if (*leftClick)
 				{
 					textFocus = !textFocus;
 
@@ -962,7 +964,7 @@ template <typename... ElementType> class Menu : public SimpleMenu
 
 			static agl::Vec<float, 2> offset;
 
-			if (event->isPointerButtonPressed(Button1Mask))
+			if (event->isPointerButtonPressed(agl::Button::Left))
 			{
 				if (pointInArea(event->getPointerWindowPosition(), position,
 								agl::Vec<int, 2>{size.x, 4 + (int)smallText->getHeight()}) &&
