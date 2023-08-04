@@ -31,15 +31,15 @@ inline bool pointInArea(agl::Vec<float, 2> point, agl::Vec<float, 2> position, a
 class MenuShare
 {
 	public:
-		static agl::Event	  *event;
-		static agl::Text	  *text;
-		static agl::Text	  *smallText;
-		static agl::Rectangle *rect;
-		static agl::Circle	  *circ;
-		static agl::Texture	  *border;
-		static agl::Texture	  *blank;
-		static void			  *focusedMenu;
-		static bool *leftClick;
+		static agl::Event		*event;
+		static agl::Text		*text;
+		static agl::Text		*smallText;
+		static agl::Rectangle	*rect;
+		static agl::Circle		*circ;
+		static agl::Texture		*border;
+		static agl::Texture		*blank;
+		static void				*focusedMenu;
+		static bool				*leftClick;
 
 		static void init(agl::Texture *blank, agl::Font *font, agl::Font *smallFont, agl::Event *event, bool *leftClick)
 		{
@@ -71,8 +71,8 @@ class MenuShare
 			circ = new agl::Circle(30);
 			circ->setTexture(blank);
 
-			MenuShare::blank = blank;
-			MenuShare::event = event;
+			MenuShare::blank	 = blank;
+			MenuShare::event	 = event;
 			MenuShare::leftClick = leftClick;
 		}
 
@@ -550,7 +550,17 @@ template <ButtonType buttonType> class ButtonElement : public MenuElement
 		}
 };
 
-template <typename T> class FieldElement : public MenuElement
+class FocusableElement
+{
+	public:
+		virtual void unFocus()
+		{
+
+		}
+		static FocusableElement *focusedField;
+};
+
+template <typename T> class FieldElement : public MenuElement, public FocusableElement
 {
 	public:
 		std::string label = "null";
@@ -581,6 +591,35 @@ template <typename T> class FieldElement : public MenuElement
 			labelBuffer = 80;
 		}
 
+		void unFocus() override
+		{
+			textFocus = false;
+
+			try
+			{
+				if constexpr (std::is_same_v<T, std::string>)
+				{
+					value = liveValue;
+				}
+				else if constexpr (std::is_same_v<T, int>)
+				{
+					value = std::stoi(liveValue);
+				}
+				else if constexpr (std::is_same_v<T, float>)
+				{
+					value = std::stof(liveValue);
+				}
+
+				valid = true;
+			}
+			catch (const std::invalid_argument &)
+			{
+				valid = false;
+			}
+
+			focusedField = nullptr;
+		}
+
 		void drawFunction(agl::RenderWindow &window) override
 		{
 			// bad fix, too lazy to add utf-8 fonts yet
@@ -602,46 +641,40 @@ template <typename T> class FieldElement : public MenuElement
 				{
 					textFocus = !textFocus;
 
-					if (!textFocus)
+					if (textFocus)
 					{
-						try
+						if (focusedField != nullptr)
 						{
-							if constexpr (std::is_same_v<T, std::string>)
-							{
-								value = liveValue;
-							}
-							else if constexpr (std::is_same_v<T, int>)
-							{
-								value = std::stoi(liveValue);
-							}
-							else if constexpr (std::is_same_v<T, float>)
-							{
-								value = std::stof(liveValue);
-							}
+							focusedField->unFocus();
+						}
 
-							valid = true;
-						}
-						catch (const std::invalid_argument &)
-						{
-							valid = false;
-						}
+						focusedField = this;
+					}
+					else
+					{
+						this->unFocus();
 					}
 				}
 
 				if (hovered) // holding
 				{
-					window.setCursorShape(XC_xterm);
+					window.setCursorShape(agl::CursorType::Beam);
 				}
 				else // first
 				{
-					window.setCursorShape(XC_xterm);
+					window.setCursorShape(agl::CursorType::Beam);
 					hovered = true;
 				}
 			}
 			else if (hovered) // last
 			{
-				window.setCursorShape(XC_left_ptr);
+				window.setCursorShape(agl::CursorType::Arrow);
 				hovered = false;
+			}
+
+			if (event->keybuffer.find('\r') != std::string::npos && textFocus)
+			{
+				this->unFocus();
 			}
 
 			if (textFocus && !utf8)
@@ -831,10 +864,10 @@ class NetworkGraph : public MenuElement
 class SimpleMenu : public agl::Drawable, public MenuShare
 {
 	public:
-		bool			 exists;
-		agl::Vec<int, 3> position;
-		agl::Vec<int, 2> size;
-		std::string		 title;
+		bool			 exists = false;
+		agl::Vec<int, 3> position = {0, 0};
+		agl::Vec<int, 2> size = {0, 0};
+		std::string		 title = "";
 
 		void open(agl::Vec<int, 2> position)
 		{

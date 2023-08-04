@@ -84,7 +84,7 @@ void printConnections(CreatureData creatureData)
 void loadRules(std::string path, SimulationRules *simulationRules)
 {
 	// read in order in .hpp
-	int			  bufLength = 12;
+	const int	  bufLength = 12;
 	std::string	  buffer[bufLength];
 	std::ifstream stream(path);
 
@@ -268,7 +268,7 @@ int main()
 	bool leftClick;
 	bool previousLeftClick;
 
-	Listener leftClickListener([&](){leftClick = true;}, [&](){leftClick = false;}, [&](){leftClick = false;});
+	Listener leftClickListener([&]() { leftClick = true; }, [&]() { leftClick = false; }, [&]() { leftClick = false; });
 
 	// menu shit
 
@@ -443,7 +443,7 @@ int main()
 			FieldElement<float> *foodVol;
 			FieldElement<float> *meatDen;
 			FieldElement<float> *leachVol;
-			FieldElement<float> *maxFood;
+			FieldElement<int>	*maxFood;
 			FieldElement<float> *damage;
 			FieldElement<float> *energyCostMultiplier;
 	} simRulesPointers;
@@ -578,45 +578,35 @@ int main()
 
 		event.poll();
 
-		if (event.isKeyPressed(agl::Key::M))
-		{
-			mHeld = true;
-		}
-		else if (mHeld)
-		{
-			mHeld = false;
-
-			CreatureData creatureData(1, 1, 1, 60, 15);
-
-			creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
-			creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
-			creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
-			creatureData.setConnection(3, CREATURE_ROTATION, LEFT_OUTPUT, 1);
-			creatureData.setConnection(4, CREATURE_ROTATION, RIGHT_OUTPUT, -1);
-			creatureData.setConnection(5, CONSTANT_INPUT, RIGHT_OUTPUT, -1);
-			creatureData.setConnection(6, CONSTANT_INPUT, LEFT_OUTPUT, -1);
-			creatureData.setConnection(7, CREATURE_PREFERENCE, RIGHT_OUTPUT, 1);
-			creatureData.setConnection(8, CREATURE_PREFERENCE, LEFT_OUTPUT, 1);
-
-			creatureData.preference = 0;
-			creatureData.metabolism = METABOLISM;
-
-			agl::Vec<float, 2> position;
-			position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
-			position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
-
-			simulation.addCreature(creatureData, position);
-		}
-
-		if (event.isKeyPressed(agl::Key::Return))
-		{
-			ReturnHeld = true;
-		}
-		else if (ReturnHeld)
-		{
-			ReturnHeld = false;
-			skipRender = !skipRender;
-		}
+		// if (event.isKeyPressed(agl::Key::M))
+		// {
+		// 	mHeld = true;
+		// }
+		// else if (mHeld)
+		// {
+		// 	mHeld = false;
+		//
+		// 	CreatureData creatureData(1, 1, 1, 60, 15);
+		//
+		// 	creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
+		// 	creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
+		// 	creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
+		// 	creatureData.setConnection(3, CREATURE_ROTATION, LEFT_OUTPUT, 1);
+		// 	creatureData.setConnection(4, CREATURE_ROTATION, RIGHT_OUTPUT, -1);
+		// 	creatureData.setConnection(5, CONSTANT_INPUT, RIGHT_OUTPUT, -1);
+		// 	creatureData.setConnection(6, CONSTANT_INPUT, LEFT_OUTPUT, -1);
+		// 	creatureData.setConnection(7, CREATURE_PREFERENCE, RIGHT_OUTPUT, 1);
+		// 	creatureData.setConnection(8, CREATURE_PREFERENCE, LEFT_OUTPUT, 1);
+		//
+		// 	creatureData.preference = 0;
+		// 	creatureData.metabolism = METABOLISM;
+		//
+		// 	agl::Vec<float, 2> position;
+		// 	position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
+		// 	position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
+		//
+		// 	simulation.addCreature(creatureData, position);
+		// }
 
 		if (!simMenuPointers.pause->state && simulation.active)
 		{
@@ -1032,14 +1022,14 @@ int main()
 			}
 			else // first click
 			{
-				window.setCursorShape(58);
+				window.setCursorShape(agl::CursorType::Arrow);
 				startPos = event.getPointerWindowPosition();
 				b1Held	 = true;
 			}
 		}
 		else if (b1Held) // let go
 		{
-			window.setCursorShape(XC_left_ptr);
+			window.setCursorShape(agl::CursorType::Arrow);
 			cameraOffset = {0, 0};
 			b1Held		 = false;
 		}
@@ -1097,7 +1087,10 @@ int main()
 		milliDiff = getMillisecond() - start;
 	}
 
-	simulation.destroy();
+	if (simulation.active)
+	{
+		simulation.destroy();
+	}
 
 	MenuShare::destroy();
 
