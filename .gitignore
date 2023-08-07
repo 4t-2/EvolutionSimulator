@@ -47,3 +47,6 @@ bin/plot/*
 bin/img/border.png.bak
 lib/PHY
 lib/IN
+simbeta6win32.zip
+.vs
+.vscode

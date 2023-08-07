@@ -3,7 +3,6 @@
 #include "../inc/MenuBar.hpp"
 #include "../inc/Simulation.hpp"
 
-#include <X11/X.h>
 #include <cctype>
 #include <chrono>
 #include <cstdio>
@@ -14,7 +13,6 @@
 #include <math.h>
 #include <string>
 #include <thread>
-#include <unistd.h>
 
 class Listener
 {

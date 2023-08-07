@@ -954,11 +954,11 @@ template <typename... ElementType> class Menu : public SimpleMenu
 		template <size_t i = 0>
 			typename std::enable_if < i<sizeof...(ElementType), void>::type pointerAssign(void *pointerStruct)
 		{
-			long  address = (long)(pointerStruct);
-			long  offset  = i * 8;
-			long *item	  = (long *)(address + offset);
+			int64_t  address = (int64_t)(pointerStruct);
+			int64_t  offset  = i * 8;
+			int64_t *item	  = (int64_t *)(address + offset);
 
-			*item = (long)&this->get<i>();
+			*item = (int64_t)&this->get<i>();
 
 			pointerAssign<i + 1>(pointerStruct);
 		}
@@ -1042,7 +1042,7 @@ template <typename... ElementType> class Menu : public SimpleMenu
 			{
 				OuterArea outerArea;
 				outerArea.position = position;
-				outerArea.size	   = {size.x, (float)smallText->getHeight() + 6};
+				outerArea.size	   = {(float)size.x, (float)smallText->getHeight() + 6};
 
 				window.draw(outerArea);
 			}
