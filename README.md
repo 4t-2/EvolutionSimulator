@@ -1,4 +1,4 @@
-# EvolutionSimulator 1.1
+# EvolutionSimulator 1.1.1
 
 ## What is this
 This project was inspired by [Bibits](https://www.youtube.com/@TheBibitesDigitalLife) and [this video](https://www.youtube.com/watch?v=N3tRFayqVtk). It creates some creatures with simulated brains (with a NEAT like neural network) that live and die with the successfull ones (living long enough to reproduce) being able to pass down their genetic information to the next generation and so on.
@@ -21,18 +21,15 @@ cmake --build build
 ## Roadmap
 1.0 - Basics, Initial release
 1.1 - Predation, digestion and tweaks
+1.1.1 - Windows port, UI overhaul
 
 *FUTURE*
 
-1.1.1 - Windows port
-1.1.2 - More creature traits, balancing, and optimization
-1.2 - AI Overhaul
+1.2 - AI Overhaul, balancing, more traits
 
 ## TODO
 - Add a tree diagram of how the creatures evolved
 - Evolving plants (probably make plants evolve into creatures)
 - Evolving bodies (not just size, speed, etc but actual limbs and shape)
-- Windows port
 - Saving and loading
-- Better UI
 - Better AI?
