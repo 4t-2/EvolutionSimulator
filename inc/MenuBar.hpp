@@ -5,41 +5,42 @@
 class MenuBar : public agl::Drawable, public MenuShare
 {
 	private:
-		template<int i, typename T>
-		void assign(T menu)
+		template <int i, typename T> void assign(T menu)
 		{
 			this->menu[i] = menu;
 		}
 
-		template<int i, typename T, typename...Ts>
-		void assign(T menu, Ts... menus)
+		template <int i, typename T, typename... Ts> void assign(T menu, Ts... menus)
 		{
 			this->menu[i] = menu;
 
-			assign<i+1>(menus...);
+			assign<i + 1>(menus...);
 		}
 
 	public:
-		int				 length;
+		int			 length;
 		SimpleMenu **menu;
+		bool		 exists = true;
 
-		
-
-		template<typename...Ts>
-		MenuBar(Ts...menus)
+		template <typename... Ts> MenuBar(Ts... menus)
 		{
 			length = sizeof...(menus);
 
-			this->menu = new SimpleMenu*[length];
+			this->menu = new SimpleMenu *[length];
 
 			assign<0>(menus...);
 		}
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
+			if (!exists)
+			{
+				return;
+			}
+
 			// draw child menus
 
-			for(int i = 0; i < length; i++)
+			for (int i = 0; i < length; i++)
 			{
 				window.draw(*menu[i]);
 			}

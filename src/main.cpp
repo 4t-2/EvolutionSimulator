@@ -843,6 +843,11 @@ int main()
 			food			  = simulation.foodBuffer;
 		}
 
+		if(event.keybuffer.find('h') != std::string::npos && FocusableElement::focusedField == nullptr)
+		{
+			menuBar.exists = !menuBar.exists;
+		}
+
 		if (!simulation.active)
 		{
 			goto deadSim;

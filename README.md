@@ -19,13 +19,13 @@ cmake --build build
 ```
 
 ## Roadmap
-1.0 - Basics, Initial release
-1.1 - Predation, digestion and tweaks
-1.1.1 - Windows port, UI overhaul
+1.0 - Basics, Initial release <br>
+1.1 - Predation, digestion and tweaks <br>
+1.1.1 - Windows port, UI overhaul <br>
 
-*FUTURE*
+*FUTURE* <br>
 
-1.2 - AI Overhaul, balancing, more traits
+1.2 - AI Overhaul, balancing, more traits <br>
 
 ## TODO
 - Add a tree diagram of how the creatures evolved
