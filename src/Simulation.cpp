@@ -56,8 +56,8 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 		creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
 		creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
 		creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
-		creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, 1);
-		creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -1);
+		creatureData.setConnection(3, FOOD_ROTATION, LEFT_OUTPUT, .1);
+		creatureData.setConnection(4, FOOD_ROTATION, RIGHT_OUTPUT, -.1);
 
 		creatureData.preference = 1;
 		creatureData.metabolism = METABOLISM;
@@ -137,9 +137,10 @@ void Simulation::mutateBuffer(Buffer *buffer, int chance)
 	return;
 }
 
-void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> position)
+Creature *Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> position)
 {
-	bool alreadyExists;
+	Creature *creature = nullptr;
+	bool	  alreadyExists;
 
 	for (int i = 0; i < simulationRules.maxCreatures; i++)
 	{
@@ -161,9 +162,13 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 			creatureBuffer[i].position = position;
 			creatureBuffer[i].rotation = ((float)rand() / (float)RAND_MAX) * PI * 2;
 
+			creature = &creatureBuffer[i];
+
 			break;
 		}
 	}
+
+	return creature;
 }
 
 void Simulation::removeCreature(Creature *creature)
@@ -347,7 +352,8 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	// creatureData->sight		 = mutShift(creatureData->sight, .5, 4);
 	// creatureData->speed		 = mutShift(creatureData->speed, .5, 4);
 	// creatureData->size		 = mutShift(creatureData->size, .5, 4);
-	// creatureData->hue		 = mutShift(creatureData->hue / 60., 0, 359. / 60)
+	// creatureData->hue		 = mutShift(creatureData->hue / 60., 0, 359. /
+	// 60)
 	// * 60; creatureData->preference = mutShift(creatureData->preference, 0, 1);
 	// creatureData->metabolism = mutShift(creatureData->metabolism, 0, 2);
 
@@ -367,6 +373,8 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	creatureData->hue		 = (buf.data[3] * 359.) / 255.;
 	creatureData->preference = (buf.data[4] / 255.);
 	creatureData->metabolism = ((buf.data[5] * 2.) / 255.);
+
+	return;
 
 	for (int i = 0; i < networkCycles; i++)
 	{
@@ -846,6 +854,8 @@ void Simulation::updateSimulation()
 
 						food->exists = false;
 						this->removeFood(food);
+
+						creature->storedReward += 1;
 					}
 				});
 
@@ -876,6 +886,8 @@ void Simulation::updateSimulation()
 
 						meat->exists = false;
 						this->removeMeat(meat);
+
+						creature->storedReward += 1;
 					}
 				});
 
@@ -908,6 +920,8 @@ void Simulation::updateSimulation()
 							creature->biomass += leachVol;
 
 							eatenCreature->health -= damage;
+
+							creature->storedReward += 1;
 						}
 					}
 				});

@@ -57,8 +57,8 @@ class Simulation
 		static CreatureData bufferToCreatureData(Buffer buffer);
 		static void			mutateBuffer(Buffer *buffer, int chance);
 
-		void addCreature(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void removeCreature(Creature *creature);
+		Creature *addCreature(CreatureData &creatureData, agl::Vec<float, 2> position);
+		void	  removeCreature(Creature *creature);
 
 		void addEgg(CreatureData &creatureData, agl::Vec<float, 2> position);
 		void removeEgg(Egg *egg);

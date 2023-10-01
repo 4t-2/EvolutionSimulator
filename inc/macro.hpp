@@ -23,6 +23,8 @@
 // food experiences a pushback force at the border of the simulation
 #define FOODBORDER
 
+#define QTIMEDIFF 60
+
 #define THREADS	  2
 #define EATRADIUS 5
 #define DAMAGE	  4
