@@ -84,3 +84,11 @@ void CreatureData::setConnection(int index, int startNode, int endNode, float we
 
 	return;
 }
+
+void CreatureData::setNetwork(in::NetworkStructure &structure)
+{
+	for(int i = 0; i < totalConnections; i++)
+	{
+		connection[i] = structure.connection[i];
+	}
+}

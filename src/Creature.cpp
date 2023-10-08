@@ -85,6 +85,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	network = new in::NeuralNetwork(structure);
 
 	network->setActivation(in::tanh);
+	network->learningRate = .1;
 }
 
 void Creature::clear()
@@ -125,6 +126,60 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 
 void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat *> *meatGrid)
 {
+	if ((maxLife - life) % 240 == 0 && maxLife != life)
+	{
+		Debug::log.emplace_back("update " + std::to_string((int64_t)this));
+
+		float loss = 0;
+
+		for (int x = 240 - 1; x >= 0; x--)
+		{
+			for (int y = 1; (x + y) < 240; y++)
+			{
+				memory[x].reward += memory[x + y].reward * std::pow(.9, y);
+			}
+
+			loss += memory[x].reward;
+		}
+
+		loss /= 240;
+
+		int oldLoss = loss;
+		loss -= baseline;
+
+		baseline = oldLoss;
+
+		std::vector<float> gradients;
+
+		network->setupGradients(&gradients);
+
+		for (int i = 0; i < 240; i++)
+		{
+			for (int x = 0; x < TOTAL_INPUT; x++)
+			{
+				network->setInputNode(x, memory[i].state[x]);
+			}
+
+			network->update();
+
+			std::vector<float> target(TOTAL_OUTPUT);
+
+			for (int x = 0; x < TOTAL_OUTPUT; x++)
+			{
+				target[x] = memory[i].action[x];
+			}
+
+			network->calcGradients(&gradients, target);
+		}
+
+		network->applyGradients(gradients, loss, 240);
+
+		for (int i = 0; i < TOTAL_OUTPUT; i++)
+		{
+			shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * .5;
+		}
+	}
+
 	network->setInputNode(CONSTANT_INPUT, 1);
 
 	network->setInputNode(X_INPUT, ((position.x / simulationRules->size.x) * 2) - 1);
@@ -282,6 +337,22 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 
 void Creature::updateActions()
 {
+	int memSlot = (maxLife - life) % 240;
+
+	for (int i = 0; i < TOTAL_INPUT; i++)
+	{
+		memory[memSlot].state[i] = network->inputNode[i]->value;
+	}
+
+	for (int i = 0; i < TOTAL_OUTPUT; i++)
+	{
+
+		network->outputNode[i].value += shift[i];
+		network->outputNode[i].value = std::clamp<float>(network->outputNode[i].value, -1, 1);
+
+		memory[memSlot].action[i] = network->outputNode[i].value;
+	}
+
 	float moveForce = 0;
 
 	if (network->getNode(FOWARD_OUTPUT).value > 0)

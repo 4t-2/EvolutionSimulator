@@ -26,4 +26,5 @@ class CreatureData
 		void operator=(CreatureData &creatureData);
 
 		void setConnection(int index, int start, int end, float weight);
+		void setNetwork(in::NetworkStructure &structure);
 };
