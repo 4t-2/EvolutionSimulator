@@ -47,7 +47,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	existingMeat = new List<Meat *>(MAXMEAT);
 	meatGrid	 = new Grid<Meat *>(simulationRules.gridResolution, MAXMEAT);
 
-	in::NetworkStructure basicStructure(TOTAL_INPUT, {}, TOTAL_OUTPUT, false);
+	in::NetworkStructure basicStructure(TOTAL_INPUT, {TOTAL_HIDDEN}, TOTAL_OUTPUT, false);
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{

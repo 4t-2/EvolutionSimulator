@@ -173,11 +173,6 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 		}
 
 		network->applyGradients(gradients, loss, 240);
-
-		for (int i = 0; i < TOTAL_OUTPUT; i++)
-		{
-			shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * .5;
-		}
 	}
 
 	network->setInputNode(CONSTANT_INPUT, 1);
@@ -338,6 +333,14 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 void Creature::updateActions()
 {
 	int memSlot = (maxLife - life) % 240;
+
+	if (memSlot == 0)
+	{
+		for (int i = 0; i < TOTAL_OUTPUT; i++)
+		{
+			shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * .5;
+		}
+	}
 
 	for (int i = 0; i < TOTAL_INPUT; i++)
 	{
