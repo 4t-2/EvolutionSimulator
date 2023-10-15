@@ -47,11 +47,14 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	existingMeat = new List<Meat *>(MAXMEAT);
 	meatGrid	 = new Grid<Meat *>(simulationRules.gridResolution, MAXMEAT);
 
-	in::NetworkStructure basicStructure(TOTAL_INPUT, {TOTAL_HIDDEN}, TOTAL_OUTPUT, false);
+	in::NetworkStructure basicStructure(TOTAL_INPUT, {}, TOTAL_OUTPUT, false);
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
 		CreatureData creatureData(1, .5, 1, 0, basicStructure.totalConnections);
+
+		creatureData.usePG	 = true;
+		creatureData.useNEAT = false;
 
 		in::NetworkStructure::randomWeights(basicStructure);
 
@@ -367,7 +370,10 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	creatureData->preference = (buf.data[4] / 255.);
 	creatureData->metabolism = ((buf.data[5] * 2.) / 255.);
 
-	return;
+	if (!creatureData->useNEAT)
+	{
+		return;
+	}
 
 	for (int i = 0; i < networkCycles; i++)
 	{

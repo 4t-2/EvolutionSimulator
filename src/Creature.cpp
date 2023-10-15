@@ -126,7 +126,7 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 
 void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat *> *meatGrid)
 {
-	if ((maxLife - life) % 240 == 0 && maxLife != life)
+	if ((maxLife - life) % 240 == 0 && maxLife != life && creatureData.usePG)
 	{
 		Debug::log.emplace_back("update " + std::to_string((int64_t)this));
 
@@ -332,28 +332,31 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 
 void Creature::updateActions()
 {
-	int memSlot = (maxLife - life) % 240;
-
-	if (memSlot == 0)
+	if (creatureData.usePG)
 	{
+		int memSlot = (maxLife - life) % 240;
+
+		if (memSlot == 0)
+		{
+			for (int i = 0; i < TOTAL_OUTPUT; i++)
+			{
+				shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * .5;
+			}
+		}
+
+		for (int i = 0; i < TOTAL_INPUT; i++)
+		{
+			memory[memSlot].state[i] = network->inputNode[i]->value;
+		}
+
 		for (int i = 0; i < TOTAL_OUTPUT; i++)
 		{
-			shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * .5;
+
+			network->outputNode[i].value += shift[i];
+			network->outputNode[i].value = std::clamp<float>(network->outputNode[i].value, -1, 1);
+
+			memory[memSlot].action[i] = network->outputNode[i].value;
 		}
-	}
-
-	for (int i = 0; i < TOTAL_INPUT; i++)
-	{
-		memory[memSlot].state[i] = network->inputNode[i]->value;
-	}
-
-	for (int i = 0; i < TOTAL_OUTPUT; i++)
-	{
-
-		network->outputNode[i].value += shift[i];
-		network->outputNode[i].value = std::clamp<float>(network->outputNode[i].value, -1, 1);
-
-		memory[memSlot].action[i] = network->outputNode[i].value;
 	}
 
 	float moveForce = 0;

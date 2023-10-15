@@ -18,6 +18,9 @@ class CreatureData
 		float preference; // 1 = plant, -1 = meat
 		float metabolism;
 
+		bool useNEAT;
+		bool usePG;
+
 		CreatureData();
 		CreatureData(float sight, float speed, float size, int hue, int totalConnections);
 		CreatureData(const CreatureData &creatureData);
