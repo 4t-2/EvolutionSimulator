@@ -92,21 +92,20 @@ void Creature::clear()
 	network->destroy();
 	delete network;
 
-	existing	 = false;
-	position	 = {0, 0};
-	velocity	 = {0, 0};
-	force		 = {0, 0};
-	rotation	 = 0;
-	radius		 = 0;
-	network		 = nullptr;
-	eating		 = false;
-	layingEgg	 = false;
-	sight		 = 0;
-	speed		 = 0;
-	size		 = 0;
-	energy		 = 0;
-	health		 = 0;
-	storedReward = 0;
+	existing  = false;
+	position  = {0, 0};
+	velocity  = {0, 0};
+	force	  = {0, 0};
+	rotation  = 0;
+	radius	  = 0;
+	network	  = nullptr;
+	eating	  = false;
+	layingEgg = false;
+	sight	  = 0;
+	speed	  = 0;
+	size	  = 0;
+	energy	  = 0;
+	health	  = 0;
 
 	return;
 }
@@ -126,19 +125,6 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 
 void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat *> *meatGrid)
 {
-	if (storedReward > 0)
-	{
-		std::vector<float> target;
-		target.resize(network->structure.totalOutputNodes);
-
-		for (int i = 0; i < network->structure.totalOutputNodes; i++)
-		{
-			target[i] = network->outputNode[i].value;
-		}
-
-		network->backpropagation(target);
-	}
-
 	network->setInputNode(CONSTANT_INPUT, 1);
 
 	network->setInputNode(X_INPUT, ((position.x / simulationRules->size.x) * 2) - 1);
@@ -290,20 +276,6 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 	network->setInputNode(LIFE_INPUT, (float)life / maxLife);
 
 	network->update();
-
-	for (int i = 0; i < network->structure.totalOutputNodes; i++)
-	{
-		float ran = rand() / (float)RAND_MAX;
-
-		if (network->outputNode[i].value > ran)
-		{
-			network->outputNode[i].value = 1;
-		}
-		else
-		{
-			network->outputNode[i].value = 0;
-		}
-	}
 
 	return;
 }

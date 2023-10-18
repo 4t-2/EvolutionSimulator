@@ -1,21 +1,19 @@
 #pragma once
 
+#include <AGL/agl.hpp>
 #include "CreatureData.hpp"
 #include "Food.hpp"
 #include "Grid.hpp"
 #include "Meat.hpp"
 #include "SimulationRules.hpp"
-#include "macro.hpp"
 #include "other.hpp"
-#include <AGL/agl.hpp>
+#include "macro.hpp"
 
-#define sizeToHealth(size) 100 * size *size *size
+#define sizeToHealth(size) 100*size*size*size
 
 class Creature : public phy::Circle
 {
 	public:
-		float storedReward = 0;
-
 		float rotation = 0;
 
 		agl::Vec<int, 2> gridPosition = {0, 0};
@@ -26,7 +24,7 @@ class Creature : public phy::Circle
 		bool layingEgg = false;
 
 		bool incubating = 0;
-
+		
 		float sight = 0;
 		float speed = 0;
 		float size	= 0;
@@ -43,10 +41,10 @@ class Creature : public phy::Circle
 		float biomass		= 0;
 		float energyDensity = 0;
 
-		float eggTotalCost	= 0;
+		float eggTotalCost	  = 0;
 		float eggHealthCost = 0;
 		float eggEnergyCost = 0;
-		float eggDesposit	= 0;
+		float eggDesposit = 0;
 
 		float &preference = creatureData.preference; // plant = 1
 													 // meat  = 0
