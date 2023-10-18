@@ -27,6 +27,9 @@
 #define EATRADIUS 5
 #define DAMAGE	  4
 
+#define MEMLENGTH 240
+#define DEVIATION .5
+
 #define FOODVOL	 40
 #define MEATVOL	 60
 #define LEACHVOL 1
@@ -41,7 +44,7 @@
 
 #define TOTAL_INPUT	 15
 #define TOTAL_OUTPUT 5
-#define TOTAL_HIDDEN 4
+#define TOTAL_HIDDEN 0
 #define TOTAL_NODES	 (TOTAL_INPUT + TOTAL_OUTPUT + TOTAL_HIDDEN)
 
 #define CONSTANT_INPUT		0

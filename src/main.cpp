@@ -799,6 +799,21 @@ int main()
 			}
 		}
 
+		for (std::string msgLog : Debug::log)
+		{
+			debugLog.get<0>().str = debugLog.get<1>().str;
+			debugLog.get<1>().str = debugLog.get<2>().str;
+			debugLog.get<2>().str = debugLog.get<3>().str;
+			debugLog.get<3>().str = debugLog.get<4>().str;
+			debugLog.get<4>().str = debugLog.get<5>().str;
+			debugLog.get<5>().str = debugLog.get<6>().str;
+			debugLog.get<6>().str = debugLog.get<7>().str;
+
+			debugLog.get<7>().str = msgLog;
+		}
+
+		Debug::log.clear();
+
 		window.draw(menuBar);
 
 		window.display();
@@ -843,7 +858,7 @@ int main()
 			food			  = simulation.foodBuffer;
 		}
 
-		if(event.keybuffer.find('h') != std::string::npos && FocusableElement::focusedField == nullptr)
+		if (event.keybuffer.find('h') != std::string::npos && FocusableElement::focusedField == nullptr)
 		{
 			menuBar.exists = !menuBar.exists;
 		}

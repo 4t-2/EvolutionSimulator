@@ -14,7 +14,7 @@ CreatureData::CreatureData(float sight, float speed, float size, int hue, int to
 	this->size			   = size;
 	this->totalConnections = totalConnections;
 	this->hue			   = hue;
-	this->startEnergy		   = 25 * size * size * size;
+	this->startEnergy	   = 25 * size * size * size;
 
 	connection = new in::Connection[totalConnections];
 
@@ -38,19 +38,21 @@ CreatureData::CreatureData(const CreatureData &creatureData)
 		connection[i] = creatureData.connection[i];
 	}
 
-	sight = creatureData.sight;
-	speed = creatureData.speed;
-	size  = creatureData.size;
-	hue	  = creatureData.hue;
+	sight		= creatureData.sight;
+	speed		= creatureData.speed;
+	size		= creatureData.size;
+	hue			= creatureData.hue;
 	startEnergy = creatureData.startEnergy;
-	preference = creatureData.preference;
-	metabolism = creatureData.metabolism;
+	preference	= creatureData.preference;
+	metabolism	= creatureData.metabolism;
+	useNEAT		= creatureData.useNEAT;
+	usePG		= creatureData.usePG;
 }
 
 void CreatureData::operator=(CreatureData &creatureData)
 {
 	totalConnections = creatureData.totalConnections;
-	
+
 	delete[] connection;
 	connection = new in::Connection[totalConnections];
 
@@ -59,13 +61,15 @@ void CreatureData::operator=(CreatureData &creatureData)
 		connection[i] = creatureData.connection[i];
 	}
 
-	sight = creatureData.sight;
-	speed = creatureData.speed;
-	size  = creatureData.size;
-	hue	  = creatureData.hue;
+	sight		= creatureData.sight;
+	speed		= creatureData.speed;
+	size		= creatureData.size;
+	hue			= creatureData.hue;
 	startEnergy = creatureData.startEnergy;
-	preference = creatureData.preference;
-	metabolism = creatureData.metabolism;
+	preference	= creatureData.preference;
+	metabolism	= creatureData.metabolism;
+	useNEAT		= creatureData.useNEAT;
+	usePG		= creatureData.usePG;
 }
 
 CreatureData::~CreatureData()
@@ -83,4 +87,12 @@ void CreatureData::setConnection(int index, int startNode, int endNode, float we
 	connection[index].exists	= true;
 
 	return;
+}
+
+void CreatureData::setNetwork(in::NetworkStructure &structure)
+{
+	for (int i = 0; i < totalConnections; i++)
+	{
+		connection[i] = structure.connection[i];
+	}
 }

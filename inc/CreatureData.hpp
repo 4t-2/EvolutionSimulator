@@ -18,6 +18,9 @@ class CreatureData
 		float preference; // 1 = plant, -1 = meat
 		float metabolism;
 
+		bool useNEAT;
+		bool usePG;
+
 		CreatureData();
 		CreatureData(float sight, float speed, float size, int hue, int totalConnections);
 		CreatureData(const CreatureData &creatureData);
@@ -26,4 +29,5 @@ class CreatureData
 		void operator=(CreatureData &creatureData);
 
 		void setConnection(int index, int start, int end, float weight);
+		void setNetwork(in::NetworkStructure &structure);
 };

@@ -1,6 +1,8 @@
 #include "../inc/other.hpp"
 #include <math.h>
 
+std::vector<std::string> Debug::log;
+
 float loop(float min, float max, float value)
 {
 	return value - (max + abs(min)) * int(value / max);

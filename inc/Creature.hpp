@@ -11,6 +11,13 @@
 
 #define sizeToHealth(size) 100*size*size*size
 
+struct Memory
+{
+	float state[TOTAL_INPUT];
+	float action[TOTAL_OUTPUT];
+	float reward;
+};
+
 class Creature : public phy::Circle
 {
 	public:
@@ -66,6 +73,11 @@ class Creature : public phy::Circle
 
 		agl::Vec<int, 2> startGridOffset;
 		agl::Vec<int, 2> endGridOffset;
+
+		Memory memory[240];
+		float baseline = 0;
+		float reward = 0;
+		float shift[TOTAL_OUTPUT];
 
 		Creature();
 		~Creature();
