@@ -128,8 +128,6 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 {
 	if ((maxLife - life) % 240 == 0 && maxLife != life && creatureData.usePG)
 	{
-		Debug::log.emplace_back("update " + std::to_string((int64_t)this));
-
 		float loss = 0;
 
 		for (int x = 240 - 1; x >= 0; x--)
@@ -277,6 +275,11 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 			return;
 		}
 
+		if (std::isnan(distance))
+		{
+			return;
+		}
+
 		creatureRotation = vectorAngle(offset) + rotation;
 		creatureDistance = distance;
 
@@ -291,6 +294,11 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 		float			   distance = offset.length();
 
 		if (distance > foodDistance)
+		{
+			return;
+		}
+
+		if (std::isnan(distance))
 		{
 			return;
 		}
@@ -310,6 +318,11 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 		float			   distance = offset.length();
 
 		if (distance > meatDistance)
+		{
+			return;
+		}
+
+		if (std::isnan(distance))
 		{
 			return;
 		}
@@ -400,10 +413,11 @@ void Creature::updateActions()
 	{
 		biomass -= metabolism;
 		energy += energyDensity * metabolism;
-	}
-	else
-	{
-		biomass = 0;
+
+		if (biomass < 0)
+		{
+			biomass = 0;
+		}
 	}
 
 	// energy loss

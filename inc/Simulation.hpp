@@ -27,10 +27,9 @@ class Simulation
 		List<Food *> *existingFood;
 		Grid<Food *> *foodGrid;
 
-		// std::vector<int>   creaturePopData;
-		// std::vector<float> creatureSightData;
-		// std::vector<float> creatureSpeedData;
-		// std::vector<float> creatureSizeData;
+		std::vector<int>   totalNEAT;
+		std::vector<int> totalRL;
+		std::vector<int> totalBOTH;
 
 		Meat		 *meatBuffer;
 		List<Meat *> *existingMeat;

@@ -747,10 +747,9 @@ int main()
 
 			if (event.isKeyPressed(agl::Key::Z))
 			{
-				agl::Vec<float, 3> blue =
-					agl::Vec<float, 3>{0, 0, 255} * existingCreatures->get(i)->creatureData.preference;
+				agl::Vec<float, 3> blue = agl::Vec<float, 3>{0, 0, 255} * existingCreatures->get(i)->creatureData.usePG;
 				agl::Vec<float, 3> yellow =
-					agl::Vec<float, 3>{255, 255, 0} * (1 - existingCreatures->get(i)->creatureData.preference);
+					agl::Vec<float, 3>{255, 255, 0} * existingCreatures->get(i)->creatureData.useNEAT;
 
 				creatureShape.setColor({(unsigned char)(blue.x + yellow.x), (unsigned char)(blue.y + yellow.y),
 										(unsigned char)(blue.z + yellow.z)});

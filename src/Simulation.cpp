@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <random>
 #include <thread>
 #include <type_traits>
 
@@ -53,11 +54,23 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	{
 		CreatureData creatureData(1, .5, 1, 0, basicStructure.totalConnections);
 
-		creatureData.usePG	 = true;
-		creatureData.useNEAT = false;
+		switch (i % 3)
+		{
+			case 0:
+				creatureData.useNEAT = true;
+				creatureData.usePG	 = false;
+				break;
+			case 1:
+				creatureData.useNEAT = false;
+				creatureData.usePG	 = true;
+				break;
+			case 2:
+				creatureData.useNEAT = true;
+				creatureData.usePG	 = true;
+				break;
+		}
 
 		in::NetworkStructure::randomWeights(basicStructure);
-
 		creatureData.setNetwork(basicStructure);
 
 		creatureData.preference = 1;
@@ -103,23 +116,24 @@ void Simulation::destroy()
 
 #ifdef LOGCREATUREDATA
 
-	std::fstream cpd("./plot/cpd.txt", std::ios::out);
-	std::fstream csigd("./plot/csigd.txt", std::ios::out);
-	std::fstream csped("./plot/csped.txt", std::ios::out);
-	std::fstream csizd("./plot/csizd.txt", std::ios::out);
+	std::fstream neat("./plot/neat.txt", std::ios::out);
+	std::fstream rl("./plot/rl.txt", std::ios::out);
+	std::fstream both("./plot/both.txt", std::ios::out);
 
-	for (int x = 0; x < creaturePopData.size(); x++)
+	for (int x = 0; x < totalNEAT.size(); x++)
 	{
-		cpd << x << " " << creaturePopData[x] << "\n";
-		csigd << x << " " << creatureSightData[x] << "\n";
-		csped << x << " " << creatureSpeedData[x] << "\n";
-		csizd << x << " " << creatureSizeData[x] << "\n";
+		neat << totalNEAT[x] << "\n";
+		rl << totalRL[x] << "\n";
+		both << totalBOTH[x] << "\n";
 	}
 
-	cpd.close();
-	csigd.close();
-	csped.close();
-	csizd.close();
+	neat.close();
+	rl.close();
+	both.close();
+
+	totalNEAT.clear();
+	totalRL.clear();
+	totalBOTH.clear();
 
 #endif
 }
@@ -522,7 +536,14 @@ template <typename T, typename U> void correctPosition(T &circle, U &otherCircle
 		}
 
 		agl::Vec<float, 2> offsetNormal = circleOffset.normalized();
-		agl::Vec<float, 2> pushback		= offsetNormal * circleOverlap;
+
+		if (std::isnan(offsetNormal.x))
+		{
+			offsetNormal.x = 1;
+			offsetNormal.y = 0;
+		}
+
+		agl::Vec<float, 2> pushback = offsetNormal * circleOverlap;
 
 		float actingMass = circle.mass > otherCircle.mass ? otherCircle.mass : circle.mass;
 
@@ -677,6 +698,12 @@ void Simulation::updateSimulation()
 		creature->updateActions();
 
 		creature->gridPosition = foodGrid->toGridPosition(creature->position, simulationRules.size);
+
+		// if (std::isnan(creature->position.x))
+		// {
+		// 	existingCreatures->pop(i);
+		// 	i--;
+		// }
 
 		creatureGrid->addData(creature->gridPosition, creature);
 	}
@@ -1030,21 +1057,30 @@ void Simulation::update()
 	frame++;
 
 #ifdef LOGCREATUREDATA
-	creaturePopData.emplace_back(existingCreatures->length);
-
-	float totSight = 0;
-	float totSpeed = 0;
-	float totSize  = 0;
+	int neat = 0;
+	int rl	 = 0;
+	int both = 0;
 
 	for (int i = 0; i < existingCreatures->length; i++)
 	{
-		totSight += existingCreatures->get(i)->sight;
-		totSpeed += existingCreatures->get(i)->speed;
-		totSize += existingCreatures->get(i)->size;
+		CreatureData *data = &existingCreatures->get(i)->creatureData;
+
+		if (data->useNEAT && !data->usePG)
+		{
+			neat++;
+		}
+		else if (!data->useNEAT && data->usePG)
+		{
+			rl++;
+		}
+		else if (data->useNEAT && data->usePG)
+		{
+			both++;
+		}
 	}
 
-	creatureSightData.emplace_back(totSight / existingCreatures->length);
-	creatureSpeedData.emplace_back(totSpeed / existingCreatures->length);
-	creatureSizeData.emplace_back(totSize / existingCreatures->length);
+	totalNEAT.emplace_back(neat);
+	totalRL.emplace_back(rl);
+	totalBOTH.emplace_back(both);
 #endif
 }
