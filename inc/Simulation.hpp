@@ -8,6 +8,7 @@
 #include "Meat.hpp"
 #include "SimulationRules.hpp"
 #include "macro.hpp"
+#include <list>
 
 class Simulation
 {
@@ -16,24 +17,18 @@ class Simulation
 
 		bool active;
 
-		Creature		 *creatureBuffer;
-		List<Creature *> *existingCreatures;
+		std::list<Creature> existingCreatures;
+		std::list<Egg>		existingEggs;
+		std::list<Food>		existingFood;
+		std::list<Meat>		existingMeat;
+
 		Grid<Creature *> *creatureGrid;
+		Grid<Food *>	 *foodGrid;
+		Grid<Meat *>	 *meatGrid;
 
-		Egg			*eggBuffer;
-		List<Egg *> *existingEggs;
-
-		Food		 *foodBuffer;
-		List<Food *> *existingFood;
-		Grid<Food *> *foodGrid;
-
-		std::vector<int>   totalNEAT;
+		std::vector<int> totalNEAT;
 		std::vector<int> totalRL;
 		std::vector<int> totalBOTH;
-
-		Meat		 *meatBuffer;
-		List<Meat *> *existingMeat;
-		Grid<Meat *> *meatGrid;
 
 		int frame = 0;
 

@@ -32,20 +32,8 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	srand(seed);
 
-	creatureBuffer	  = new Creature[simulationRules.maxCreatures];
-	existingCreatures = new List<Creature *>(simulationRules.maxCreatures);
-
-	eggBuffer	 = new Egg[simulationRules.maxEggs];
-	existingEggs = new List<Egg *>(simulationRules.maxEggs);
-
-	foodBuffer	 = new Food[simulationRules.maxFood];
-	existingFood = new List<Food *>(simulationRules.maxFood);
-
 	foodGrid	 = new Grid<Food *>(simulationRules.gridResolution, simulationRules.maxFood);
 	creatureGrid = new Grid<Creature *>(simulationRules.gridResolution, simulationRules.maxCreatures);
-
-	meatBuffer	 = new Meat[MAXMEAT];
-	existingMeat = new List<Meat *>(MAXMEAT);
 	meatGrid	 = new Grid<Meat *>(simulationRules.gridResolution, MAXMEAT);
 
 	in::NetworkStructure basicStructure(TOTAL_INPUT, {}, TOTAL_OUTPUT, false);
@@ -54,7 +42,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	{
 		CreatureData creatureData(1, .5, 1, 0, basicStructure.totalConnections);
 
-		switch (i % 3)
+		switch (i % 2)
 		{
 			case 0:
 				creatureData.useNEAT = true;
@@ -85,8 +73,6 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	for (int i = 0; i < simulationRules.maxFood; i++)
 	{
-		foodBuffer[i].id = i;
-
 		this->addFood({(float)rand() / (float)RAND_MAX * simulationRules.size.x,
 					   (float)rand() / (float)RAND_MAX * simulationRules.size.y});
 	}
@@ -100,19 +86,13 @@ void Simulation::destroy()
 {
 	active = false;
 
+	existingCreatures.clear();
+	existingFood.clear();
+	existingEggs.clear();
+	existingMeat.clear();
 	delete foodGrid;
 	delete creatureGrid;
 	delete meatGrid;
-
-	delete existingCreatures;
-	delete existingEggs;
-	delete existingFood;
-	delete existingMeat;
-
-	delete[] creatureBuffer;
-	delete[] eggBuffer;
-	delete[] foodBuffer;
-	delete[] meatBuffer;
 
 #ifdef LOGCREATUREDATA
 
@@ -154,85 +134,44 @@ void Simulation::mutateBuffer(Buffer *buffer, int chance)
 
 void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> position)
 {
-	bool alreadyExists;
-
-	for (int i = 0; i < simulationRules.maxCreatures; i++)
-	{
-		alreadyExists = false;
-
-		for (int x = 0; x < existingCreatures->length; x++)
-		{
-			if (&creatureBuffer[i] == existingCreatures->get(x))
-			{
-				alreadyExists = true;
-				break;
-			}
-		}
-
-		if (!alreadyExists)
-		{
-			existingCreatures->add(&creatureBuffer[i]);
-			creatureBuffer[i].setup(creatureData, &simulationRules);
-			creatureBuffer[i].position = position;
-			creatureBuffer[i].rotation = ((float)rand() / (float)RAND_MAX) * PI * 2;
-
-			break;
-		}
-	}
+	existingCreatures.emplace_back();
+	Creature &newCreature = existingCreatures.back();
+	newCreature.setup(creatureData, &simulationRules);
+	newCreature.position = position;
+	newCreature.rotation = ((float)rand() / (float)RAND_MAX) * PI * 2;
 }
 
 void Simulation::removeCreature(Creature *creature)
 {
-	for (int i = 0; i < existingCreatures->length; i++)
+	for (auto it = existingCreatures.begin(); it != existingCreatures.end(); it++)
 	{
-		if (existingCreatures->get(i) == creature)
+		if (&(*it) == creature)
 		{
-			existingCreatures->pop(i);
+			creature->clear();
+			existingCreatures.erase(it);
 			break;
 		}
 	}
-
-	creature->clear();
 
 	return;
 }
 
 void Simulation::addEgg(CreatureData &creatureData, agl::Vec<float, 2> position)
 {
-	bool alreadyExists;
-
-	for (int i = 0; i < simulationRules.maxEggs; i++)
-	{
-		alreadyExists = false;
-
-		for (int x = 0; x < existingEggs->length; x++)
-		{
-			if (&eggBuffer[i] == existingEggs->get(x))
-			{
-				alreadyExists = true;
-				break;
-			}
-		}
-
-		if (!alreadyExists)
-		{
-			existingEggs->add(&eggBuffer[i]);
-			eggBuffer[i].setup(creatureData);
-			eggBuffer[i].position = position;
-			break;
-		}
-	}
+	existingEggs.emplace_back();
+	Egg &newEgg = existingEggs.back();
+	newEgg.setup(creatureData);
+	newEgg.position = position;
 }
 
 void Simulation::removeEgg(Egg *egg)
 {
-	egg->clear();
-
-	for (int i = 0; i < existingEggs->length; i++)
+	for (auto it = existingEggs.begin(); it != existingEggs.end(); it++)
 	{
-		if (existingEggs->get(i) == egg)
+		if (&(*it) == egg)
 		{
-			existingEggs->pop(i);
+			egg->clear();
+			existingEggs.erase(it);
 			break;
 		}
 	}
@@ -242,47 +181,26 @@ void Simulation::removeEgg(Egg *egg)
 
 void Simulation::addFood(agl::Vec<float, 2> position)
 {
-	bool alreadyExists;
-
-	for (int i = 0; i < simulationRules.maxFood; i++)
-	{
-		alreadyExists = false;
-
-		for (int x = 0; x < existingFood->length; x++)
-		{
-			if (&foodBuffer[i] == existingFood->get(x))
-			{
-				alreadyExists = true;
-				break;
-			}
-		}
-
-		if (!alreadyExists)
-		{
-			existingFood->add(&foodBuffer[i]);
-			foodBuffer[i].position = position;
-			foodBuffer[i].energy   = simulationRules.foodEnergy;
+	existingFood.emplace_back();
+	Food &newFood	 = existingFood.back();
+	newFood.position = position;
+	newFood.energy	 = simulationRules.foodEnergy;
 
 #ifdef ACTIVEFOOD
-			foodBuffer[i].nextRandPos(simulationRules.size);
+	newFood.nextRandPos(simulationRules.size);
 #endif
-
-			break;
-		}
-	}
 }
 
 void Simulation::removeFood(Food *food)
 {
-	for (int i = 0; i < existingFood->length; i++)
+	for (auto it = existingFood.begin(); it != existingFood.end(); it++)
 	{
-		if (existingFood->get(i) == food)
+		if (&(*it) == food)
 		{
 			agl::Vec<int, 2> gridPosition = foodGrid->toGridPosition(food->position, simulationRules.size);
-
 			foodGrid->removeData(gridPosition, food);
-			existingFood->pop(i);
 
+			existingFood.erase(it);
 			break;
 		}
 	}
@@ -292,37 +210,13 @@ void Simulation::removeFood(Food *food)
 
 void Simulation::addMeat(agl::Vec<float, 2> position, float energy)
 {
-	bool alreadyExists;
-
-	for (int i = 0; i < MAXMEAT; i++)
-	{
-		alreadyExists = false;
-
-		for (int x = 0; x < existingMeat->length; x++)
-		{
-			if (&meatBuffer[i] == existingMeat->get(x))
-			{
-				alreadyExists = true;
-				break;
-			}
-		}
-
-		if (!alreadyExists)
-		{
-			existingMeat->add(&meatBuffer[i]);
-			meatBuffer[i].position	= position;
-			meatBuffer[i].energyVol = (float)energy / meatEnergyDensity;
-			meatBuffer[i].radius	= (energy / 50.) * 5;
-			meatBuffer[i].rotation	= ((float)rand() / (float)RAND_MAX) * 360;
-			meatBuffer[i].lifetime	= meatBuffer[i].energyVol * 288;
-
-			agl::Vec<int, 2> gridPosition = meatGrid->toGridPosition(position, simulationRules.size);
-
-			meatGrid->addData(gridPosition, &meatBuffer[i]);
-
-			break;
-		}
-	}
+	existingMeat.emplace_back();
+	Meat &newMeat	  = existingMeat.back();
+	newMeat.position  = position;
+	newMeat.energyVol = (float)energy / meatEnergyDensity;
+	newMeat.radius	  = (energy / 50.) * 5;
+	newMeat.rotation  = ((float)rand() / (float)RAND_MAX) * 360;
+	newMeat.lifetime  = newMeat.energyVol * 288;
 }
 
 void Simulation::addMeat(agl::Vec<float, 2> position)
@@ -332,14 +226,13 @@ void Simulation::addMeat(agl::Vec<float, 2> position)
 
 void Simulation::removeMeat(Meat *meat)
 {
-	for (int i = 0; i < existingMeat->length; i++)
+	for (auto it = existingMeat.begin(); it != existingMeat.end(); it++)
 	{
-		if (existingMeat->get(i) == meat)
+		if (&(*it) == meat)
 		{
 			agl::Vec<int, 2> gridPosition = meatGrid->toGridPosition(meat->position, simulationRules.size);
-
 			meatGrid->removeData(gridPosition, meat);
-			existingMeat->pop(i);
+			existingMeat.erase(it);
 
 			break;
 		}
@@ -691,13 +584,11 @@ void Simulation::updateSimulation()
 
 	creatureGrid->clear();
 
-	for (int i = 0; i < existingCreatures->length; i++)
+	for (Creature &creature : existingCreatures)
 	{
-		Creature *creature = existingCreatures->get(i);
+		creature.updateActions();
 
-		creature->updateActions();
-
-		creature->gridPosition = foodGrid->toGridPosition(creature->position, simulationRules.size);
+		creature.gridPosition = foodGrid->toGridPosition(creature.position, simulationRules.size);
 
 		// if (std::isnan(creature->position.x))
 		// {
@@ -705,16 +596,14 @@ void Simulation::updateSimulation()
 		// 	i--;
 		// }
 
-		creatureGrid->addData(creature->gridPosition, creature);
+		creatureGrid->addData(creature.gridPosition, &creature);
 	}
 
 	foodGrid->clear();
 
-	for (int i = 0; i < existingFood->length; i++)
+	for (Food &food : existingFood)
 	{
-		Food *food = existingFood->get(i);
-
-		phy::Circle &circle = *existingFood->get(i);
+		phy::Circle &circle = food;
 
 #ifdef FOODDRAG
 		float dragCoeficient = FOODDRAG;
@@ -747,48 +636,48 @@ void Simulation::updateSimulation()
 #endif
 
 #ifdef FOODBORDER
-		if (food->position.x < 0)
+		if (food.position.x < 0)
 		{
-			food->force.x += 1;
+			food.force.x += 1;
 		}
-		if (food->position.x > simulationRules.size.x)
+		if (food.position.x > simulationRules.size.x)
 		{
-			food->force.x -= 1;
+			food.force.x -= 1;
 		}
 
-		if (food->position.y < 0)
+		if (food.position.y < 0)
 		{
-			food->force.y += 1;
+			food.force.y += 1;
 		}
-		if (food->position.y > simulationRules.size.y)
+		if (food.position.y > simulationRules.size.y)
 		{
-			food->force.y -= 1;
+			food.force.y -= 1;
 		}
 #endif
 
-		food->update();
+		food.update();
 
-		food->exists = true;
+		food.exists = true;
 
-		foodGrid->addData(foodGrid->toGridPosition(food->position, simulationRules.size), food);
+		foodGrid->addData(foodGrid->toGridPosition(food.position, simulationRules.size), &food);
 	}
 
 	meatGrid->clear();
 
-	for (int i = 0; i < existingMeat->length; i++)
+	for (auto it = existingMeat.begin(); it != existingMeat.end(); it++)
 	{
-		Meat *meat = existingMeat->get(i);
+		Meat &meat = *it;
 
-		meat->lifetime--;
+		meat.lifetime--;
 
-		if (meat->lifetime < 0)
+		if (meat.lifetime < 0)
 		{
-			existingMeat->pop(i);
-			i--;
+			it--;
+			existingMeat.erase(it);
 			continue;
 		}
 
-		phy::Circle &circle = *existingMeat->get(i);
+		phy::Circle &circle = meat;
 
 		float dragCoeficient = .1;
 
@@ -809,193 +698,200 @@ void Simulation::updateSimulation()
 
 		circle.force -= drag;
 
-		meat->update();
+		meat.update();
 
-		meat->exists = true;
+		meat.exists = true;
 
-		meatGrid->addData(meatGrid->toGridPosition(meat->position, simulationRules.size), meat);
+		meatGrid->addData(meatGrid->toGridPosition(meat.position, simulationRules.size), &meat);
 	}
 
-	for (int i = 0; i < existingCreatures->length; i++)
+	for (auto it = existingCreatures.begin(); it != existingCreatures.end(); it++)
 	{
-		Creature *creature = existingCreatures->get(i);
+		Creature &creature = *it;
 
 		// egg laying
-		if (creature->layingEgg)
+		if (creature.layingEgg)
 		{
-			if (creature->energy > creature->eggTotalCost)
+			if (creature.energy > creature.eggTotalCost)
 			{
-				creature->incubating = true;
-				creature->reward += 50;
+				creature.incubating = true;
+				creature.reward += 50;
 			}
 		}
 
-		if (creature->incubating)
+		if (creature.incubating)
 		{
-			creature->energy -= PREGNANCY_COST;
-			creature->eggDesposit += PREGNANCY_COST;
+			creature.energy -= PREGNANCY_COST;
+			creature.eggDesposit += PREGNANCY_COST;
 
-			if (creature->eggDesposit >= creature->eggTotalCost)
+			if (creature.eggDesposit >= creature.eggTotalCost)
 			{
-				CreatureData creatureData = creature->creatureData;
+				CreatureData creatureData = creature.creatureData;
 
 				mutate(&creatureData, 50, 3);
 
-				creatureData.startEnergy = creature->eggEnergyCost;
+				creatureData.startEnergy = creature.eggEnergyCost;
 
-				this->addEgg(creatureData, creature->position);
+				this->addEgg(creatureData, creature.position);
 
-				creature->incubating  = false;
-				creature->eggDesposit = 0;
+				creature.incubating	 = false;
+				creature.eggDesposit = 0;
 			}
 		}
 
 		// creature eating
-		if (creature->eating)
+		if (creature.eating)
 		{
 			foodGrid->updateElements(
-				foodGrid->toGridPosition(creature->position, simulationRules.size), {-1, -1}, {1, 1}, [&](Food *food) {
+				foodGrid->toGridPosition(creature.position, simulationRules.size), {-1, -1}, {1, 1}, [&](Food *food) {
 					if (!food->exists)
 					{
 						return;
 					}
 
-					agl::Vec<float, 2> offset = creature->position - food->position;
+					agl::Vec<float, 2> offset = creature.position - food->position;
 
-					float angleDiff = offset.angle() - creature->rotation;
+					float angleDiff = offset.angle() - creature.rotation;
 
 					if (abs(angleDiff - PI) > (PI / 4))
 					{
 						return;
 					}
 
-					if (offset.length() < (creature->radius + food->radius + EATRADIUS))
+					if (offset.length() < (creature.radius + food->radius + EATRADIUS))
 					{
 						float energy =
-							foodEnergyDensity * creature->preference * creature->preference * creature->preference;
+							foodEnergyDensity * creature.preference * creature.preference * creature.preference;
 
-						creature->energyDensity =
-							newEnergyDensity(creature->biomass, creature->energyDensity, foodVol, energy);
+						creature.energyDensity =
+							newEnergyDensity(creature.biomass, creature.energyDensity, foodVol, energy);
 
-						creature->biomass += foodVol;
+						creature.biomass += foodVol;
 
 						food->exists = false;
 						this->removeFood(food);
-						creature->reward += energy * foodVol;
+						creature.reward += energy * foodVol;
 					}
 				});
 
 			meatGrid->updateElements(
-				meatGrid->toGridPosition(creature->position, simulationRules.size), {-1, -1}, {1, 1}, [&](Meat *meat) {
+				meatGrid->toGridPosition(creature.position, simulationRules.size), {-1, -1}, {1, 1}, [&](Meat *meat) {
 					if (!meat->exists)
 					{
 						return;
 					}
 
-					agl::Vec<float, 2> offset = creature->position - meat->position;
+					agl::Vec<float, 2> offset = creature.position - meat->position;
 
-					float angleDiff = offset.angle() - creature->rotation;
+					float angleDiff = offset.angle() - creature.rotation;
 
 					if (abs(angleDiff - PI) > (PI / 4))
 					{
 						return;
 					}
 
-					if (offset.length() < (creature->radius + meat->radius + EATRADIUS))
+					if (offset.length() < (creature.radius + meat->radius + EATRADIUS))
 					{
-						float energy = (meatEnergyDensity * (1 - creature->preference));
+						float energy = (meatEnergyDensity * (1 - creature.preference));
 
-						creature->energyDensity =
-							newEnergyDensity(creature->biomass, creature->energyDensity, meat->energyVol, energy);
+						creature.energyDensity =
+							newEnergyDensity(creature.biomass, creature.energyDensity, meat->energyVol, energy);
 
-						creature->biomass += meat->energyVol;
+						creature.biomass += meat->energyVol;
 
 						meat->exists = false;
 						this->removeMeat(meat);
-						creature->reward += energy * meat->energyVol;
+						creature.reward += energy * meat->energyVol;
 					}
 				});
 
 			creatureGrid->updateElements(
-				creatureGrid->toGridPosition(creature->position, simulationRules.size), {-1, -1}, {1, 1},
+				creatureGrid->toGridPosition(creature.position, simulationRules.size), {-1, -1}, {1, 1},
 				[&](Creature *eatenCreature) {
-					if (eatenCreature == creature || eatenCreature->health < 0)
+					if (eatenCreature == &creature || eatenCreature->health < 0)
 					{
 						return;
 					}
 
-					agl::Vec<float, 2> offset = creature->position - eatenCreature->position;
+					agl::Vec<float, 2> offset = creature.position - eatenCreature->position;
 
-					float angleDiff = offset.angle() - creature->rotation;
+					float angleDiff = offset.angle() - creature.rotation;
 
 					if (abs(angleDiff - PI) > (PI / 4))
 					{
 						return;
 					}
 
-					if (offset.length() < (creature->radius + eatenCreature->radius + EATRADIUS))
+					if (offset.length() < (creature.radius + eatenCreature->radius + EATRADIUS))
 					{
 						// if (frame % BITEDELAY == 0)
 						{
-							float energy = (meatEnergyDensity * (1 - creature->preference));
+							float energy = (meatEnergyDensity * (1 - creature.preference));
 
-							creature->energyDensity =
-								newEnergyDensity(creature->biomass, creature->energyDensity, leachVol, energy);
+							creature.energyDensity =
+								newEnergyDensity(creature.biomass, creature.energyDensity, leachVol, energy);
 
-							creature->biomass += leachVol;
+							creature.biomass += leachVol;
 
 							eatenCreature->health -= damage;
-							creature->reward += energy * leachVol;
+							creature.reward += energy * leachVol;
 						}
 					}
 				});
 		}
 
 		// tired creature damage
-		if (creature->energy <= 0)
+		if (creature.energy <= 0)
 		{
-			creature->health--;
-			creature->energy = 0;
+			creature.health--;
+			creature.energy = 0;
 		}
 
 		// age damage
-		if (creature->life < 0)
+		if (creature.life < 0)
 		{
-			creature->health--;
+			creature.health--;
 		}
 
 		// killing creature
-		if (creature->health <= 0)
+		if (creature.health <= 0)
 		{
-			this->addMeat(creature->position, creature->maxHealth / 4);
-			this->removeCreature(creature);
-			i--;
+			this->addMeat(creature.position, creature.maxHealth / 4);
+			it--;
+			this->removeCreature(&creature);
+			continue;
 		}
 
-		List<Food *> *foodList = foodGrid->getList(creature->gridPosition);
+		List<Food *> *foodList = foodGrid->getList(creature.gridPosition);
 
-		if (creature->energy > creature->maxEnergy)
+		if (creature.energy > creature.maxEnergy)
 		{
-			creature->energy = creature->maxEnergy;
+			creature.energy = creature.maxEnergy;
 		}
-		if (creature->biomass > creature->maxBiomass)
+		if (creature.biomass > creature.maxBiomass)
 		{
-			creature->biomass = creature->maxBiomass;
+			creature.biomass = creature.maxBiomass;
 		}
 	}
 
 	// egg hatching
-	for (int i = 0; i < existingEggs->length; i++)
+	for (auto it = existingEggs.begin(); it != existingEggs.end(); it++)
 	{
-		existingEggs->get(i)->update();
-		if (existingEggs->get(i)->timeleft <= 0)
+		Egg &egg = *it;
+
+		egg.update();
+
+		if (egg.timeleft <= 0)
 		{
-			Egg *hatchedEgg = existingEggs->get(i);
+			Egg *hatchedEgg = &egg;
 
 			CreatureData creatureData = hatchedEgg->creatureData;
 			this->addCreature(creatureData, hatchedEgg->position);
 
+			it--;
 			removeEgg(hatchedEgg);
+			
+			continue;
 		}
 	}
 
@@ -1034,7 +930,7 @@ void Simulation::updateSimulation()
 	int max = std::min(simulationRules.maxFood, foodCap);
 	// int max = 0;
 
-	for (; existingFood->length < max;)
+	for (; existingFood.size() < max;)
 	{
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
@@ -1044,9 +940,8 @@ void Simulation::updateSimulation()
 	}
 
 	// threaded network update
-
-	multithreadedRecurse(existingCreatures->length,
-						 [&](int i) { existingCreatures->get(i)->updateNetwork(foodGrid, creatureGrid, meatGrid); });
+	std::for_each(existingCreatures.begin(), existingCreatures.end(),
+				  [&](Creature &creature) { creature.updateNetwork(foodGrid, creatureGrid, meatGrid); });
 }
 
 void Simulation::update()
@@ -1061,9 +956,9 @@ void Simulation::update()
 	int rl	 = 0;
 	int both = 0;
 
-	for (int i = 0; i < existingCreatures->length; i++)
+	for (Creature &creature : existingCreatures)
 	{
-		CreatureData *data = &existingCreatures->get(i)->creatureData;
+		CreatureData *data = &creature.creatureData;
 
 		if (data->useNEAT && !data->usePG)
 		{

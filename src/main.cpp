@@ -107,6 +107,11 @@ void loadRules(std::string path, SimulationRules *simulationRules)
 	return;
 }
 
+template <typename T> bool contains(std::list<T> &list, T *p)
+{
+	return std::find_if(list.begin(), list.end(), [&](T &t) { return &t == p; }) != list.end();
+}
+
 int main()
 {
 	printf("Starting AGL\n");
@@ -252,12 +257,6 @@ int main()
 	Simulation simulation;
 	// simulation.create(simulationRules, 0);
 
-	Creature		 *creature			= simulation.creatureBuffer;
-	List<Creature *> *existingCreatures = simulation.existingCreatures;
-	Egg				 *egg				= simulation.eggBuffer;
-	List<Egg *>		 *existingEggs		= simulation.existingEggs;
-	Food			 *food				= simulation.foodBuffer;
-
 	Creature *focusCreature = nullptr;
 
 	float		fps = 0;
@@ -284,13 +283,37 @@ int main()
 			ValueElement<float> *fps;
 	} simulationInfoPointers;
 
-	Menu simulationInfo("SimInfo", 125,																			 //
-						ValueElement<int>{"Creatures", [&]() { return &simulation.existingCreatures->length; }}, //
-						ValueElement<int>{"Eggs", [&]() { return &simulation.existingEggs->length; }},			 //
-						ValueElement<int>{"Food", [&]() { return &simulation.existingFood->length; }},			 //
-						ValueElement<int>{"Meat", [&]() { return &simulation.existingMeat->length; }},			 //
-						ValueElement<int>{"Frame", [&]() { return &simulation.frame; }},						 //
-						ValueElement<float>{"FPS", [&]() { return &fps; }}										 //
+	struct
+	{
+			int creatures;
+			int eggs;
+			int food;
+			int meat;
+	} statsForSimInfo;
+
+	Menu simulationInfo("SimInfo", 125, //
+						ValueElement<int>{"Creatures",
+										  [&]() {
+											  statsForSimInfo.creatures = simulation.existingCreatures.size();
+											  return &statsForSimInfo.creatures;
+										  }}, //
+						ValueElement<int>{"Eggs",
+										  [&]() {
+											  statsForSimInfo.eggs = simulation.existingEggs.size();
+											  return &statsForSimInfo.eggs;
+										  }}, //
+						ValueElement<int>{"Food",
+										  [&]() {
+											  statsForSimInfo.food = simulation.existingFood.size();
+											  return &statsForSimInfo.food;
+										  }}, //
+						ValueElement<int>{"Meat",
+										  [&]() {
+											  statsForSimInfo.meat = simulation.existingMeat.size();
+											  return &statsForSimInfo.meat;
+										  }},											 //
+						ValueElement<int>{"Frame", [&]() { return &simulation.frame; }}, //
+						ValueElement<float>{"FPS", [&]() { return &fps; }}				 //
 	);
 
 	simulationInfo.bindPointers(&simulationInfoPointers);
@@ -648,33 +671,31 @@ int main()
 		window.updateMvp(camera);
 
 		// Draw food
-		for (int i = 0; i < simulation.existingFood->length; i++)
+		for (Food &food : simulation.existingFood)
 		{
-			agl::Vec<float, 2> position = simulation.existingFood->get(i)->position;
+			agl::Vec<float, 2> position = food.position;
 			foodShape.setPosition(position);
 			window.drawShape(foodShape);
 		}
 
-		for (int i = 0; i < simulation.existingMeat->length; i++)
+		for (Meat &meat : simulation.existingMeat)
 		{
-			Meat *meat = simulation.existingMeat->get(i);
-
-			meatShape.setPosition(meat->position);
-			meatShape.setSize({meat->radius * 2, meat->radius * 2});
-			meatShape.setOffset({-meat->radius, -meat->radius});
-			meatShape.setRotation({0, 0, meat->rotation});
+			meatShape.setPosition(meat.position);
+			meatShape.setSize({meat.radius * 2, meat.radius * 2});
+			meatShape.setOffset({-meat.radius, -meat.radius});
+			meatShape.setRotation({0, 0, meat.rotation});
 			window.drawShape(meatShape);
 		}
 
 		// draw eggs
-		for (int i = 0; i < existingEggs->length; i++)
+		for (Egg &egg : simulation.existingEggs)
 		{
-			eggShape.setPosition(existingEggs->get(i)->position);
+			eggShape.setPosition(egg.position);
 			window.drawShape(eggShape);
 		}
 
 		// draw rays
-		if (existingCreatures->find(focusCreature) != -1)
+		if (contains(simulation.existingCreatures, focusCreature))
 		{
 			rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH * focusCreature->sight});
 			rayShape.setPosition(focusCreature->position);
@@ -721,12 +742,12 @@ int main()
 		}
 
 		// draw creature
-		for (int i = 0; i < existingCreatures->length; i++)
+		for (Creature &creature : simulation.existingCreatures)
 		{
-			creatureShape.setPosition(existingCreatures->get(i)->position);
-			creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(existingCreatures->get(i)->rotation * 180 / PI)});
+			creatureShape.setPosition(creature.position);
+			creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(creature.rotation * 180 / PI)});
 
-			float speed = existingCreatures->get(i)->velocity.length();
+			float speed = creature.velocity.length();
 
 			creatureShape.setTexture(&creatureBodyTexture);
 
@@ -747,19 +768,18 @@ int main()
 
 			if (event.isKeyPressed(agl::Key::Z))
 			{
-				agl::Vec<float, 3> blue = agl::Vec<float, 3>{0, 0, 255} * existingCreatures->get(i)->creatureData.usePG;
-				agl::Vec<float, 3> yellow =
-					agl::Vec<float, 3>{255, 255, 0} * existingCreatures->get(i)->creatureData.useNEAT;
+				agl::Vec<float, 3> blue	  = agl::Vec<float, 3>{0, 0, 255} * creature.creatureData.usePG;
+				agl::Vec<float, 3> yellow = agl::Vec<float, 3>{255, 255, 0} * creature.creatureData.useNEAT;
 
 				creatureShape.setColor({(unsigned char)(blue.x + yellow.x), (unsigned char)(blue.y + yellow.y),
 										(unsigned char)(blue.z + yellow.z)});
 			}
 			else
 			{
-				creatureShape.setColor(hueToRGB(existingCreatures->get(i)->hue));
+				creatureShape.setColor(hueToRGB(creature.hue));
 			}
 
-			float size = existingCreatures->get(i)->size;
+			float size = creature.size;
 
 			creatureShape.setSize(agl::Vec<float, 3>{25 * size, 60 * size, 0});
 			creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -1});
@@ -788,7 +808,7 @@ int main()
 
 		if (focusCreature != nullptr)
 		{
-			if (existingCreatures->find(focusCreature) != -1)
+			if (contains(simulation.existingCreatures, focusCreature))
 			{
 				nodeName = nodeNames[creatureNetworkPointers.network->selectedID];
 			}
@@ -849,12 +869,6 @@ int main()
 			simulationRules.maxEggs			  = simMenuPointers.maxEggs->value;
 
 			simulation.create(simulationRules, simMenuPointers.seed->value);
-
-			creature		  = simulation.creatureBuffer;
-			existingCreatures = simulation.existingCreatures;
-			egg				  = simulation.eggBuffer;
-			existingEggs	  = simulation.existingEggs;
-			food			  = simulation.foodBuffer;
 		}
 
 		if (event.keybuffer.find('h') != std::string::npos && FocusableElement::focusedField == nullptr)
@@ -898,7 +912,7 @@ int main()
 			}
 			if (leftMenuPointers.select->state) // select creature
 			{
-				for (int i = 0; i < existingCreatures->length; i++)
+				for (Creature &creature : simulation.existingCreatures)
 				{
 					agl::Vec<float, 2> mouse;
 					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
@@ -906,11 +920,11 @@ int main()
 					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
 							  cameraPosition.y;
 
-					float distance = (mouse - existingCreatures->get(i)->position).length();
+					float distance = (mouse - creature.position).length();
 
-					if (distance < existingCreatures->get(i)->radius)
+					if (distance < creature.radius)
 					{
-						focusCreature = existingCreatures->get(i);
+						focusCreature = &creature;
 
 						break;
 					}
@@ -918,21 +932,23 @@ int main()
 			}
 			if (leftMenuPointers.kill->state) // kill creature
 			{
-				for (int i = 0; i < existingCreatures->length; i++)
+				for (auto it = simulation.existingCreatures.begin(); it != simulation.existingCreatures.end(); it++)
 				{
+					Creature &creature = *it;
+
 					agl::Vec<float, 2> mouse;
 					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
 							  cameraPosition.x;
 					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
 							  cameraPosition.y;
 
-					float distance = (mouse - existingCreatures->get(i)->position).length();
+					float distance = (mouse - creature.position).length();
 
-					if (distance < existingCreatures->get(i)->radius)
+					if (distance < creature.radius)
 					{
-						simulation.addMeat(existingCreatures->get(i)->position,
-										   existingCreatures->get(i)->maxHealth / 4);
-						existingCreatures->pop(i);
+						it--;
+						simulation.addMeat(creature.position, creature.maxHealth / 4);
+						simulation.existingCreatures.erase(it);
 
 						break;
 					}
