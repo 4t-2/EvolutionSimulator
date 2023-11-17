@@ -98,9 +98,7 @@ void loadRules(std::string path, SimulationRules *simulationRules)
 	simulationRules->gridResolution.y  = stoi(buffer[3]);
 	simulationRules->startingCreatures = stoi(buffer[4]);
 	simulationRules->foodEnergy		   = stoi(buffer[5]);
-	simulationRules->maxCreatures	   = stoi(buffer[6]);
-	simulationRules->maxFood		   = stoi(buffer[7]);
-	simulationRules->maxEggs		   = stoi(buffer[8]);
+	simulationRules->foodCap = stoi(buffer[7]);
 
 	stream.close();
 
@@ -241,12 +239,10 @@ int main()
 	loadRules("./conf/sim.conf", &simulationRules);
 
 	std::cout << "startingCreatures - " << simulationRules.startingCreatures << '\n';
-	std::cout << "maxCreatures - " << simulationRules.maxCreatures << '\n';
 	std::cout << "foodEnergy - " << simulationRules.foodEnergy << '\n';
-	std::cout << "maxFood - " << simulationRules.maxFood << '\n';
+	std::cout << "maxFood - " << simulationRules.foodCap << '\n';
 	std::cout << "size - " << simulationRules.size << '\n';
 	std::cout << "gridResolution - " << simulationRules.gridResolution << '\n';
-	std::cout << "maxEggs - " << simulationRules.maxEggs << '\n';
 
 	background.setSize(simulationRules.size);
 
@@ -469,7 +465,7 @@ int main()
 			FieldElement<float> *energyCostMultiplier;
 	} simRulesPointers;
 
-	simulation.foodCap = simulationRules.maxFood;
+	simulation.foodCap = simulationRules.foodCap;
 
 	Menu simRules("SimRules", 200,												   //
 				  FieldElement<float>{"FdEnDn", simulation.foodEnergyDensity},	   //
@@ -508,9 +504,6 @@ int main()
 			FieldElement<int>	  *gridX;
 			FieldElement<int>	  *gridY;
 			FieldElement<int>	  *startingCreatures;
-			FieldElement<int>	  *maxCreatures;
-			FieldElement<int>	  *maxFood;
-			FieldElement<int>	  *maxEggs;
 			FieldElement<int>	  *seed;
 			FieldElement<float>	  *simCycles;
 			ButtonElement<Hold>	  *start;
@@ -524,9 +517,6 @@ int main()
 				 FieldElement<int>{"gridX", (simulationRules.gridResolution.x)},		  //
 				 FieldElement<int>{"gridY", (simulationRules.gridResolution.y)},		  //
 				 FieldElement<int>{"startCreature", (simulationRules.startingCreatures)}, //
-				 FieldElement<int>{"maxCreature", (simulationRules.maxCreatures)},		  //
-				 FieldElement<int>{"maxFood", (simulationRules.maxFood)},				  //
-				 FieldElement<int>{"maxEgg", (simulationRules.maxEggs)},				  //
 				 FieldElement<int>{"seed", 0},											  //
 				 FieldElement<float>{"simCycles", 1.0},									  //
 				 ButtonElement<Hold>{"START"},											  //
@@ -864,9 +854,6 @@ int main()
 			simulationRules.gridResolution.x  = simMenuPointers.gridX->value;
 			simulationRules.gridResolution.y  = simMenuPointers.gridY->value;
 			simulationRules.startingCreatures = simMenuPointers.startingCreatures->value;
-			simulationRules.maxCreatures	  = simMenuPointers.maxCreatures->value;
-			simulationRules.maxFood			  = simMenuPointers.maxFood->value;
-			simulationRules.maxEggs			  = simMenuPointers.maxEggs->value;
 
 			simulation.create(simulationRules, simMenuPointers.seed->value);
 		}

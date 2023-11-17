@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <iterator>
 #include <random>
 #include <thread>
 #include <type_traits>
@@ -32,9 +33,9 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	srand(seed);
 
-	foodGrid	 = new Grid<Food *>(simulationRules.gridResolution, simulationRules.maxFood);
-	creatureGrid = new Grid<Creature *>(simulationRules.gridResolution, simulationRules.maxCreatures);
-	meatGrid	 = new Grid<Meat *>(simulationRules.gridResolution, MAXMEAT);
+	foodGrid	 = new Grid<Food *>(simulationRules.gridResolution);
+	creatureGrid = new Grid<Creature *>(simulationRules.gridResolution);
+	meatGrid	 = new Grid<Meat *>(simulationRules.gridResolution);
 
 	in::NetworkStructure basicStructure(TOTAL_INPUT, {}, TOTAL_OUTPUT, false);
 
@@ -71,13 +72,13 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 		this->addCreature(creatureData, position);
 	}
 
-	for (int i = 0; i < simulationRules.maxFood; i++)
+	for (int i = 0; i < foodCap; i++)
 	{
 		this->addFood({(float)rand() / (float)RAND_MAX * simulationRules.size.x,
 					   (float)rand() / (float)RAND_MAX * simulationRules.size.y});
 	}
 
-	foodCap = simulationRules.maxFood;
+	foodCap = simulationRules.foodCap;
 
 	return;
 }
@@ -147,6 +148,9 @@ void Simulation::removeCreature(Creature *creature)
 	{
 		if (&(*it) == creature)
 		{
+			agl::Vec<int, 2> gridPosition = creatureGrid->toGridPosition(creature->position, simulationRules.size);
+			creatureGrid->removeData(gridPosition, creature);
+
 			creature->clear();
 			existingCreatures.erase(it);
 			break;
@@ -366,7 +370,8 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 		}
 		else if (type == 3)
 		{
-			List<int> hiddenNodes(creatureData->totalConnections);
+			std::vector<int> hiddenNodes;
+			hiddenNodes.reserve(creatureData->totalConnections);
 
 			for (int i = 0; i < creatureData->totalConnections; i++)
 			{
@@ -377,26 +382,27 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 
 				if (connection[i].startNode < (TOTAL_INPUT + TOTAL_OUTPUT))
 				{
-					if (hiddenNodes.find(connection[i].startNode) != -1)
+					auto it = std::find(hiddenNodes.begin(), hiddenNodes.end(), connection[i].startNode);
+					if (it != hiddenNodes.end())
 					{
-						hiddenNodes.add(connection[i].startNode);
+						hiddenNodes.emplace_back(connection[i].startNode);
 					}
 				}
 			}
 
-			int startNode = round((rand() / (float)RAND_MAX) * (TOTAL_INPUT + hiddenNodes.length - 1));
-			int endNode	  = round((rand() / (float)RAND_MAX) * (TOTAL_OUTPUT + hiddenNodes.length - 1));
+			int startNode = round((rand() / (float)RAND_MAX) * (TOTAL_INPUT + hiddenNodes.size() - 1));
+			int endNode	  = round((rand() / (float)RAND_MAX) * (TOTAL_OUTPUT + hiddenNodes.size() - 1));
 
 			if (startNode >= TOTAL_INPUT)
 			{
 				startNode -= TOTAL_INPUT;
-				startNode = hiddenNodes.get(startNode);
+				startNode = hiddenNodes[startNode];
 			}
 
 			if (endNode >= TOTAL_OUTPUT)
 			{
 				endNode -= TOTAL_OUTPUT;
-				endNode = hiddenNodes.get(startNode);
+				endNode = hiddenNodes[startNode];
 			}
 			else
 			{
@@ -505,16 +511,16 @@ agl::Vec<int, 2> indexToPosition(int i, agl::Vec<int, 2> size)
 
 template <typename T, typename U> void updatePhysics(agl::Vec<int, 2> gridPosition, Grid<T> *Tgrid, Grid<U> *Ugrid)
 {
-	List<T> *Tlist = Tgrid->getList(gridPosition);
-	List<U> *Ulist = Ugrid->getList(gridPosition);
+	std::list<T> *Tlist = Tgrid->getList(gridPosition);
+	std::list<U> *Ulist = Ugrid->getList(gridPosition);
 
-	for (int x = 0; x < Tlist->length; x++)
+	for (auto it = Tlist->begin(); it != Tlist->end(); it++)
 	{
-		T t = Tlist->get(x);
+		T t = *it;
 
-		for (int y = 0; y < Ulist->length; y++)
+		for (auto it = Ulist->begin(); it != Ulist->begin(); it++)
 		{
-			U u = Ulist->get(y);
+			U u = *it;
 
 			correctPosition(*t, *u);
 		}
@@ -527,15 +533,17 @@ template <typename T, typename U> void updatePhysics(agl::Vec<int, 2> gridPositi
 
 template <typename T> void updatePhysics(agl::Vec<int, 2> gridPosition, Grid<T> *Tgrid)
 {
-	List<T> *list = Tgrid->getList(gridPosition);
+	std::list<T> *list = Tgrid->getList(gridPosition);
 
-	for (int x = 0; x < list->length; x++)
+	for (auto x = list->begin(); x != list->end(); x++)
 	{
-		T t1 = list->get(x);
+		T t1 = *x;
 
-		for (int y = x + 1; y < list->length; y++)
+		for (auto y = std::next(x, 1); y != list->end(); y++)
 		{
-			correctPosition(*list->get(x), *list->get(y));
+			T t2 = *y;
+
+			correctPosition(*t1, *t2);
 		}
 
 		Tgrid->updateElements(gridPosition, {1, 1}, {1, 1}, [&](T t2) { correctPosition(*t1, *t2); });
@@ -672,8 +680,9 @@ void Simulation::updateSimulation()
 
 		if (meat.lifetime < 0)
 		{
-			it--;
+			auto next = std::next(it, -1);
 			existingMeat.erase(it);
+			it = next;
 			continue;
 		}
 
@@ -862,8 +871,6 @@ void Simulation::updateSimulation()
 			continue;
 		}
 
-		List<Food *> *foodList = foodGrid->getList(creature.gridPosition);
-
 		if (creature.energy > creature.maxEnergy)
 		{
 			creature.energy = creature.maxEnergy;
@@ -890,7 +897,7 @@ void Simulation::updateSimulation()
 
 			it--;
 			removeEgg(hatchedEgg);
-			
+
 			continue;
 		}
 	}
@@ -927,10 +934,9 @@ void Simulation::updateSimulation()
 
 	// adding more food
 	// int max = std::min(simulationRules.maxFood, adjustedMaxFood);
-	int max = std::min(simulationRules.maxFood, foodCap);
 	// int max = 0;
 
-	for (; existingFood.size() < max;)
+	for (; existingFood.size() < foodCap;)
 	{
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;

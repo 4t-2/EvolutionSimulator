@@ -1,29 +1,27 @@
 #pragma once
 #include <AGL/agl.hpp>
-#include "List.hpp"
+#include <list>
 
 template <typename T> class Grid
 {
 	private:
-		List<T> ***gridData = nullptr;
-		int		   max		= 0;
+		std::list<T> ***gridData = nullptr;
 
 	public:
 		agl::Vec<int, 2> size = {0, 0};
 
-		Grid(agl::Vec<int, 2> size, int max)
+		Grid(agl::Vec<int, 2> size)
 		{
 			this->size = size;
-			this->max  = max;
 
-			gridData = new List<T> **[this->size.x];
+			gridData = new std::list<T> **[this->size.x];
 
 			for (int x = 0; x < size.x; x++)
 			{
-				gridData[x] = new List<T> *[size.y];
+				gridData[x] = new std::list<T> *[size.y];
 				for (int y = 0; y < size.y; y++)
 				{
-					gridData[x][y] = new List<T>(max);
+					gridData[x][y] = new std::list<T>;
 				}
 			}
 		}
@@ -45,20 +43,21 @@ template <typename T> class Grid
 
 		void addData(agl::Vec<int, 2> gridPosition, T data)
 		{
-			gridData[gridPosition.x][gridPosition.y]->add(data);
+			gridData[gridPosition.x][gridPosition.y]->emplace_back(data);
 		}
 
 		void removeData(agl::Vec<int, 2> gridPosition, T data)
 		{
-			int index = gridData[gridPosition.x][gridPosition.y]->find(data);
+			auto index = std::find(gridData[gridPosition.x][gridPosition.y]->begin(),
+								   gridData[gridPosition.x][gridPosition.y]->end(), data);
 
-			if (index != -1)
+			if (index != gridData[gridPosition.x][gridPosition.y]->end())
 			{
-				gridData[gridPosition.x][gridPosition.y]->pop(index);
+				gridData[gridPosition.x][gridPosition.y]->erase(index);
 			}
 		}
 
-		List<T> *getList(agl::Vec<int, 2> gridPosition)
+		std::list<T> *getList(agl::Vec<int, 2> gridPosition)
 		{
 			return gridData[gridPosition.x][gridPosition.y];
 		}
@@ -91,8 +90,8 @@ template <typename T> class Grid
 		}
 
 		void updateGrids(agl::Vec<int, 2> gridPosition, agl::Vec<int, 2> startGridOffset,
-						 agl::Vec<int, 2>											  endGridOffset,
-						 std::function<void(List<T> *list, agl::Vec<int, 2> gridPos)> lambda)
+						 agl::Vec<int, 2>												   endGridOffset,
+						 std::function<void(std::list<T> *list, agl::Vec<int, 2> gridPos)> lambda)
 		{
 			for (int x = startGridOffset.x; x <= endGridOffset.x; x++)
 			{
@@ -108,7 +107,7 @@ template <typename T> class Grid
 						continue;
 					}
 
-					List<T> *list = this->getList({gridPosition.x + x, gridPosition.y + y});
+					std::list<T> *list = this->getList({gridPosition.x + x, gridPosition.y + y});
 
 					lambda(list, {gridPosition.x + x, gridPosition.y + y});
 				}
@@ -118,10 +117,12 @@ template <typename T> class Grid
 		void updateElements(agl::Vec<int, 2> gridPosition, agl::Vec<int, 2> startGridOffset,
 							agl::Vec<int, 2> endGridOffset, std::function<void(T element)> lambda)
 		{
-			auto loopFunc = [&](List<T> *list, agl::Vec<int, 2> gridPos) {
-				for (int i = 0; i < list->length; i++)
+			auto loopFunc = [&](std::list<T> *list, agl::Vec<int, 2> gridPos) {
+				for (auto it = list->begin(); it != list->end();)
 				{
-					lambda(list->get(i));
+					auto next = std::next(it, 1);
+					lambda(*it);
+					it = next;
 				}
 			};
 

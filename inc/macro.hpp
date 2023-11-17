@@ -34,9 +34,10 @@
 #define MEATVOL	 60
 #define LEACHVOL 1
 
+#define FOODCAP 
+
 #define BITEDELAY 20
 
-#define MAXMEAT	   2000
 #define FOODENERGY 1
 #define MEATENERGY 1
 
