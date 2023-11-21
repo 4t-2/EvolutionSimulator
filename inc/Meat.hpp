@@ -3,10 +3,10 @@
 #include <AGL/agl.hpp>
 #include "Food.hpp"
 
-class Meat : public phy::Circle
+class Meat : public Entity<PhysicsObj>
 {
 	public:
-		Meat() : phy::Circle(*(agl::Circle *)0)
+		Meat()
 		{
 			mass = 2;
 			radius = 5;

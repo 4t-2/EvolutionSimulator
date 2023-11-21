@@ -105,9 +105,9 @@ void loadRules(std::string path, SimulationRules *simulationRules)
 	return;
 }
 
-template <typename T> bool contains(std::list<T> &list, T *p)
+template <typename T> bool contains(std::list<EntityData> &list, T *p)
 {
-	return std::find_if(list.begin(), list.end(), [&](T &t) { return &t == p; }) != list.end();
+	return std::find_if(list.begin(), list.end(), [&](EntityData &d) { return d.data == p; }) != list.end();
 }
 
 int main()
@@ -290,22 +290,22 @@ int main()
 	Menu simulationInfo("SimInfo", 125, //
 						ValueElement<int>{"Creatures",
 										  [&]() {
-											  statsForSimInfo.creatures = simulation.existingCreatures.size();
+											  statsForSimInfo.creatures = simulation.env.getList<Creature>().size();
 											  return &statsForSimInfo.creatures;
 										  }}, //
 						ValueElement<int>{"Eggs",
 										  [&]() {
-											  statsForSimInfo.eggs = simulation.existingEggs.size();
+											  statsForSimInfo.eggs = simulation.env.getList<Egg>().size();
 											  return &statsForSimInfo.eggs;
 										  }}, //
 						ValueElement<int>{"Food",
 										  [&]() {
-											  statsForSimInfo.food = simulation.existingFood.size();
+											  statsForSimInfo.food = simulation.env.getList<Food>().size();
 											  return &statsForSimInfo.food;
 										  }}, //
 						ValueElement<int>{"Meat",
 										  [&]() {
-											  statsForSimInfo.meat = simulation.existingMeat.size();
+											  statsForSimInfo.meat = simulation.env.getList<Meat>().size();
 											  return &statsForSimInfo.meat;
 										  }},											 //
 						ValueElement<int>{"Frame", [&]() { return &simulation.frame; }}, //
@@ -661,31 +661,31 @@ int main()
 		window.updateMvp(camera);
 
 		// Draw food
-		for (Food &food : simulation.existingFood)
+		simulation.env.view<Food>([&](auto &food, auto)
 		{
 			agl::Vec<float, 2> position = food.position;
 			foodShape.setPosition(position);
 			window.drawShape(foodShape);
-		}
+		});
 
-		for (Meat &meat : simulation.existingMeat)
+		simulation.env.view<Meat>([&](auto &meat, auto)
 		{
 			meatShape.setPosition(meat.position);
 			meatShape.setSize({meat.radius * 2, meat.radius * 2});
 			meatShape.setOffset({-meat.radius, -meat.radius});
 			meatShape.setRotation({0, 0, meat.rotation});
 			window.drawShape(meatShape);
-		}
+		});
 
 		// draw eggs
-		for (Egg &egg : simulation.existingEggs)
+		simulation.env.view<Egg>([&](auto &egg, auto)
 		{
 			eggShape.setPosition(egg.position);
 			window.drawShape(eggShape);
-		}
+		});
 
 		// draw rays
-		if (contains(simulation.existingCreatures, focusCreature))
+		if (contains(simulation.env.getList<Creature>(), focusCreature))
 		{
 			rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH * focusCreature->sight});
 			rayShape.setPosition(focusCreature->position);
@@ -732,7 +732,7 @@ int main()
 		}
 
 		// draw creature
-		for (Creature &creature : simulation.existingCreatures)
+		simulation.env.view<Creature>([&](auto &creature, auto)
 		{
 			creatureShape.setPosition(creature.position);
 			creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(creature.rotation * 180 / PI)});
@@ -786,7 +786,7 @@ int main()
 			creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -.5});
 
 			window.drawShape(creatureShape);
-		}
+		});
 
 	skipSimRender:;
 
@@ -798,7 +798,7 @@ int main()
 
 		if (focusCreature != nullptr)
 		{
-			if (contains(simulation.existingCreatures, focusCreature))
+			if (contains(simulation.env.getList<Creature>(), focusCreature))
 			{
 				nodeName = nodeNames[creatureNetworkPointers.network->selectedID];
 			}
@@ -899,7 +899,7 @@ int main()
 			}
 			if (leftMenuPointers.select->state) // select creature
 			{
-				for (Creature &creature : simulation.existingCreatures)
+				simulation.env.view<Creature>([&](auto &creature, auto it)
 				{
 					agl::Vec<float, 2> mouse;
 					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
@@ -913,16 +913,14 @@ int main()
 					{
 						focusCreature = &creature;
 
-						break;
+						return;
 					}
-				}
+				});
 			}
 			if (leftMenuPointers.kill->state) // kill creature
 			{
-				for (auto it = simulation.existingCreatures.begin(); it != simulation.existingCreatures.end(); it++)
+				simulation.env.view<Creature>([&](auto &creature, auto it)
 				{
-					Creature &creature = *it;
-
 					agl::Vec<float, 2> mouse;
 					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
 							  cameraPosition.x;
@@ -935,11 +933,11 @@ int main()
 					{
 						it--;
 						simulation.addMeat(creature.position, creature.maxHealth / 4);
-						simulation.existingCreatures.erase(it);
+						simulation.env.removeEntity<Creature>(it);
 
-						break;
+						return;
 					}
-				}
+				});
 			}
 			if (leftMenuPointers.forceFood->state)
 			{

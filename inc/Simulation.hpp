@@ -14,13 +14,9 @@ class Simulation
 {
 	public:
 		SimulationRules simulationRules;
+		Environment env;
 
 		bool active;
-
-		std::list<Creature> existingCreatures;
-		std::list<Egg>		existingEggs;
-		std::list<Food>		existingFood;
-		std::list<Meat>		existingMeat;
 
 		Grid<Creature *> *creatureGrid;
 		Grid<Food *>	 *foodGrid;
@@ -52,15 +48,19 @@ class Simulation
 		static void			mutateBuffer(Buffer *buffer, int chance);
 
 		void addCreature(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void removeCreature(Creature *creature);
+		void removeCreature(std::list<EntityData>::iterator creature);
 
 		void addEgg(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void removeEgg(Egg *egg);
+		void removeEgg(std::list<EntityData>::iterator egg);
 
 		void addFood(agl::Vec<float, 2> position);
+		void removeFood(std::list<EntityData>::iterator food);
+// depricated - WILL REMOVE
 		void removeFood(Food *food);
 
 		void addMeat(agl::Vec<float, 2> position);
 		void addMeat(agl::Vec<float, 2> position, float energy);
+		void removeMeat(std::list<EntityData>::iterator meat);
+// depricated - WILL REMOVE
 		void removeMeat(Meat *meat);
 };

@@ -1,14 +1,15 @@
 #pragma once
 
 #include <AGL/agl.hpp>
-#include <PHY/fastphys.hpp>
 #include <cstdlib>
 #include "macro.hpp"
+#include "Environment.hpp"
+#include "PhysicsObj.hpp"
 
-class Food : public phy::Circle
+class Food : public Entity<PhysicsObj>
 {
 	public:
-		Food() : phy::Circle(*(agl::Circle *)0)
+		Food()
 		{
 			mass	 = 1;
 			radius = 5;

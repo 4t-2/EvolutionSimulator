@@ -87,10 +87,8 @@ void Simulation::destroy()
 {
 	active = false;
 
-	existingCreatures.clear();
-	existingFood.clear();
-	existingEggs.clear();
-	existingMeat.clear();
+	env.destroy();
+
 	delete foodGrid;
 	delete creatureGrid;
 	delete meatGrid;
@@ -135,58 +133,41 @@ void Simulation::mutateBuffer(Buffer *buffer, int chance)
 
 void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> position)
 {
-	existingCreatures.emplace_back();
-	Creature &newCreature = existingCreatures.back();
+	Creature &newCreature = env.addEntity<Creature>();
 	newCreature.setup(creatureData, &simulationRules);
 	newCreature.position = position;
 	newCreature.rotation = ((float)rand() / (float)RAND_MAX) * PI * 2;
 }
 
-void Simulation::removeCreature(Creature *creature)
+void Simulation::removeCreature(std::list<EntityData>::iterator creature)
 {
-	for (auto it = existingCreatures.begin(); it != existingCreatures.end(); it++)
-	{
-		if (&(*it) == creature)
-		{
-			agl::Vec<int, 2> gridPosition = creatureGrid->toGridPosition(creature->position, simulationRules.size);
-			creatureGrid->removeData(gridPosition, creature);
+	env.removeEntity<Creature>(creature, [&](Creature &creature) {
+		agl::Vec<int, 2> gridPosition = creatureGrid->toGridPosition(creature.position, simulationRules.size);
+		creatureGrid->removeData(gridPosition, &creature);
 
-			creature->clear();
-			existingCreatures.erase(it);
-			break;
-		}
-	}
+		creature.clear();
+	});
 
 	return;
 }
 
 void Simulation::addEgg(CreatureData &creatureData, agl::Vec<float, 2> position)
 {
-	existingEggs.emplace_back();
-	Egg &newEgg = existingEggs.back();
+	Egg &newEgg = env.addEntity<Egg>();
 	newEgg.setup(creatureData);
 	newEgg.position = position;
 }
 
-void Simulation::removeEgg(Egg *egg)
+void Simulation::removeEgg(std::list<EntityData>::iterator egg)
 {
-	for (auto it = existingEggs.begin(); it != existingEggs.end(); it++)
-	{
-		if (&(*it) == egg)
-		{
-			egg->clear();
-			existingEggs.erase(it);
-			break;
-		}
-	}
+	env.removeEntity<Egg>(egg, [](Egg &egg) { egg.clear(); });
 
 	return;
 }
 
 void Simulation::addFood(agl::Vec<float, 2> position)
 {
-	existingFood.emplace_back();
-	Food &newFood	 = existingFood.back();
+	Food &newFood	 = env.addEntity<Food>();
 	newFood.position = position;
 	newFood.energy	 = simulationRules.foodEnergy;
 
@@ -197,25 +178,31 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 
 void Simulation::removeFood(Food *food)
 {
-	for (auto it = existingFood.begin(); it != existingFood.end(); it++)
-	{
-		if (&(*it) == food)
-		{
-			agl::Vec<int, 2> gridPosition = foodGrid->toGridPosition(food->position, simulationRules.size);
-			foodGrid->removeData(gridPosition, food);
+	std::list<EntityData>::iterator iterator;
 
-			existingFood.erase(it);
-			break;
+	env.view<Food>([&](auto, auto it) {
+		if (it->data == food)
+		{
+			iterator = it;
 		}
-	}
+	});
+
+	removeFood(iterator);
+}
+
+void Simulation::removeFood(std::list<EntityData>::iterator food)
+{
+	env.removeEntity<Food>(food, [&](Food &food) {
+		agl::Vec<int, 2> gridPosition = foodGrid->toGridPosition(food.position, simulationRules.size);
+		foodGrid->removeData(gridPosition, &food);
+	});
 
 	return;
 }
 
 void Simulation::addMeat(agl::Vec<float, 2> position, float energy)
 {
-	existingMeat.emplace_back();
-	Meat &newMeat	  = existingMeat.back();
+	Meat &newMeat	  = env.addEntity<Meat>();
 	newMeat.position  = position;
 	newMeat.energyVol = (float)energy / meatEnergyDensity;
 	newMeat.radius	  = (energy / 50.) * 5;
@@ -228,21 +215,28 @@ void Simulation::addMeat(agl::Vec<float, 2> position)
 	this->addMeat(position, 50);
 }
 
-void Simulation::removeMeat(Meat *meat)
+void Simulation::removeMeat(std::list<EntityData>::iterator meat)
 {
-	for (auto it = existingMeat.begin(); it != existingMeat.end(); it++)
-	{
-		if (&(*it) == meat)
-		{
-			agl::Vec<int, 2> gridPosition = meatGrid->toGridPosition(meat->position, simulationRules.size);
-			meatGrid->removeData(gridPosition, meat);
-			existingMeat.erase(it);
-
-			break;
-		}
-	}
+	env.removeEntity<Meat>(meat, [&](Meat &meat) {
+		agl::Vec<int, 2> gridPosition = meatGrid->toGridPosition(meat.position, simulationRules.size);
+		meatGrid->removeData(gridPosition, &meat);
+	});
 
 	return;
+}
+
+void Simulation::removeMeat(Meat *meat)
+{
+	std::list<EntityData>::iterator iterator;
+
+	env.view<Meat>([&](auto, auto it) {
+		if (it->data == meat)
+		{
+			iterator = it;
+		}
+	});
+
+	removeMeat(iterator);
 }
 
 float mutShift(float f, float min, float max)
@@ -592,8 +586,7 @@ void Simulation::updateSimulation()
 
 	creatureGrid->clear();
 
-	for (Creature &creature : existingCreatures)
-	{
+	env.view<Creature>([&](Creature &creature, auto) {
 		creature.updateActions();
 
 		creature.gridPosition = foodGrid->toGridPosition(creature.position, simulationRules.size);
@@ -605,13 +598,12 @@ void Simulation::updateSimulation()
 		// }
 
 		creatureGrid->addData(creature.gridPosition, &creature);
-	}
+	});
 
 	foodGrid->clear();
 
-	for (Food &food : existingFood)
-	{
-		phy::Circle &circle = food;
+	env.view<Food>([&](Food &food, auto) {
+		PhysicsObj &circle = food;
 
 #ifdef FOODDRAG
 		float dragCoeficient = FOODDRAG;
@@ -668,25 +660,22 @@ void Simulation::updateSimulation()
 		food.exists = true;
 
 		foodGrid->addData(foodGrid->toGridPosition(food.position, simulationRules.size), &food);
-	}
+	});
 
 	meatGrid->clear();
 
-	for (auto it = existingMeat.begin(); it != existingMeat.end(); it++)
-	{
-		Meat &meat = *it;
-
+	env.view<Meat>([&](Meat &meat, auto it) {
 		meat.lifetime--;
 
 		if (meat.lifetime < 0)
 		{
 			auto next = std::next(it, -1);
-			existingMeat.erase(it);
+			env.removeEntity<Meat>(it);
 			it = next;
-			continue;
+			return;
 		}
 
-		phy::Circle &circle = meat;
+		PhysicsObj &circle = meat;
 
 		float dragCoeficient = .1;
 
@@ -712,12 +701,9 @@ void Simulation::updateSimulation()
 		meat.exists = true;
 
 		meatGrid->addData(meatGrid->toGridPosition(meat.position, simulationRules.size), &meat);
-	}
+	});
 
-	for (auto it = existingCreatures.begin(); it != existingCreatures.end(); it++)
-	{
-		Creature &creature = *it;
-
+	env.view<Creature>([&](Creature &creature, auto it) {
 		// egg laying
 		if (creature.layingEgg)
 		{
@@ -867,8 +853,8 @@ void Simulation::updateSimulation()
 		{
 			this->addMeat(creature.position, creature.maxHealth / 4);
 			it--;
-			this->removeCreature(&creature);
-			continue;
+			this->removeCreature(it);
+			return;
 		}
 
 		if (creature.energy > creature.maxEnergy)
@@ -879,13 +865,9 @@ void Simulation::updateSimulation()
 		{
 			creature.biomass = creature.maxBiomass;
 		}
-	}
+	});
 
-	// egg hatching
-	for (auto it = existingEggs.begin(); it != existingEggs.end(); it++)
-	{
-		Egg &egg = *it;
-
+	env.view<Egg>([&](Egg &egg, auto it) {
 		egg.update();
 
 		if (egg.timeleft <= 0)
@@ -896,11 +878,11 @@ void Simulation::updateSimulation()
 			this->addCreature(creatureData, hatchedEgg->position);
 
 			it--;
-			removeEgg(hatchedEgg);
+			removeEgg(it);
 
-			continue;
+			return;
 		}
-	}
+	});
 
 	// static int penalty = 0;
 	//
@@ -936,7 +918,7 @@ void Simulation::updateSimulation()
 	// int max = std::min(simulationRules.maxFood, adjustedMaxFood);
 	// int max = 0;
 
-	for (; existingFood.size() < foodCap;)
+	for (; env.getList<Food>().size() < foodCap;)
 	{
 		agl::Vec<float, 2> position;
 		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
@@ -945,9 +927,7 @@ void Simulation::updateSimulation()
 		this->addFood(position);
 	}
 
-	// threaded network update
-	std::for_each(existingCreatures.begin(), existingCreatures.end(),
-				  [&](Creature &creature) { creature.updateNetwork(foodGrid, creatureGrid, meatGrid); });
+	env.view<Creature>([&](auto &creature, auto) { creature.updateNetwork(foodGrid, creatureGrid, meatGrid); });
 }
 
 void Simulation::update()
@@ -962,8 +942,7 @@ void Simulation::update()
 	int rl	 = 0;
 	int both = 0;
 
-	for (Creature &creature : existingCreatures)
-	{
+	env.view<Creature>([&](Creature &creature, auto it) {
 		CreatureData *data = &creature.creatureData;
 
 		if (data->useNEAT && !data->usePG)
@@ -978,7 +957,7 @@ void Simulation::update()
 		{
 			both++;
 		}
-	}
+	});
 
 	totalNEAT.emplace_back(neat);
 	totalRL.emplace_back(rl);

@@ -8,7 +8,7 @@
 
 // output av pop, size, speed, sight in a format interprettable be something
 // like gnuplot
-// #define LOGCREATUREDATA
+#define LOGCREATUREDATA
 
 // food avoids other food, value is pressure multiplier
 #define FOODPRESSURE 20

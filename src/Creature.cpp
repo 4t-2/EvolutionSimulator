@@ -1,6 +1,6 @@
 #include "../inc/Creature.hpp"
 
-Creature::Creature() : phy::Circle(*(agl::Circle *)0)
+Creature::Creature()
 {
 	mass = 1;
 	return;

@@ -8,6 +8,8 @@
 #include "SimulationRules.hpp"
 #include "other.hpp"
 #include "macro.hpp"
+#include "Environment.hpp"
+#include "PhysicsObj.hpp"
 
 #define sizeToHealth(size) 100*size*size*size
 
@@ -18,7 +20,7 @@ struct Memory
 	float reward;
 };
 
-class Creature : public phy::Circle
+class Creature : public Entity<PhysicsObj>
 {
 	public:
 		float rotation = 0;

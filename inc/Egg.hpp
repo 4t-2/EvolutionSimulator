@@ -2,7 +2,7 @@
 
 #include "Creature.hpp"
 
-class Egg
+class Egg : public Entity<PhysicsObj>
 {
 	public:
 		agl::Vec<float, 2> position;
