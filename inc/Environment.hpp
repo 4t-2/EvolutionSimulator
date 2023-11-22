@@ -16,10 +16,6 @@ class BaseEntity
 		virtual ~BaseEntity()
 		{
 		}
-
-		virtual void update()
-		{
-		}
 };
 
 template <typename... T> class Entity : public BaseEntity, public T...
@@ -32,10 +28,6 @@ template <typename... T> class Entity : public BaseEntity, public T...
 		}
 
 		virtual ~Entity()
-		{
-		}
-
-		virtual void update()
 		{
 		}
 };
@@ -143,7 +135,7 @@ class Environment
 			return entityList[typeid(T).hash_code()];
 		}
 
-		template <typename T> void view(std::function<void(T&, std::list<EntityData>::iterator)> func)
+		template <typename T> void view(std::function<void(T&, std::list<EntityData>::iterator&)> func)
 		{
 			for(auto it = getList<T>().begin(); it != getList<T>().end(); it++)
 			{
@@ -246,7 +238,7 @@ class Environment
 				for (EntityPointer &pointer : pair.second)
 				{
 					BaseEntity &entity = *pointer.data;
-					entity.update();
+					// entity.update();
 				}
 			}
 
@@ -255,7 +247,7 @@ class Environment
 				for (auto it = pair.second.begin(); it != pair.second.end(); it++)
 				{
 					BaseEntity &entity = *it->data;
-					entity.update();
+					// entity.update();
 
 					if (!entity.exists)
 					{

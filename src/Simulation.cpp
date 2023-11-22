@@ -664,7 +664,7 @@ void Simulation::updateSimulation()
 
 	meatGrid->clear();
 
-	env.view<Meat>([&](Meat &meat, auto it) {
+	env.view<Meat>([&](Meat &meat, auto &it) {
 		meat.lifetime--;
 
 		if (meat.lifetime < 0)
@@ -703,7 +703,7 @@ void Simulation::updateSimulation()
 		meatGrid->addData(meatGrid->toGridPosition(meat.position, simulationRules.size), &meat);
 	});
 
-	env.view<Creature>([&](Creature &creature, auto it) {
+	env.view<Creature>([&](Creature &creature, auto &it) {
 		// egg laying
 		if (creature.layingEgg)
 		{
@@ -764,8 +764,8 @@ void Simulation::updateSimulation()
 						creature.biomass += foodVol;
 
 						food->exists = false;
-						this->removeFood(food);
 						creature.reward += energy * foodVol;
+						this->removeFood(food);
 					}
 				});
 
@@ -795,8 +795,8 @@ void Simulation::updateSimulation()
 						creature.biomass += meat->energyVol;
 
 						meat->exists = false;
-						this->removeMeat(meat);
 						creature.reward += energy * meat->energyVol;
+						this->removeMeat(meat);
 					}
 				});
 
@@ -852,8 +852,10 @@ void Simulation::updateSimulation()
 		if (creature.health <= 0)
 		{
 			this->addMeat(creature.position, creature.maxHealth / 4);
-			it--;
+			auto next = it;
+			next--;
 			this->removeCreature(it);
+			it = next;
 			return;
 		}
 
@@ -867,7 +869,7 @@ void Simulation::updateSimulation()
 		}
 	});
 
-	env.view<Egg>([&](Egg &egg, auto it) {
+	env.view<Egg>([&](Egg &egg, auto &it) {
 		egg.update();
 
 		if (egg.timeleft <= 0)
@@ -877,8 +879,10 @@ void Simulation::updateSimulation()
 			CreatureData creatureData = hatchedEgg->creatureData;
 			this->addCreature(creatureData, hatchedEgg->position);
 
-			it--;
+			auto next = it;
+			next--;
 			removeEgg(it);
+			it = next;
 
 			return;
 		}
