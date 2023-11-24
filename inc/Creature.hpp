@@ -3,7 +3,6 @@
 #include <AGL/agl.hpp>
 #include "CreatureData.hpp"
 #include "Food.hpp"
-#include "Grid.hpp"
 #include "Meat.hpp"
 #include "SimulationRules.hpp"
 #include "other.hpp"
@@ -87,6 +86,6 @@ class Creature : public Entity<PhysicsObj>
 		void setup(CreatureData &creatureData, SimulationRules *simulationRules);
 		void clear();
 
-		void updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat *> *meatGrid);
+		void updateNetwork(Environment &env);
 		void updateActions();
 };

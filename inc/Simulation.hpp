@@ -4,7 +4,6 @@
 #include "Creature.hpp"
 #include "Egg.hpp"
 #include "Food.hpp"
-#include "Grid.hpp"
 #include "Meat.hpp"
 #include "SimulationRules.hpp"
 #include "macro.hpp"
@@ -14,13 +13,9 @@ class Simulation
 {
 	public:
 		SimulationRules simulationRules;
-		Environment env;
+		Environment		env;
 
 		bool active;
-
-		Grid<Creature *> *creatureGrid;
-		Grid<Food *>	 *foodGrid;
-		Grid<Meat *>	 *meatGrid;
 
 		std::vector<int> totalNEAT;
 		std::vector<int> totalRL;
@@ -48,19 +43,19 @@ class Simulation
 		static void			mutateBuffer(Buffer *buffer, int chance);
 
 		void addCreature(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void removeCreature(std::list<EntityData>::iterator creature);
+		void removeCreature(std::list<BaseEntity *>::iterator creature);
 
 		void addEgg(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void removeEgg(std::list<EntityData>::iterator egg);
+		void removeEgg(std::list<BaseEntity *>::iterator egg);
 
 		void addFood(agl::Vec<float, 2> position);
-		void removeFood(std::list<EntityData>::iterator food);
-// depricated - WILL REMOVE
+		void removeFood(std::list<BaseEntity *>::iterator food);
+		// depricated - WILL REMOVE
 		void removeFood(Food *food);
 
 		void addMeat(agl::Vec<float, 2> position);
 		void addMeat(agl::Vec<float, 2> position, float energy);
-		void removeMeat(std::list<EntityData>::iterator meat);
-// depricated - WILL REMOVE
+		void removeMeat(std::list<BaseEntity *>::iterator meat);
+		// depricated - WILL REMOVE
 		void removeMeat(Meat *meat);
 };

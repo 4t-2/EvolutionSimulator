@@ -17,7 +17,6 @@ class Food : public Entity<PhysicsObj>
 
 		int	  id;
 		float energy;
-		bool exists = true;
 
 #ifdef ACTIVEFOOD
 		agl::Vec<float, 2> nextPos;

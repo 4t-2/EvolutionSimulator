@@ -124,7 +124,7 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
-void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureGrid, Grid<Meat *> *meatGrid)
+void Creature::updateNetwork(Environment &env)
 {
 	if ((maxLife - life) % 240 == 0 && maxLife != life && creatureData.usePG)
 	{
@@ -261,51 +261,55 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 
 	network->setInputNode(CREATURE_PREFERENCE, 0);
 
-	creatureGrid->updateElements(gridPosition, startGridOffset, endGridOffset, [&](Creature *creature) {
-		if (creature == this)
-		{
-			return;
-		}
+	env.getArea<Creature>(
+		[&](Creature &creature) {
+			if (&creature == this)
+			{
+				return;
+			}
 
-		agl::Vec<float, 2> offset	= position - creature->position;
-		float			   distance = offset.length();
+			agl::Vec<float, 2> offset	= position - creature.position;
+			float			   distance = offset.length();
 
-		if (distance > creatureDistance)
-		{
-			return;
-		}
+			if (distance > creatureDistance)
+			{
+				return;
+			}
 
-		if (std::isnan(distance))
-		{
-			return;
-		}
+			if (std::isnan(distance))
+			{
+				return;
+			}
 
-		creatureRotation = vectorAngle(offset) + rotation;
-		creatureDistance = distance;
+			creatureRotation = vectorAngle(offset) + rotation;
+			creatureDistance = distance;
 
-		network->setInputNode(CREATURE_PREFERENCE, creature->preference);
-	});
+			network->setInputNode(CREATURE_PREFERENCE, creature.preference);
+		},
+		env.toGridPosition(position));
 
 	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / rayLength));
 	network->setInputNode(CREATURE_ROTATION, loop(-PI, PI, creatureRotation) / PI);
 
-	foodGrid->updateElements(gridPosition, startGridOffset, endGridOffset, [&](Food *food) {
-		agl::Vec<float, 2> offset	= position - food->position;
-		float			   distance = offset.length();
+	env.getArea<Food>(
+		[&](Food &food) {
+			agl::Vec<float, 2> offset	= position - food.position;
+			float			   distance = offset.length();
 
-		if (distance > foodDistance)
-		{
-			return;
-		}
+			if (distance > foodDistance)
+			{
+				return;
+			}
 
-		if (std::isnan(distance))
-		{
-			return;
-		}
+			if (std::isnan(distance))
+			{
+				return;
+			}
 
-		foodRotation = vectorAngle(offset) + rotation;
-		foodDistance = distance;
-	});
+			foodRotation = vectorAngle(offset) + rotation;
+			foodDistance = distance;
+		},
+		env.toGridPosition(position));
 
 	network->setInputNode(FOOD_DISTANCE, 1 - (foodDistance / rayLength));
 	network->setInputNode(FOOD_ROTATION, loop(-PI, PI, foodRotation) / PI);
@@ -313,23 +317,25 @@ void Creature::updateNetwork(Grid<Food *> *foodGrid, Grid<Creature *> *creatureG
 	float meatDistance = rayLength;
 	float meatRotation = 0;
 
-	meatGrid->updateElements(gridPosition, startGridOffset, endGridOffset, [&](Meat *meat) {
-		agl::Vec<float, 2> offset	= position - meat->position;
-		float			   distance = offset.length();
+	env.getArea<Meat>(
+		[&](Meat &meat) {
+			agl::Vec<float, 2> offset	= position - meat.position;
+			float			   distance = offset.length();
 
-		if (distance > meatDistance)
-		{
-			return;
-		}
+			if (distance > meatDistance)
+			{
+				return;
+			}
 
-		if (std::isnan(distance))
-		{
-			return;
-		}
+			if (std::isnan(distance))
+			{
+				return;
+			}
 
-		meatRotation = vectorAngle(offset) + rotation;
-		meatDistance = distance;
-	});
+			meatRotation = vectorAngle(offset) + rotation;
+			meatDistance = distance;
+		},
+		env.toGridPosition(position));
 
 	network->setInputNode(MEAT_DISTANCE, 1 - (meatDistance / rayLength));
 	network->setInputNode(MEAT_ROTATION, loop(-PI, PI, meatRotation) / PI);

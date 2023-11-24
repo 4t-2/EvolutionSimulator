@@ -15,5 +15,4 @@ class Meat : public Entity<PhysicsObj>
 		float lifetime = 0;
 		float rotation = 0;
 		float energyVol = 60;
-		bool exists;
 };

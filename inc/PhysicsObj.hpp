@@ -1,11 +1,11 @@
 #pragma once
 
 #include <AGL/agl.hpp>
+#include "Environment.hpp"
 
-class PhysicsObj
+class PhysicsObj : virtual public BaseEntity
 {
 	public:
-		agl::Vec<float, 2> position;
 		agl::Vec<float, 2> posOffset;
 		agl::Vec<float, 2> velocity;
 		agl::Vec<float, 2> force;
