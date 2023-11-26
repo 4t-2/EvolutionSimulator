@@ -33,12 +33,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	srand(seed);
 
-	env.grid.resize(simulationRules.gridResolution.x);
-	for (auto &vec : env.grid)
-	{
-		vec.resize(simulationRules.gridResolution.y);
-	}
-	env.size = simulationRules.size;
+	env.setupGrid(simulationRules.size, simulationRules.gridResolution);
 
 	in::NetworkStructure basicStructure(TOTAL_INPUT, {}, TOTAL_OUTPUT, false);
 
@@ -493,7 +488,7 @@ agl::Vec<int, 2> indexToPosition(int i, agl::Vec<int, 2> size)
 
 void Simulation::updateSimulation()
 {
-	env.update<PhysicsObj, PhysicsObj>([](PhysicsObj circle, PhysicsObj otherCircle) {
+	env.update<PhysicsObj, PhysicsObj, true>([](PhysicsObj &circle, PhysicsObj &otherCircle) {
 		agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
 
 		float circleDistance = circleOffset.length();
@@ -527,7 +522,6 @@ void Simulation::updateSimulation()
 			circle.force -= pushback * actingMass;
 			otherCircle.force += pushback * actingMass;
 		}
-
 #ifdef FOODPRESSUREa
 		else if constexpr (std::is_same_v<T, Food> && std::is_same_v<U, Food>)
 		{
@@ -701,7 +695,8 @@ void Simulation::updateSimulation()
 		{
 			float energy = (meatEnergyDensity * (1 - creature.preference));
 
-			creature.energyDensity = newEnergyDensity(creature.biomass, creature.energyDensity, meat.energyVol, energy);
+			creature.energyDensity =
+				newEnergyDensity(creature.biomass, creature.energyDensity, meat.energyVol, energy);
 
 			creature.biomass += meat.energyVol;
 
@@ -731,7 +726,8 @@ void Simulation::updateSimulation()
 			{
 				float energy = (meatEnergyDensity * (1 - creature.preference));
 
-				creature.energyDensity = newEnergyDensity(creature.biomass, creature.energyDensity, leachVol, energy);
+				creature.energyDensity =
+					newEnergyDensity(creature.biomass, creature.energyDensity, leachVol, energy);
 
 				creature.biomass += leachVol;
 
@@ -867,6 +863,8 @@ void Simulation::updateSimulation()
 
 		this->addFood(position);
 	}
+
+    env.keepExisters();
 
 	env.view<Creature>([&](auto &creature, auto) { creature.updateNetwork(env); });
 }

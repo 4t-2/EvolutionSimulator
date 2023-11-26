@@ -31,6 +31,14 @@ class Simulation
 		float &damage				= simulationRules.damage;
 		float &energyCostMultiplier = simulationRules.energyCostMultiplier;
 
+        Simulation()
+        {
+            env.setupTraits<Creature>();
+            env.setupTraits<Food>();
+            env.setupTraits<Meat>();
+            env.setupTraits<Egg>();
+        }
+
 		void create(SimulationRules simulationRules, int seed);
 		void destroy();
 

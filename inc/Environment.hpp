@@ -14,7 +14,6 @@ class BaseEntity
 	public:
 		bool			   exists = true;
 		agl::Vec<float, 2> position;
-
 		virtual ~BaseEntity()
 		{
 		}
@@ -83,7 +82,20 @@ class Environment
 		std::map<std::size_t, std::list<BaseEntity *>>							 entityList;
 		std::map<std::size_t, std::vector<std::size_t>>							 traits;
 		agl::Vec<float, 2>														 size;
+		agl::Vec<int, 2>														 gridResolution;
 		std::vector<std::vector<std::map<std::size_t, std::list<BaseEntity *>>>> grid;
+
+		void setupGrid(agl::Vec<float, 2> size, agl::Vec<int, 2> gridResolution)
+		{
+			this->size			 = size;
+			this->gridResolution = gridResolution;
+
+			grid.resize(gridResolution.x);
+			for (auto &vec : grid)
+			{
+				vec.resize(gridResolution.y);
+			}
+		}
 
 		template <typename T> void setupTraits()
 		{
@@ -97,8 +109,6 @@ class Environment
 			T *t = new T();
 
 			entityList[hash].emplace_back(t);
-
-			setupTraits<T>();
 
 			return *t;
 		}
@@ -119,25 +129,25 @@ class Environment
 		agl::Vec<int, 2> toGridPosition(agl::Vec<float, 2> position)
 		{
 			agl::Vec<int, 2> gridPosition;
-			gridPosition.x = (position.x / size.x) * (grid.size());
-			gridPosition.y = (position.y / size.y) * (grid.at(0).size());
+			gridPosition.x = (position.x / size.x) * (gridResolution.x);
+			gridPosition.y = (position.y / size.y) * (gridResolution.y);
 
 			if (gridPosition.x < 0)
 			{
 				gridPosition.x = 0;
 			}
+			else if (gridPosition.x > (gridResolution.x - 1))
+			{
+				gridPosition.x = (gridResolution.x - 1);
+			}
+
 			if (gridPosition.y < 0)
 			{
 				gridPosition.y = 0;
 			}
-
-			if (gridPosition.x > (size.x - 1))
+			else if (gridPosition.y > (gridResolution.y - 1))
 			{
-				gridPosition.x = (size.x - 1);
-			}
-			if (gridPosition.y > (size.y - 1))
-			{
-				gridPosition.y = (size.y - 1);
+				gridPosition.y = (gridResolution.y - 1);
 			}
 
 			return gridPosition;
@@ -146,8 +156,7 @@ class Environment
 		template <typename T> void addToGrid(T &t)
 		{
 			agl::Vec<int, 2> gridPosition = toGridPosition(t.position);
-
-			auto &map = grid[gridPosition.x][gridPosition.y];
+			auto			&map		  = grid[gridPosition.x][gridPosition.y];
 			map[typeid(T).hash_code()].emplace_back(&t);
 		}
 
@@ -195,7 +204,7 @@ class Environment
 						continue;
 					}
 
-					for (auto entity : grid.at(gridPosition.x).at(gridPosition.y)[typeid(T).hash_code()])
+					for (auto &entity : grid.at(gridPosition.x).at(gridPosition.y)[typeid(T).hash_code()])
 					{
 						if (!entity->exists)
 						{
@@ -208,65 +217,66 @@ class Environment
 			}
 		}
 
-		template <typename T, typename U> void update(std::function<void(T &, U &)> func)
+		std::list<BaseEntity *> &getListInGrid(agl::Vec<int, 2> pos, std::size_t hash)
 		{
-			agl::Vec<int, 2> startGridOffset = {0, 0};
-			agl::Vec<int, 2> endGridOffset	 = {1, 1};
-			agl::Vec<int, 2> gridPosition;
+			return grid.at(pos.x).at(pos.y)[hash];
+		}
 
-			for (gridPosition.x = 0; gridPosition.x < grid.size(); gridPosition.x++)
+		template <typename T, typename U, bool oneWay = false> void update(std::function<void(T &, U &)> func)
+		{
+			agl::Vec<int, 2> startGridOffset;
+			if (!oneWay)
 			{
-				for (gridPosition.y = 0; gridPosition.y < grid[gridPosition.x].size(); gridPosition.y++)
+				startGridOffset = {-1, -1};
+			}
+
+			agl::Vec<int, 2> endGridOffset = {1, 1};
+			agl::Vec<int, 2> gridPosition  = {0, 0};
+
+			for (gridPosition.x = 0; gridPosition.x < gridResolution.x; gridPosition.x++)
+			{
+				for (gridPosition.y = 0; gridPosition.y < gridResolution.y; gridPosition.y++)
 				{
 					for (int x = startGridOffset.x; x <= endGridOffset.x; x++)
 					{
-						if (gridPosition.x + x < 0 || gridPosition.x + x > (this->size.x - 1))
+						if (gridPosition.x + x < 0 || gridPosition.x + x > (gridResolution.x - 1))
 						{
 							continue;
 						}
 
 						for (int y = startGridOffset.y; y <= endGridOffset.y; y++)
 						{
-							if (gridPosition.y + y < 0 || gridPosition.y + y > (this->size.y - 1))
+							if (gridPosition.y + y < 0 || gridPosition.y + y > (gridResolution.y - 1))
 							{
 								continue;
 							}
 
-							if (std::is_same<T, U>())
+							for (auto hashT : traits[typeid(T).hash_code()])
 							{
-								for (auto it1 = grid.at(x).at(y)[typeid(T).hash_code()].begin();
-									 it1 != grid.at(x).at(y)[typeid(T).hash_code()].end(); it1++)
+								for (auto hashU : traits[typeid(U).hash_code()])
 								{
-									if (!(*it1)->exists)
+									auto &list1 = getListInGrid(gridPosition, hashT);
+									auto &list2 = getListInGrid({x + gridPosition.x, y + gridPosition.y}, hashU);
+
+									auto it1 = list1.begin();
+
+									std::list<BaseEntity *>::iterator it2;
+
+									if (std::is_same<T, U>() && &list1 == &list2)
 									{
-										continue;
+										it2 = it1;
 									}
-									for (auto it2 = std::next(it1, 1);
-										 it2 != grid.at(x).at(y)[typeid(U).hash_code()].end(); it2++)
+									else
 									{
-										if (!(*it2)->exists)
+										it2 = list2.begin();
+									}
+
+									for (; it1 != list1.end(); it1++)
+									{
+										for (; it2 != list2.end(); it2++)
 										{
-											continue;
+											func(*dynamic_cast<T *>(*it1), *dynamic_cast<U *>(*it2));
 										}
-										func(*dynamic_cast<T *>(*it1), *dynamic_cast<U *>(*it2));
-									}
-								}
-							}
-							else
-							{
-								for (auto t : grid.at(x).at(y)[typeid(T).hash_code()])
-								{
-									if (!t->exists)
-									{
-										continue;
-									}
-									for (auto u : grid.at(x).at(y)[typeid(U).hash_code()])
-									{
-										if (!u->exists)
-										{
-											continue;
-										}
-										func(*dynamic_cast<T *>(t), *dynamic_cast<U *>(u));
 									}
 								}
 							}
@@ -278,14 +288,18 @@ class Environment
 
 		void clearGrid()
 		{
-			for (auto x : grid)
+			float num  = 0;
+			int	  size = 0;
+			for (auto &x : grid)
 			{
-				for (auto y : x)
+				for (auto &y : x)
 				{
-					for (auto [key, list] : y)
+					for (auto &[key, list] : y)
 					{
+						num += list.size();
 						list.clear();
 					}
+					size++;
 				}
 			}
 		}
@@ -394,7 +408,7 @@ class Environment
 
 		void keepExisters()
 		{
-			for (auto [key, list] : entityList)
+			for (auto &[key, list] : entityList)
 			{
 				for (auto it = list.begin(); it != list.end(); it++)
 				{
@@ -428,16 +442,15 @@ class Environment
 
 		void destroy()
 		{
-			for (auto [f, s] : entityList)
+			for (auto &[f, s] : entityList)
 			{
-				for (auto list : s)
+				for (auto &entity : s)
 				{
-					delete list;
+					delete entity;
 				}
 			}
 
 			clearGrid();
 			entityList.clear();
-			traits.clear();
 		}
 };

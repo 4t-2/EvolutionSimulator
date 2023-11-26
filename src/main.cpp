@@ -804,7 +804,7 @@ int main()
 			}
 		}
 
-		for (std::string msgLog : Debug::log)
+		for (std::string &msgLog : Debug::log)
 		{
 			debugLog.get<0>().str = debugLog.get<1>().str;
 			debugLog.get<1>().str = debugLog.get<2>().str;
