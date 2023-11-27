@@ -111,20 +111,6 @@ void Simulation::destroy()
 #endif
 }
 
-void Simulation::mutateBuffer(Buffer *buffer, int chance)
-{
-	for (int i = 0; i < buffer->size; i++)
-	{
-		for (int x = 0; x < 8; x++)
-		{
-			int mutation	= (((float)rand() / (float)RAND_MAX) * chance);
-			buffer->data[i] = buffer->data[i] ^ ((mutation == 0) << x);
-		}
-	}
-
-	return;
-}
-
 void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> position)
 {
 	Creature &newCreature = env.addEntity<Creature>();
@@ -249,7 +235,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	buf.data[4] = 255 * (creatureData->preference / 1);
 	buf.data[5] = 255 * (creatureData->metabolism / 2);
 
-	Simulation::mutateBuffer(&buf, bodyMutation);
+	buf.mutate(bodyMutation);
 
 	creatureData->sight		 = (buf.data[0] * 2) / 255.;
 	creatureData->speed		 = (buf.data[1] * 2) / 255.;
@@ -488,67 +474,76 @@ agl::Vec<int, 2> indexToPosition(int i, agl::Vec<int, 2> size)
 
 void Simulation::updateSimulation()
 {
-	env.update<PhysicsObj, PhysicsObj, true>([](PhysicsObj &circle, PhysicsObj &otherCircle) {
-		agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
-
-		float circleDistance = circleOffset.length();
-
-		float circleOverlap = (otherCircle.radius + circle.radius) - circleDistance;
-
-		if (circleOverlap > 0)
-		{
-			if (circleDistance == 0)
-			{
-				circleOffset   = {rand() / (float)RAND_MAX - (float).5, rand() / (float)RAND_MAX - (float).5};
-				circleDistance = circleOffset.length();
-				circleOverlap  = (otherCircle.radius + circle.radius) - circleDistance;
-			}
-
-			agl::Vec<float, 2> offsetNormal = circleOffset.normalized();
-
-			if (std::isnan(offsetNormal.x))
-			{
-				offsetNormal.x = 1;
-				offsetNormal.y = 0;
-			}
-
-			agl::Vec<float, 2> pushback = offsetNormal * circleOverlap;
-
-			float actingMass = circle.mass > otherCircle.mass ? otherCircle.mass : circle.mass;
-
-			circle.posOffset -= pushback * (otherCircle.mass / (circle.mass + otherCircle.mass));
-			otherCircle.posOffset += pushback * (circle.mass / (circle.mass + otherCircle.mass));
-
-			circle.force -= pushback * actingMass;
-			otherCircle.force += pushback * actingMass;
-		}
-#ifdef FOODPRESSUREa
-		else if constexpr (std::is_same_v<T, Food> && std::is_same_v<U, Food>)
-		{
-			if (circleDistance < 700)
-			{
-				float forceScalar = FOODPRESSURE / (circleDistance * circleDistance);
-
-				agl::Vec<float, 2> force = circleOffset.normalized() * forceScalar;
-
-				circle.force -= force;
-				otherCircle.force += force;
-			}
-		}
-#endif
-	});
-
-	// everything else
-
 	env.clearGrid();
 
-	env.view<Creature>([&](Creature &creature, auto) {
+	env.selfUpdate<Creature>([this](Creature &creature) {
+		creature.updateNetwork();
 		creature.updateActions();
 
-		env.addToGrid(creature);
+		// egg laying
+		if (creature.layingEgg)
+		{
+			if (creature.energy > creature.eggTotalCost)
+			{
+				creature.incubating = true;
+				creature.reward += 50;
+			}
+		}
+
+		if (creature.incubating)
+		{
+			creature.energy -= PREGNANCY_COST;
+			creature.eggDesposit += PREGNANCY_COST;
+
+			if (creature.eggDesposit >= creature.eggTotalCost)
+			{
+				CreatureData creatureData = creature.creatureData;
+
+				mutate(&creatureData, 50, 3);
+
+				creatureData.startEnergy = creature.eggEnergyCost;
+
+				this->addEgg(creatureData, creature.position);
+
+				creature.incubating	 = false;
+				creature.eggDesposit = 0;
+			}
+		}
+
+		// tired creature damage
+		if (creature.energy <= 0)
+		{
+			creature.health--;
+			creature.energy = 0;
+		}
+
+		// age damage
+		if (creature.life < 0)
+		{
+			creature.health--;
+		}
+
+		// killing creature
+		if (creature.health <= 0)
+		{
+			this->addMeat(creature.position, creature.maxHealth / 4);
+			creature.exists = false;
+			return;
+		}
+
+		if (creature.energy > creature.maxEnergy)
+		{
+			creature.energy = creature.maxEnergy;
+		}
+		if (creature.biomass > creature.maxBiomass)
+		{
+			creature.biomass = creature.maxBiomass;
+		}
+
+		creature.updatePhysics();
 	});
 
-	env.view<Food>([&](Food &food, auto) {
+	env.selfUpdate<Food>([&](Food &food) {
 		PhysicsObj &circle = food;
 
 #ifdef FOODDRAG
@@ -601,21 +596,15 @@ void Simulation::updateSimulation()
 		}
 #endif
 
-		food.update();
-
-		food.exists = true;
-
-		env.addToGrid(food);
+		food.updatePhysics();
 	});
 
-	env.view<Meat>([&](Meat &meat, auto &it) {
+	env.selfUpdate<Meat>([](Meat &meat) {
 		meat.lifetime--;
 
 		if (meat.lifetime < 0)
 		{
-			auto next = std::next(it, -1);
-			env.removeEntity<Meat>(it);
-			it = next;
+			meat.exists = false;
 			return;
 		}
 
@@ -640,11 +629,128 @@ void Simulation::updateSimulation()
 
 		circle.force -= drag;
 
-		meat.update();
+		meat.updatePhysics();
+	});
 
-		meat.exists = true;
+	env.selfUpdate<Egg>([&](Egg &egg) {
+		egg.update();
 
-		env.addToGrid(meat);
+		if (egg.timeleft <= 0)
+		{
+			Egg *hatchedEgg = &egg;
+
+			CreatureData creatureData = hatchedEgg->creatureData;
+			this->addCreature(creatureData, hatchedEgg->position);
+
+			egg.exists = false;
+			return;
+		}
+	});
+
+	env.update<PhysicsObj, PhysicsObj, true>([](PhysicsObj &circle, PhysicsObj &otherCircle) {
+		agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
+
+		float circleDistance = circleOffset.length();
+
+		float circleOverlap = (otherCircle.radius + circle.radius) - circleDistance;
+
+		if (circleOverlap > 0)
+		{
+			if (circleDistance == 0)
+			{
+				circleOffset   = {rand() / (float)RAND_MAX - (float).5, rand() / (float)RAND_MAX - (float).5};
+				circleDistance = circleOffset.length();
+				circleOverlap  = (otherCircle.radius + circle.radius) - circleDistance;
+			}
+
+			agl::Vec<float, 2> offsetNormal = circleOffset.normalized();
+
+			if (std::isnan(offsetNormal.x))
+			{
+				offsetNormal.x = 1;
+				offsetNormal.y = 0;
+			}
+
+			agl::Vec<float, 2> pushback = offsetNormal * circleOverlap;
+
+			float actingMass = circle.mass > otherCircle.mass ? otherCircle.mass : circle.mass;
+
+			circle.posOffset -= pushback * (otherCircle.mass / (circle.mass + otherCircle.mass));
+			otherCircle.posOffset += pushback * (circle.mass / (circle.mass + otherCircle.mass));
+
+			circle.force -= pushback * actingMass;
+			otherCircle.force += pushback * actingMass;
+		}
+#ifdef FOODPRESSUREa
+		else if constexpr (std::is_same_v<T, Food> && std::is_same_v<U, Food>)
+		{
+			if (circleDistance < 700)
+			{
+				float forceScalar = FOODPRESSURE / (circleDistance * circleDistance);
+
+				agl::Vec<float, 2> force = circleOffset.normalized() * forceScalar;
+
+				circle.force -= force;
+				otherCircle.force += force;
+			}
+		}
+#endif
+	});
+
+	env.update<Creature, Creature>([](Creature &seeingCreature, Creature &creature) {
+		agl::Vec<float, 2> offset	= seeingCreature.position - creature.position;
+		float			   distance = offset.length();
+
+		if (distance > seeingCreature.creatureRelPos.distance)
+		{
+			return;
+		}
+
+		if (std::isnan(distance))
+		{
+			return;
+		}
+
+		seeingCreature.creatureRelPos.rotation = vectorAngle(offset) + seeingCreature.rotation;
+		seeingCreature.creatureRelPos.distance = distance;
+
+		seeingCreature.network->setInputNode(CREATURE_PREFERENCE, creature.preference);
+	});
+
+	env.update<Creature, Food>([](Creature &creature, Food &food) {
+		agl::Vec<float, 2> offset	= creature.position - food.position;
+		float			   distance = offset.length();
+
+		if (distance > creature.foodRelPos.distance)
+		{
+			return;
+		}
+
+		if (std::isnan(distance))
+		{
+			return;
+		}
+
+		creature.foodRelPos.rotation = vectorAngle(offset) + creature.rotation;
+		creature.foodRelPos.distance = distance;
+	});
+
+	env.update<Creature, Meat>([&](Creature &creature, Meat &meat) {
+		agl::Vec<float, 2> offset	= creature.position - meat.position;
+		float			   distance = offset.length();
+
+		if (distance > creature.meatRelPos.distance)
+		{
+			return;
+		}
+
+		if (std::isnan(distance))
+		{
+			return;
+		}
+
+		creature.meatRelPos.rotation = vectorAngle(offset) + creature.rotation;
+		creature.meatRelPos.distance = distance;
 	});
 
 	// creature eating
@@ -695,8 +801,7 @@ void Simulation::updateSimulation()
 		{
 			float energy = (meatEnergyDensity * (1 - creature.preference));
 
-			creature.energyDensity =
-				newEnergyDensity(creature.biomass, creature.energyDensity, meat.energyVol, energy);
+			creature.energyDensity = newEnergyDensity(creature.biomass, creature.energyDensity, meat.energyVol, energy);
 
 			creature.biomass += meat.energyVol;
 
@@ -726,8 +831,7 @@ void Simulation::updateSimulation()
 			{
 				float energy = (meatEnergyDensity * (1 - creature.preference));
 
-				creature.energyDensity =
-					newEnergyDensity(creature.biomass, creature.energyDensity, leachVol, energy);
+				creature.energyDensity = newEnergyDensity(creature.biomass, creature.energyDensity, leachVol, energy);
 
 				creature.biomass += leachVol;
 
@@ -737,123 +841,7 @@ void Simulation::updateSimulation()
 		}
 	});
 
-	env.view<Creature>([&](Creature &creature, auto &it) {
-		// egg laying
-		if (creature.layingEgg)
-		{
-			if (creature.energy > creature.eggTotalCost)
-			{
-				creature.incubating = true;
-				creature.reward += 50;
-			}
-		}
-
-		if (creature.incubating)
-		{
-			creature.energy -= PREGNANCY_COST;
-			creature.eggDesposit += PREGNANCY_COST;
-
-			if (creature.eggDesposit >= creature.eggTotalCost)
-			{
-				CreatureData creatureData = creature.creatureData;
-
-				mutate(&creatureData, 50, 3);
-
-				creatureData.startEnergy = creature.eggEnergyCost;
-
-				this->addEgg(creatureData, creature.position);
-
-				creature.incubating	 = false;
-				creature.eggDesposit = 0;
-			}
-		}
-
-		// tired creature damage
-		if (creature.energy <= 0)
-		{
-			creature.health--;
-			creature.energy = 0;
-		}
-
-		// age damage
-		if (creature.life < 0)
-		{
-			creature.health--;
-		}
-
-		// killing creature
-		if (creature.health <= 0)
-		{
-			this->addMeat(creature.position, creature.maxHealth / 4);
-			auto next = it;
-			next--;
-			this->removeCreature(it);
-			it = next;
-			return;
-		}
-
-		if (creature.energy > creature.maxEnergy)
-		{
-			creature.energy = creature.maxEnergy;
-		}
-		if (creature.biomass > creature.maxBiomass)
-		{
-			creature.biomass = creature.maxBiomass;
-		}
-	});
-
-	env.view<Egg>([&](Egg &egg, auto &it) {
-		egg.update();
-
-		if (egg.timeleft <= 0)
-		{
-			Egg *hatchedEgg = &egg;
-
-			CreatureData creatureData = hatchedEgg->creatureData;
-			this->addCreature(creatureData, hatchedEgg->position);
-
-			auto next = it;
-			next--;
-			removeEgg(it);
-			it = next;
-
-			return;
-		}
-	});
-
-	// static int penalty = 0;
-	//
-	// int adjustedMaxFood =
-	// 	int(simulationRules.maxFood * ((float)simulationRules.preferedCreatures
-	// / existingCreatures->length)); adjustedMaxFood = std::min(adjustedMaxFood,
-	// simulationRules.maxFood);
-	//
-	// if (existingCreatures->length > simulationRules.preferedCreatures)
-	// {
-	// 	penalty++;
-	//
-	// 	if (penalty > ((adjustedMaxFood + simulationRules.penaltyBuffer) *
-	// simulationRules.penaltyPeriod))
-	// 	{
-	// 		penalty = ((adjustedMaxFood + simulationRules.penaltyBuffer) *
-	// simulationRules.penaltyPeriod);
-	// 	}
-	// }
-	// else
-	// {
-	// 	penalty--;
-	//
-	// 	if (penalty < 0)
-	// 	{
-	// 		penalty = 0;
-	// 	}
-	// }
-	//
-	// adjustedMaxFood -= (penalty / simulationRules.penaltyPeriod);
-
 	// adding more food
-	// int max = std::min(simulationRules.maxFood, adjustedMaxFood);
-	// int max = 0;
 
 	for (; env.getList<Food>().size() < foodCap;)
 	{
@@ -863,10 +851,6 @@ void Simulation::updateSimulation()
 
 		this->addFood(position);
 	}
-
-    env.keepExisters();
-
-	env.view<Creature>([&](auto &creature, auto) { creature.updateNetwork(env); });
 }
 
 void Simulation::update()

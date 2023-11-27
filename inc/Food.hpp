@@ -1,17 +1,17 @@
 #pragma once
 
-#include <AGL/agl.hpp>
-#include <cstdlib>
-#include "macro.hpp"
 #include "Environment.hpp"
 #include "PhysicsObj.hpp"
+#include "macro.hpp"
+#include <AGL/agl.hpp>
+#include <cstdlib>
 
 class Food : public Entity<PhysicsObj>
 {
 	public:
 		Food()
 		{
-			mass	 = 1;
+			mass   = 1;
 			radius = 5;
 		}
 

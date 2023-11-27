@@ -19,12 +19,20 @@ struct Memory
 	float reward;
 };
 
+struct RelPos
+{
+	float rotation;
+	float distance;
+};
+
 class Creature : public Entity<PhysicsObj>
 {
 	public:
 		float rotation = 0;
 
-		agl::Vec<int, 2> gridPosition = {0, 0};
+		RelPos creatureRelPos;
+		RelPos foodRelPos;
+		RelPos meatRelPos;
 
 		in::NeuralNetwork *network = nullptr;
 
@@ -86,6 +94,6 @@ class Creature : public Entity<PhysicsObj>
 		void setup(CreatureData &creatureData, SimulationRules *simulationRules);
 		void clear();
 
-		void updateNetwork(Environment &env);
+		void updateNetwork();
 		void updateActions();
 };

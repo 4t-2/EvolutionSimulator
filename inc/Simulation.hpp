@@ -48,7 +48,6 @@ class Simulation
 
 		static Buffer		creatureDataToBuffer(CreatureData &creatureData);
 		static CreatureData bufferToCreatureData(Buffer buffer);
-		static void			mutateBuffer(Buffer *buffer, int chance);
 
 		void addCreature(CreatureData &creatureData, agl::Vec<float, 2> position);
 		void removeCreature(std::list<BaseEntity *>::iterator creature);

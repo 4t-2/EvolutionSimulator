@@ -1,4 +1,5 @@
 #include "../inc/Creature.hpp"
+#include "../inc/Buffer.hpp"
 
 Creature::Creature()
 {
@@ -28,8 +29,6 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	existing = true;
 
 	this->simulationRules = simulationRules;
-
-	this->gridPosition = {0, 0};
 
 	this->creatureData = creatureData;
 
@@ -124,8 +123,35 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
-void Creature::updateNetwork(Environment &env)
+void Creature::updateNetwork()
 {
+	if (creatureData.usePG)
+	{
+		int memSlot = (maxLife - life) % 240;
+
+		if (memSlot == 0)
+		{
+			for (int i = 0; i < TOTAL_OUTPUT; i++)
+			{
+				shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * .5;
+			}
+		}
+
+		for (int i = 0; i < TOTAL_INPUT; i++)
+		{
+			memory[memSlot].state[i] = network->inputNode[i]->value;
+		}
+
+		for (int i = 0; i < TOTAL_OUTPUT; i++)
+		{
+
+			network->outputNode[i].value += shift[i];
+			network->outputNode[i].value = std::clamp<float>(network->outputNode[i].value, -1, 1);
+
+			memory[memSlot].action[i] = network->outputNode[i].value;
+		}
+	}
+
 	if ((maxLife - life) % 240 == 0 && maxLife != life && creatureData.usePG)
 	{
 		float loss = 0;
@@ -182,163 +208,20 @@ void Creature::updateNetwork(Environment &env)
 
 	network->setInputNode(SPEED_INPUT, velocity.length());
 
-	// for (int x = 0; x < RAY_TOTAL; x++)
-	// {
-	// 	float nearestDistance = RAY_LENGTH;
-	// 	int	  type			  = 0;
-	//
-	// 	for (int i = 0; i < existingFood->getLength(); i++)
-	// 	{
-	// 		agl::Vec<float, 2> offset	= position -
-	// existingFood->get(i)->position; 		float distance =
-	// offset.length();
-	//
-	// 		if (distance > nearestDistance)
-	// 		{
-	// 			continue;
-	// 		}
-	//
-	// 		float foodRotation	= vectorAngle(offset);
-	// 		float creatureAngle = rotation;
-	// 		float rayAngle		= (((float)x / (RAY_TOTAL - 1)) * PI) -
-	// (PI / 2);
-	//
-	// 		rayAngle -= creatureAngle;
-	//
-	// 		float angleDifference	 = loop(-PI, PI, foodRotation -
-	// rayAngle); 		float maxAngleDifference = (PI / RAY_TOTAL) / 2;
-	//
-	// 		if (angleDifference < maxAngleDifference && angleDifference >
-	// -maxAngleDifference)
-	// 		{
-	// 			nearestDistance = distance;
-	// 			type			= 1;
-	// 		}
-	// 	}
-	//
-	// 	for (int i = 0; i < existingCreature->getLength(); i++)
-	// 	{
-	// 		if (existingCreature->get(i) == this)
-	// 		{
-	// 			continue;
-	// 		}
-	//
-	// 		agl::Vec<float, 2> offset	= position -
-	// existingCreature->get(i)->getPosition();
-	// 		float			   distance = offset.length();
-	//
-	// 		if (distance > nearestDistance)
-	// 		{
-	// 			continue;
-	// 		}
-	//
-	// 		float creatureRotation = vectorAngle(offset);
-	// 		float creatureAngle	   = rotation;
-	// 		float rayAngle		   = (((float)x / (RAY_TOTAL - 1)) * PI)
-	// - (PI / 2);
-	//
-	// 		rayAngle -= creatureAngle;
-	//
-	// 		float angleDifference	 = loop(-PI, PI, creatureRotation -
-	// rayAngle); 		float maxAngleDifference = (PI / RAY_TOTAL) / 2;
-	//
-	// 		if (angleDifference < maxAngleDifference && angleDifference >
-	// -maxAngleDifference)
-	// 		{
-	// 			nearestDistance = distance;
-	// 			type			= -1;
-	// 		}
-	// 	}
-	//
-	// 	network->setInputNode((x + 5), (RAY_LENGTH - nearestDistance) /
-	// RAY_LENGTH); 	network->setInputNode((x + 5) + RAY_TOTAL, type);
-	// }
-
-	float creatureDistance = rayLength;
-	float creatureRotation = 0;
-	float foodDistance	   = rayLength;
-	float foodRotation	   = 0;
+	creatureRelPos = {0, rayLength};
+	foodRelPos	   = {0, rayLength};
+	meatRelPos	   = {0, rayLength};
 
 	network->setInputNode(CREATURE_PREFERENCE, 0);
 
-	env.getArea<Creature>(
-		[&](Creature &creature) {
-			if (&creature == this)
-			{
-				return;
-			}
+	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureRelPos.distance / rayLength));
+	network->setInputNode(CREATURE_ROTATION, loop(-PI, PI, creatureRelPos.rotation) / PI);
 
-			agl::Vec<float, 2> offset	= position - creature.position;
-			float			   distance = offset.length();
+	network->setInputNode(FOOD_DISTANCE, 1 - (foodRelPos.distance / rayLength));
+	network->setInputNode(FOOD_ROTATION, loop(-PI, PI, foodRelPos.rotation) / PI);
 
-			if (distance > creatureDistance)
-			{
-				return;
-			}
-
-			if (std::isnan(distance))
-			{
-				return;
-			}
-
-			creatureRotation = vectorAngle(offset) + rotation;
-			creatureDistance = distance;
-
-			network->setInputNode(CREATURE_PREFERENCE, creature.preference);
-		},
-		env.toGridPosition(position));
-
-	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureDistance / rayLength));
-	network->setInputNode(CREATURE_ROTATION, loop(-PI, PI, creatureRotation) / PI);
-
-	env.getArea<Food>(
-		[&](Food &food) {
-			agl::Vec<float, 2> offset	= position - food.position;
-			float			   distance = offset.length();
-
-			if (distance > foodDistance)
-			{
-				return;
-			}
-
-			if (std::isnan(distance))
-			{
-				return;
-			}
-
-			foodRotation = vectorAngle(offset) + rotation;
-			foodDistance = distance;
-		},
-		env.toGridPosition(position));
-
-	network->setInputNode(FOOD_DISTANCE, 1 - (foodDistance / rayLength));
-	network->setInputNode(FOOD_ROTATION, loop(-PI, PI, foodRotation) / PI);
-
-	float meatDistance = rayLength;
-	float meatRotation = 0;
-
-	env.getArea<Meat>(
-		[&](Meat &meat) {
-			agl::Vec<float, 2> offset	= position - meat.position;
-			float			   distance = offset.length();
-
-			if (distance > meatDistance)
-			{
-				return;
-			}
-
-			if (std::isnan(distance))
-			{
-				return;
-			}
-
-			meatRotation = vectorAngle(offset) + rotation;
-			meatDistance = distance;
-		},
-		env.toGridPosition(position));
-
-	network->setInputNode(MEAT_DISTANCE, 1 - (meatDistance / rayLength));
-	network->setInputNode(MEAT_ROTATION, loop(-PI, PI, meatRotation) / PI);
+	network->setInputNode(MEAT_DISTANCE, 1 - (meatRelPos.distance / rayLength));
+	network->setInputNode(MEAT_ROTATION, loop(-PI, PI, meatRelPos.rotation) / PI);
 
 	network->setInputNode(ENERGY_INPUT, energy / maxEnergy);
 	network->setInputNode(HEALTH_INPUT, health / maxHealth);
@@ -351,32 +234,6 @@ void Creature::updateNetwork(Environment &env)
 
 void Creature::updateActions()
 {
-	if (creatureData.usePG)
-	{
-		int memSlot = (maxLife - life) % 240;
-
-		if (memSlot == 0)
-		{
-			for (int i = 0; i < TOTAL_OUTPUT; i++)
-			{
-				shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * .5;
-			}
-		}
-
-		for (int i = 0; i < TOTAL_INPUT; i++)
-		{
-			memory[memSlot].state[i] = network->inputNode[i]->value;
-		}
-
-		for (int i = 0; i < TOTAL_OUTPUT; i++)
-		{
-
-			network->outputNode[i].value += shift[i];
-			network->outputNode[i].value = std::clamp<float>(network->outputNode[i].value, -1, 1);
-
-			memory[memSlot].action[i] = network->outputNode[i].value;
-		}
-	}
 
 	float moveForce = 0;
 
@@ -454,8 +311,6 @@ void Creature::updateActions()
 	agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 1);
 
 	force = force - drag;
-
-	this->update();
 
 	return;
 }

@@ -9,11 +9,16 @@
 #include <tuple>
 #include <typeinfo>
 
+class Environment;
+
 class BaseEntity
 {
+	private:
+		int test;
 	public:
 		bool			   exists = true;
 		agl::Vec<float, 2> position;
+
 		virtual ~BaseEntity()
 		{
 		}
@@ -153,11 +158,12 @@ class Environment
 			return gridPosition;
 		}
 
-		template <typename T> void addToGrid(T &t)
+		template <typename T> void addToGrid(BaseEntity &entity)
 		{
-			agl::Vec<int, 2> gridPosition = toGridPosition(t.position);
+			agl::Vec<int, 2> gridPosition = toGridPosition(entity.position);
 			auto			&map		  = grid[gridPosition.x][gridPosition.y];
-			map[typeid(T).hash_code()].emplace_back(&t);
+
+			map[typeid(T).hash_code()].emplace_back(&entity);
 		}
 
 		template <typename T>
@@ -282,6 +288,28 @@ class Environment
 							}
 						}
 					}
+				}
+			}
+		}
+
+		template <typename T> void selfUpdate(std::function<void(T&)> func)
+		{
+			auto &list = entityList[typeid(T).hash_code()];
+
+			for (auto it = list.begin(); it != list.end(); it++)
+			{
+				BaseEntity &entity = **it;
+
+				func(*dynamic_cast<T*>(*it));
+
+				if (!entity.exists)
+				{
+					it--;
+					list.erase(std::next(it, 1));
+				}
+				else
+				{
+					addToGrid<T>(entity);
 				}
 			}
 		}

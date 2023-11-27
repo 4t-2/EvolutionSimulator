@@ -12,7 +12,7 @@ class PhysicsObj : virtual public BaseEntity
 		float			   radius = 1;
 		float			   mass	  = 1;
 
-		void update()
+		void updatePhysics()
 		{
 			velocity = velocity + (force * (1. / mass));
 			force	 = {0, 0};
