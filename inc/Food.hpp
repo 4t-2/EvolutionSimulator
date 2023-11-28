@@ -9,7 +9,10 @@
 class Food : public Entity<PhysicsObj>
 {
 	public:
-		Food()
+        agl::Vec<float, 2> position;
+        bool exists;
+
+		Food() : Entity<PhysicsObj>(exists, position)
 		{
 			mass   = 1;
 			radius = 5;

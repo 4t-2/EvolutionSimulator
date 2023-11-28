@@ -1,9 +1,9 @@
 #pragma once
 
-#include <AGL/agl.hpp>
 #include "Environment.hpp"
+#include <AGL/agl.hpp>
 
-class PhysicsObj : virtual public BaseEntity
+class PhysicsObj : public BaseEntity
 {
 	public:
 		agl::Vec<float, 2> posOffset;
@@ -11,6 +11,10 @@ class PhysicsObj : virtual public BaseEntity
 		agl::Vec<float, 2> force;
 		float			   radius = 1;
 		float			   mass	  = 1;
+
+		PhysicsObj(bool &exists, agl::Vec<float, 2> &position) : BaseEntity(exists, position)
+		{
+		}
 
 		void updatePhysics()
 		{

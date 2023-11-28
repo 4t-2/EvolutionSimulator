@@ -156,7 +156,7 @@ void Simulation::removeFood(Food *food)
 	std::list<BaseEntity *>::iterator iterator;
 
 	env.view<Food>([&](auto, auto it) {
-		if (*it == food)
+		if (*it == (BaseEntity *)(DoNotUse *)food)
 		{
 			iterator = it;
 		}
@@ -199,7 +199,7 @@ void Simulation::removeMeat(Meat *meat)
 	std::list<BaseEntity *>::iterator iterator;
 
 	env.view<Meat>([&](auto, auto it) {
-		if (*it == meat)
+		if (*it == (BaseEntity *)(DoNotUse *)meat)
 		{
 			iterator = it;
 		}
@@ -474,6 +474,17 @@ agl::Vec<int, 2> indexToPosition(int i, agl::Vec<int, 2> size)
 
 void Simulation::updateSimulation()
 {
+	// adding more food
+
+	for (; env.getList<Food>().size() < foodCap;)
+	{
+		agl::Vec<float, 2> position;
+		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
+		position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
+
+		this->addFood(position);
+	}
+
 	env.clearGrid();
 
 	env.selfUpdate<Creature>([this](Creature &creature) {
@@ -840,17 +851,6 @@ void Simulation::updateSimulation()
 			}
 		}
 	});
-
-	// adding more food
-
-	for (; env.getList<Food>().size() < foodCap;)
-	{
-		agl::Vec<float, 2> position;
-		position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
-		position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
-
-		this->addFood(position);
-	}
 }
 
 void Simulation::update()

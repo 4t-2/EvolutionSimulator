@@ -6,7 +6,10 @@
 class Meat : public Entity<PhysicsObj>
 {
 	public:
-		Meat()
+        bool exists;
+        agl::Vec<float, 2> position;
+
+		Meat() : Entity<PhysicsObj>(exists, position)
 		{
 			mass   = 2;
 			radius = 5;

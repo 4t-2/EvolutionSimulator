@@ -1,7 +1,7 @@
 #include "../inc/Creature.hpp"
 #include "../inc/Buffer.hpp"
 
-Creature::Creature()
+Creature::Creature() : Entity<PhysicsObj>(exists, position)
 {
 	mass = 1;
 	return;
@@ -25,8 +25,6 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	// Turn left
 	// Eat
 	// Lay egg
-
-	existing = true;
 
 	this->simulationRules = simulationRules;
 
@@ -92,7 +90,6 @@ void Creature::clear()
 	network->destroy();
 	delete network;
 
-	existing  = false;
 	position  = {0, 0};
 	velocity  = {0, 0};
 	force	  = {0, 0};
@@ -112,10 +109,7 @@ void Creature::clear()
 
 Creature::~Creature()
 {
-	if (existing)
-	{
-		this->clear();
-	}
+	this->clear();
 }
 
 float closerObject(agl::Vec<float, 2> offset, float nearestDistance)

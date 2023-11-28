@@ -28,6 +28,8 @@ struct RelPos
 class Creature : public Entity<PhysicsObj>
 {
 	public:
+        bool exists;
+        agl::Vec<float, 2> position;
 		float rotation = 0;
 
 		RelPos creatureRelPos;
@@ -73,8 +75,6 @@ class Creature : public Entity<PhysicsObj>
 		float rayLength = 0;
 
 		int hue = 0;
-
-		bool existing = false;
 
 		SimulationRules *simulationRules;
 

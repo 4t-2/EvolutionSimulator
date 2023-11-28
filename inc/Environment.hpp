@@ -13,23 +13,38 @@ class Environment;
 
 class BaseEntity
 {
-	private:
-		int test;
 	public:
-		bool			   exists = true;
-		agl::Vec<float, 2> position;
+		bool			   &exists;
+		agl::Vec<float, 2> &position;
+
+		BaseEntity(bool &exists, agl::Vec<float, 2> &position) : exists(exists), position(position)
+		{
+		}
 
 		virtual ~BaseEntity()
 		{
 		}
 };
 
-template <typename... T> class Entity : virtual public BaseEntity, public T...
+class DoNotUse : public BaseEntity
 {
 	public:
-		const static std::tuple<T...> signature;
+		DoNotUse(bool &exists, agl::Vec<float, 2> &position) : BaseEntity(exists, position)
+		{
+		}
+};
 
-		Entity()
+template <typename... T> class Signature
+{
+};
+
+template <typename... T> class Entity : public DoNotUse, public T...
+{
+	private:
+	public:
+		const static Signature<T...> signature;
+
+		Entity(bool &exists, agl::Vec<float, 2> &position) : DoNotUse(exists, position), T(exists, position)...
 		{
 		}
 
@@ -38,11 +53,15 @@ template <typename... T> class Entity : virtual public BaseEntity, public T...
 		}
 };
 
-template <typename... T> const std::tuple<T...> Entity<T...>::signature;
+template <typename... T> const Signature<T...> Entity<T...>::signature;
 
 class Environment
 {
 	private:
+		template <typename S> void registerTraits()
+		{
+		}
+
 		template <typename S, typename T> void registerTraits()
 		{
 			std::size_t eHash = typeid(S).hash_code();
@@ -62,7 +81,7 @@ class Environment
 			registerTraits<Ts...>();
 		}
 
-		template <typename S, typename... Ts> void registerTraits(std::tuple<Ts...> signature)
+		template <typename S, typename... Ts> void registerTraits(Signature<Ts...> signature)
 		{
 			registerTraits<S, Ts...>();
 
@@ -83,9 +102,31 @@ class Environment
 			getArgsFromIterators<i + 1, Ts...>(args, it);
 		}
 
+		template <typename T> void addToTraitMap()
+		{
+		}
+		template <typename T, typename U> void addToTraitMap()
+		{
+			long long offset = (long long)(U *)(T*)(1) - (long long)(BaseEntity*)(DoNotUse*)(T*)1;
+			traitMap[std::pair(typeid(T).hash_code(), typeid(U).hash_code())] = offset;
+		}
+		template <typename T, typename U, typename... Us,
+				  typename std::enable_if<(sizeof...(Us) > 0)>::type * = nullptr>
+		void addToTraitMap()
+		{
+			long long offset = (long long)(U *)(T*)(1) - (long long)(BaseEntity*)(DoNotUse*)(T*)1;
+			traitMap[std::pair(typeid(T).hash_code(), typeid(U).hash_code())] = offset;
+		}
+
+		template <typename T, typename... Us> void addToTraitMap(Signature<Us...> sig)
+		{
+			addToTraitMap<T, Us...>();
+		}
+
 	public:
 		std::map<std::size_t, std::list<BaseEntity *>>							 entityList;
 		std::map<std::size_t, std::vector<std::size_t>>							 traits;
+		std::map<std::pair<std::size_t, std::size_t>, long long>				 traitMap;
 		agl::Vec<float, 2>														 size;
 		agl::Vec<int, 2>														 gridResolution;
 		std::vector<std::vector<std::map<std::size_t, std::list<BaseEntity *>>>> grid;
@@ -105,6 +146,7 @@ class Environment
 		template <typename T> void setupTraits()
 		{
 			registerTraits<T>(T::signature);
+			addToTraitMap<T>(T::signature);
 		}
 
 		template <typename T> T &addEntity()
@@ -113,7 +155,8 @@ class Environment
 
 			T *t = new T();
 
-			entityList[hash].emplace_back(t);
+			t->exists = true;
+			entityList[hash].emplace_back((BaseEntity *)(DoNotUse *)t);
 
 			return *t;
 		}
@@ -127,7 +170,7 @@ class Environment
 		{
 			for (auto it = getList<T>().begin(); it != getList<T>().end(); it++)
 			{
-				func(*dynamic_cast<T *>(*it), it);
+				func(*(T *)(DoNotUse *)(*it), it);
 			}
 		}
 
@@ -170,7 +213,8 @@ class Environment
 		void removeEntity(
 			typename std::list<BaseEntity *>::iterator it, std::function<void(T &)> func = [](T &) {})
 		{
-			func(*dynamic_cast<T *>(*it));
+			func(*(T *)(DoNotUse *)(*it));
+			delete *it;
 
 			agl::Vec<int, 2> gridPosition = toGridPosition((*it)->position);
 
@@ -217,7 +261,7 @@ class Environment
 							continue;
 						}
 
-						func(*dynamic_cast<T *>(entity));
+						func(*(T *)(DoNotUse *)(entity));
 					}
 				}
 			}
@@ -259,8 +303,22 @@ class Environment
 
 							for (auto hashT : traits[typeid(T).hash_code()])
 							{
+								long long offsetT;
+
+								if constexpr (!std::is_base_of_v<DoNotUse, T>)
+								{
+									offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
+								}
+
 								for (auto hashU : traits[typeid(U).hash_code()])
 								{
+									long long offsetU;
+
+									if constexpr (!std::is_base_of_v<DoNotUse, U>)
+									{
+										offsetT = traitMap[std::pair(hashU, typeid(T).hash_code())];
+									}
+
 									auto &list1 = getListInGrid(gridPosition, hashT);
 									auto &list2 = getListInGrid({x + gridPosition.x, y + gridPosition.y}, hashU);
 
@@ -281,7 +339,23 @@ class Environment
 									{
 										for (; it2 != list2.end(); it2++)
 										{
-											func(*dynamic_cast<T *>(*it1), *dynamic_cast<U *>(*it2));
+											T* addressT;
+											U* addressU;
+
+											if constexpr (std::is_base_of_v<DoNotUse, T>)
+											{
+												addressT = (T *)(DoNotUse *)(*it1);
+											} else {
+												addressT = (T*)((long long)*it1 + (long long)offsetT);
+											}
+											if constexpr (std::is_base_of_v<DoNotUse, U>)
+											{
+												addressU = (U *)(DoNotUse *)(*it2);
+											} else {
+												addressU = (U*)((long long)*it2 + (long long)offsetT);
+											}
+
+											func(*addressT, *addressU);
 										}
 									}
 								}
@@ -292,7 +366,7 @@ class Environment
 			}
 		}
 
-		template <typename T> void selfUpdate(std::function<void(T&)> func)
+		template <typename T> void selfUpdate(std::function<void(T &)> func)
 		{
 			auto &list = entityList[typeid(T).hash_code()];
 
@@ -300,7 +374,7 @@ class Environment
 			{
 				BaseEntity &entity = **it;
 
-				func(*dynamic_cast<T*>(*it));
+				func(*(T *)(DoNotUse *)(*it));
 
 				if (!entity.exists)
 				{
