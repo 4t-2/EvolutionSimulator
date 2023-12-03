@@ -73,6 +73,10 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	endGridOffset.x	  = xOffset;
 	endGridOffset.y	  = yOffset;
 
+	creatureRelPos = {0, rayLength};
+	foodRelPos	   = {0, rayLength};
+	meatRelPos	   = {0, rayLength};
+	
 	std::vector<in::Connection> connection(creatureData.connection,
 										   creatureData.connection + creatureData.totalConnections);
 
@@ -202,10 +206,6 @@ void Creature::updateNetwork()
 
 	network->setInputNode(SPEED_INPUT, velocity.length());
 
-	creatureRelPos = {0, rayLength};
-	foodRelPos	   = {0, rayLength};
-	meatRelPos	   = {0, rayLength};
-
 	network->setInputNode(CREATURE_PREFERENCE, 0);
 
 	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureRelPos.distance / rayLength));
@@ -216,6 +216,11 @@ void Creature::updateNetwork()
 
 	network->setInputNode(MEAT_DISTANCE, 1 - (meatRelPos.distance / rayLength));
 	network->setInputNode(MEAT_ROTATION, loop(-PI, PI, meatRelPos.rotation) / PI);
+
+	creatureRelPos = {0, rayLength};
+	foodRelPos	   = {0, rayLength};
+	meatRelPos	   = {0, rayLength};
+
 
 	network->setInputNode(ENERGY_INPUT, energy / maxEnergy);
 	network->setInputNode(HEALTH_INPUT, health / maxHealth);

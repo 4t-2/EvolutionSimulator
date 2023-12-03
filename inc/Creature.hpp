@@ -21,8 +21,8 @@ struct Memory
 
 struct RelPos
 {
-	float rotation;
-	float distance;
+	float rotation = 0;
+	float distance = 0;
 };
 
 class Creature : public Entity<PhysicsObj>

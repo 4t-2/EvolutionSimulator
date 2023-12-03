@@ -107,14 +107,14 @@ class Environment
 		}
 		template <typename T, typename U> void addToTraitMap()
 		{
-			long long offset = (long long)(U *)(T*)(1) - (long long)(BaseEntity*)(DoNotUse*)(T*)1;
+			long long offset = (long long)(U *)(T *)(1) - (long long)(BaseEntity *)(DoNotUse *)(T *)1;
 			traitMap[std::pair(typeid(T).hash_code(), typeid(U).hash_code())] = offset;
 		}
 		template <typename T, typename U, typename... Us,
 				  typename std::enable_if<(sizeof...(Us) > 0)>::type * = nullptr>
 		void addToTraitMap()
 		{
-			long long offset = (long long)(U *)(T*)(1) - (long long)(BaseEntity*)(DoNotUse*)(T*)1;
+			long long offset = (long long)(U *)(T *)(1) - (long long)(BaseEntity *)(DoNotUse *)(T *)1;
 			traitMap[std::pair(typeid(T).hash_code(), typeid(U).hash_code())] = offset;
 		}
 
@@ -322,21 +322,20 @@ class Environment
 									auto &list1 = getListInGrid(gridPosition, hashT);
 									auto &list2 = getListInGrid({x + gridPosition.x, y + gridPosition.y}, hashU);
 
-									auto it1 = list1.begin();
+									auto it1		= list1.begin();
+									auto list2Begin = list2.begin();
 
-									std::list<BaseEntity *>::iterator it2;
-
-									if (std::is_same<T, U>() && &list1 == &list2)
-									{
-										it2 = it1;
-									}
-									else
-									{
-										it2 = list2.begin();
-									}
+									std::list<BaseEntity *>::iterator &it2Start = &list1 == &list2 ? it1 : list2Begin;
 
 									for (; it1 != list1.end(); it1++)
 									{
+										std::list<BaseEntity *>::iterator it2 = it2Start;
+										
+										if(&list1 == &list2)
+										{
+											it2++;
+										}
+
 										for (; it2 != list2.end(); it2++)
 										{
 											T* addressT;
