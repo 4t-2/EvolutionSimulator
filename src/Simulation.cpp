@@ -658,57 +658,56 @@ void Simulation::updateSimulation()
 		}
 	});
 
-	env.update<PhysicsObj, PhysicsObj, true>([](PhysicsObj &circle, PhysicsObj &otherCircle) {
-		agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
+	env.update<PhysicsObj, PhysicsObj, true>(
+		[](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT, std::size_t hashU) {
+			agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
 
-		float circleDistance = circleOffset.length();
+			float circleDistance = circleOffset.length();
 
-		float circleOverlap = (otherCircle.radius + circle.radius) - circleDistance;
+			float circleOverlap = (otherCircle.radius + circle.radius) - circleDistance;
 
-		if (circleOverlap > 0)
-		{
-			if (circleDistance == 0)
+			if (circleOverlap > 0)
 			{
-				circleOffset   = {rand() / (float)RAND_MAX - (float).5, rand() / (float)RAND_MAX - (float).5};
-				circleDistance = circleOffset.length();
-				circleOverlap  = (otherCircle.radius + circle.radius) - circleDistance;
+				if (circleDistance == 0)
+				{
+					circleOffset   = {rand() / (float)RAND_MAX - (float).5, rand() / (float)RAND_MAX - (float).5};
+					circleDistance = circleOffset.length();
+					circleOverlap  = (otherCircle.radius + circle.radius) - circleDistance;
+				}
+
+				agl::Vec<float, 2> offsetNormal = circleOffset.normalized();
+
+				if (std::isnan(offsetNormal.x))
+				{
+					offsetNormal.x = 1;
+					offsetNormal.y = 0;
+				}
+
+				agl::Vec<float, 2> pushback = offsetNormal * circleOverlap;
+
+				float actingMass = circle.mass > otherCircle.mass ? otherCircle.mass : circle.mass;
+
+				circle.posOffset -= pushback * (otherCircle.mass / (circle.mass + otherCircle.mass));
+				otherCircle.posOffset += pushback * (circle.mass / (circle.mass + otherCircle.mass));
+
+				circle.force -= pushback * actingMass;
+				otherCircle.force += pushback * actingMass;
 			}
-
-			agl::Vec<float, 2> offsetNormal = circleOffset.normalized();
-
-			if (std::isnan(offsetNormal.x))
+			else if (hashT == typeid(Food).hash_code() && hashU == typeid(Food).hash_code())
 			{
-				offsetNormal.x = 1;
-				offsetNormal.y = 0;
+				if (circleDistance < 700)
+				{
+					float forceScalar = FOODPRESSURE / (circleDistance * circleDistance);
+
+					agl::Vec<float, 2> force = circleOffset.normalized() * forceScalar;
+
+					circle.force -= force;
+					otherCircle.force += force;
+				}
 			}
+		});
 
-			agl::Vec<float, 2> pushback = offsetNormal * circleOverlap;
-
-			float actingMass = circle.mass > otherCircle.mass ? otherCircle.mass : circle.mass;
-
-			circle.posOffset -= pushback * (otherCircle.mass / (circle.mass + otherCircle.mass));
-			otherCircle.posOffset += pushback * (circle.mass / (circle.mass + otherCircle.mass));
-
-			circle.force -= pushback * actingMass;
-			otherCircle.force += pushback * actingMass;
-		}
-#ifdef FOODPRESSUREa
-		else if constexpr (std::is_same_v<T, Food> && std::is_same_v<U, Food>)
-		{
-			if (circleDistance < 700)
-			{
-				float forceScalar = FOODPRESSURE / (circleDistance * circleDistance);
-
-				agl::Vec<float, 2> force = circleOffset.normalized() * forceScalar;
-
-				circle.force -= force;
-				otherCircle.force += force;
-			}
-		}
-#endif
-	});
-
-	env.update<Creature, Creature>([](Creature &seeingCreature, Creature &creature) {
+	env.update<Creature, Creature>([](Creature &seeingCreature, Creature &creature, auto, auto) {
 		agl::Vec<float, 2> offset	= seeingCreature.position - creature.position;
 		float			   distance = offset.length();
 
@@ -728,7 +727,7 @@ void Simulation::updateSimulation()
 		seeingCreature.network->setInputNode(CREATURE_PREFERENCE, creature.preference);
 	});
 
-	env.update<Creature, Food>([](Creature &creature, Food &food) {
+	env.update<Creature, Food>([](Creature &creature, Food &food, auto, auto) {
 		agl::Vec<float, 2> offset	= creature.position - food.position;
 		float			   distance = offset.length();
 
@@ -746,7 +745,7 @@ void Simulation::updateSimulation()
 		creature.foodRelPos.distance = distance;
 	});
 
-	env.update<Creature, Meat>([&](Creature &creature, Meat &meat) {
+	env.update<Creature, Meat>([&](Creature &creature, Meat &meat, auto, auto) {
 		agl::Vec<float, 2> offset	= creature.position - meat.position;
 		float			   distance = offset.length();
 
@@ -765,7 +764,7 @@ void Simulation::updateSimulation()
 	});
 
 	// creature eating
-	env.update<Creature, Food>([&](Creature &creature, Food &food) {
+	env.update<Creature, Food>([&](Creature &creature, Food &food, auto, auto) {
 		if (!creature.eating)
 		{
 			return;
@@ -793,7 +792,7 @@ void Simulation::updateSimulation()
 		}
 	});
 
-	env.update<Creature, Meat>([&](Creature &creature, Meat &meat) {
+	env.update<Creature, Meat>([&](Creature &creature, Meat &meat, auto, auto) {
 		if (!creature.eating)
 		{
 			return;
@@ -821,7 +820,7 @@ void Simulation::updateSimulation()
 		}
 	});
 
-	env.update<Creature, Creature>([&](Creature &creature, Creature &eatenCreature) {
+	env.update<Creature, Creature>([&](Creature &creature, Creature &eatenCreature, auto, auto) {
 		if (eatenCreature.health < 0 || !creature.eating)
 		{
 			return;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ThreadPool.hpp"
+#include "macro.hpp"
 #include <AGL/agl.hpp>
 #include <cstddef>
 #include <functional>
@@ -130,6 +132,7 @@ class Environment
 		agl::Vec<float, 2>														 size;
 		agl::Vec<int, 2>														 gridResolution;
 		std::vector<std::vector<std::map<std::size_t, std::list<BaseEntity *>>>> grid;
+		// ThreadPool																 pool();
 
 		void setupGrid(agl::Vec<float, 2> size, agl::Vec<int, 2> gridResolution)
 		{
@@ -272,7 +275,81 @@ class Environment
 			return grid.at(pos.x).at(pos.y)[hash];
 		}
 
-		template <typename T, typename U, bool oneWay = false> void update(std::function<void(T &, U &)> func)
+		template <typename T, typename U, bool oneWay = false, bool mirror = false>
+		void gridUpdate(std::function<void(T &, U &, std::size_t, std::size_t)> &func, agl::Vec<int, 2> gridPosition,
+						agl::Vec<int, 2> gridOffset)
+		{
+			for (auto hashT : traits[typeid(T).hash_code()])
+			{
+				long long offsetT;
+
+				if constexpr (!std::is_base_of_v<DoNotUse, T>)
+				{
+					offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
+				}
+
+				for (auto hashU : traits[typeid(U).hash_code()])
+				{
+					long long offsetU;
+
+					if constexpr (!std::is_base_of_v<DoNotUse, U>)
+					{
+						offsetT = traitMap[std::pair(hashU, typeid(T).hash_code())];
+					}
+
+					auto &list1 = getListInGrid(gridPosition, hashT);
+					auto &list2 = getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y + gridPosition.y}, hashU);
+
+					auto it1		= list1.begin();
+					auto list2Begin = list2.begin();
+
+					std::list<BaseEntity *>::iterator &it2Start = &list1 == &list2 ? it1 : list2Begin;
+
+					for (; it1 != list1.end(); it1++)
+					{
+						std::list<BaseEntity *>::iterator it2 = it2Start;
+
+						if (&list1 == &list2)
+						{
+							it2++;
+						}
+
+						for (; it2 != list2.end(); it2++)
+						{
+							T *addressT;
+							U *addressU;
+
+							if constexpr (std::is_base_of_v<DoNotUse, T>)
+							{
+								addressT = (T *)(DoNotUse *)(*it1);
+							}
+							else
+							{
+								addressT = (T *)((long long)*it1 + (long long)offsetT);
+							}
+							if constexpr (std::is_base_of_v<DoNotUse, U>)
+							{
+								addressU = (U *)(DoNotUse *)(*it2);
+							}
+							else
+							{
+								addressU = (U *)((long long)*it2 + (long long)offsetT);
+							}
+
+							func(*addressT, *addressU, hashT, hashU);
+
+							if constexpr (mirror)
+							{
+								func(*addressU, *addressT, hashT, hashU);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		template <typename T, typename U, bool oneWay = false, bool mirror = false>
+		void update(std::function<void(T &, U &, std::size_t, std::size_t)> func)
 		{
 			agl::Vec<int, 2> startGridOffset;
 			if (!oneWay)
@@ -301,64 +378,7 @@ class Environment
 								continue;
 							}
 
-							for (auto hashT : traits[typeid(T).hash_code()])
-							{
-								long long offsetT;
-
-								if constexpr (!std::is_base_of_v<DoNotUse, T>)
-								{
-									offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
-								}
-
-								for (auto hashU : traits[typeid(U).hash_code()])
-								{
-									long long offsetU;
-
-									if constexpr (!std::is_base_of_v<DoNotUse, U>)
-									{
-										offsetT = traitMap[std::pair(hashU, typeid(T).hash_code())];
-									}
-
-									auto &list1 = getListInGrid(gridPosition, hashT);
-									auto &list2 = getListInGrid({x + gridPosition.x, y + gridPosition.y}, hashU);
-
-									auto it1		= list1.begin();
-									auto list2Begin = list2.begin();
-
-									std::list<BaseEntity *>::iterator &it2Start = &list1 == &list2 ? it1 : list2Begin;
-
-									for (; it1 != list1.end(); it1++)
-									{
-										std::list<BaseEntity *>::iterator it2 = it2Start;
-										
-										if(&list1 == &list2)
-										{
-											it2++;
-										}
-
-										for (; it2 != list2.end(); it2++)
-										{
-											T* addressT;
-											U* addressU;
-
-											if constexpr (std::is_base_of_v<DoNotUse, T>)
-											{
-												addressT = (T *)(DoNotUse *)(*it1);
-											} else {
-												addressT = (T*)((long long)*it1 + (long long)offsetT);
-											}
-											if constexpr (std::is_base_of_v<DoNotUse, U>)
-											{
-												addressU = (U *)(DoNotUse *)(*it2);
-											} else {
-												addressU = (U*)((long long)*it2 + (long long)offsetT);
-											}
-
-											func(*addressT, *addressU);
-										}
-									}
-								}
-							}
+							gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y});
 						}
 					}
 				}
