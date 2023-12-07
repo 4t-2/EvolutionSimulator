@@ -20,7 +20,7 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
 	set (CMAKE_CXX_FLAGS "-g -fsanitize=address")
 	message(STATUS "Building with debug flags")
 elseif(CMAKE_BUILD_TYPE MATCHES Release)
-	set (CMAKE_CXX_FLAGS "-Ofast -flto=auto -g")
+	set (CMAKE_CXX_FLAGS "-Ofast -flto=auto")
 	message(STATUS "Building with release flags")
 endif()
 

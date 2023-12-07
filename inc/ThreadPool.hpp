@@ -1,3 +1,4 @@
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -14,6 +15,7 @@ class ThreadPool
 		std::condition_variable				  isJobAvailable;
 		int									  size;
 		bool								  terminateSignal = false;
+		std::atomic<int>					  count			  = 0;
 
 		void threadLoop(int id)
 		{
@@ -29,10 +31,12 @@ class ThreadPool
 						return;
 					}
 
+					count++;
 					job[id] = jobList.front();
 					jobList.pop();
 				}
 				job[id]();
+				count--;
 			}
 		}
 
@@ -60,17 +64,9 @@ class ThreadPool
 
 		bool active()
 		{
-			if(!jobList.empty())
+			if(count || jobList.size())
 			{
 				return true;
-			}
-
-			for (int i = 0; i < size; i++)
-			{
-				if (job[i] != nullptr)
-				{
-					return true;
-				}
 			}
 
 			return false;

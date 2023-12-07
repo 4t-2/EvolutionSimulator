@@ -140,7 +140,7 @@ class Environment
 		std::vector<std::vector<std::map<std::size_t, GridCell>>> grid;
 		ThreadPool												  pool;
 
-		Environment() : pool(1)
+		Environment() : pool(THREADS)
 		{
 		}
 
@@ -289,6 +289,13 @@ class Environment
 		void gridUpdate(std::function<void(T &, U &, std::size_t, std::size_t)> func, agl::Vec<int, 2> gridPosition,
 						agl::Vec<int, 2> gridOffset, std::size_t hashT, std::size_t hashU)
 		{
+			grid[gridPosition.x + gridOffset.x][gridPosition.y + gridOffset.y][hashU].mtx.lock();
+
+			if (gridOffset.x != 0 && gridOffset.y != 0)
+			{
+				grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+			}
+
 			long long offsetT;
 
 			if constexpr (!std::is_base_of_v<DoNotUse, T>)
@@ -350,6 +357,13 @@ class Environment
 					}
 				}
 			}
+
+			grid[gridPosition.x + gridOffset.x][gridPosition.y + gridOffset.y][hashU].mtx.unlock();
+
+			if (gridOffset.x != 0 && gridOffset.y != 0)
+			{
+				grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+			}
 		}
 
 		template <typename T, typename U, bool oneWay = false, bool mirror = false>
@@ -387,21 +401,14 @@ class Environment
 											continue;
 										}
 
-										grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
-
-										if (x != 0 && y != 0)
-										{
-											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-										}
-
 										gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT, hashU);
 
-										grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
-
-										if (x != 0 && y != 0)
-										{
-											grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
-										}
+										// grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
+										//
+										// if (x != 0 && y != 0)
+										// {
+										// 	grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+										// }
 									}
 								}
 							}
@@ -435,18 +442,14 @@ class Environment
 
 		void clearGrid()
 		{
-			float num  = 0;
-			int	  size = 0;
 			for (auto &x : grid)
 			{
 				for (auto &y : x)
 				{
 					for (auto &[key, cell] : y)
 					{
-						num += cell.list.size();
 						cell.list.clear();
 					}
-					size++;
 				}
 			}
 		}
