@@ -126,13 +126,23 @@ class Environment
 		}
 
 	public:
-		std::map<std::size_t, std::list<BaseEntity *>>							 entityList;
-		std::map<std::size_t, std::vector<std::size_t>>							 traits;
-		std::map<std::pair<std::size_t, std::size_t>, long long>				 traitMap;
-		agl::Vec<float, 2>														 size;
-		agl::Vec<int, 2>														 gridResolution;
-		std::vector<std::vector<std::map<std::size_t, std::list<BaseEntity *>>>> grid;
-		// ThreadPool																 pool();
+		struct GridCell
+		{
+				std::list<BaseEntity *> list;
+				std::mutex				mtx;
+		};
+
+		std::map<std::size_t, std::list<BaseEntity *>>			  entityList;
+		std::map<std::size_t, std::vector<std::size_t>>			  traits;
+		std::map<std::pair<std::size_t, std::size_t>, long long>  traitMap;
+		agl::Vec<float, 2>										  size;
+		agl::Vec<int, 2>										  gridResolution;
+		std::vector<std::vector<std::map<std::size_t, GridCell>>> grid;
+		ThreadPool												  pool;
+
+		Environment() : pool(1)
+		{
+		}
 
 		void setupGrid(agl::Vec<float, 2> size, agl::Vec<int, 2> gridResolution)
 		{
@@ -209,7 +219,7 @@ class Environment
 			agl::Vec<int, 2> gridPosition = toGridPosition(entity.position);
 			auto			&map		  = grid[gridPosition.x][gridPosition.y];
 
-			map[typeid(T).hash_code()].emplace_back(&entity);
+			map[typeid(T).hash_code()].list.emplace_back(&entity);
 		}
 
 		template <typename T>
@@ -221,7 +231,7 @@ class Environment
 
 			agl::Vec<int, 2> gridPosition = toGridPosition((*it)->position);
 
-			auto &list = grid.at(gridPosition.x).at(gridPosition.y)[typeid(T).hash_code()];
+			auto &list = grid.at(gridPosition.x).at(gridPosition.y)[typeid(T).hash_code()].list;
 
 			auto i = list.begin();
 
@@ -257,7 +267,7 @@ class Environment
 						continue;
 					}
 
-					for (auto &entity : grid.at(gridPosition.x).at(gridPosition.y)[typeid(T).hash_code()])
+					for (auto &entity : grid.at(gridPosition.x).at(gridPosition.y)[typeid(T).hash_code()].list)
 					{
 						if (!entity->exists)
 						{
@@ -272,77 +282,71 @@ class Environment
 
 		std::list<BaseEntity *> &getListInGrid(agl::Vec<int, 2> pos, std::size_t hash)
 		{
-			return grid.at(pos.x).at(pos.y)[hash];
+			return grid.at(pos.x).at(pos.y)[hash].list;
 		}
 
 		template <typename T, typename U, bool oneWay = false, bool mirror = false>
-		void gridUpdate(std::function<void(T &, U &, std::size_t, std::size_t)> &func, agl::Vec<int, 2> gridPosition,
-						agl::Vec<int, 2> gridOffset)
+		void gridUpdate(std::function<void(T &, U &, std::size_t, std::size_t)> func, agl::Vec<int, 2> gridPosition,
+						agl::Vec<int, 2> gridOffset, std::size_t hashT, std::size_t hashU)
 		{
-			for (auto hashT : traits[typeid(T).hash_code()])
-			{
-				long long offsetT;
+			long long offsetT;
 
-				if constexpr (!std::is_base_of_v<DoNotUse, T>)
+			if constexpr (!std::is_base_of_v<DoNotUse, T>)
+			{
+				offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
+			}
+
+			long long offsetU;
+
+			if constexpr (!std::is_base_of_v<DoNotUse, U>)
+			{
+				offsetT = traitMap[std::pair(hashU, typeid(T).hash_code())];
+			}
+
+			auto &list1 = getListInGrid(gridPosition, hashT);
+			auto &list2 = getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y + gridPosition.y}, hashU);
+
+			auto it1		= list1.begin();
+			auto list2Begin = list2.begin();
+
+			std::list<BaseEntity *>::iterator &it2Start = &list1 == &list2 ? it1 : list2Begin;
+
+			for (; it1 != list1.end(); it1++)
+			{
+				std::list<BaseEntity *>::iterator it2 = it2Start;
+
+				if (&list1 == &list2)
 				{
-					offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
+					it2++;
 				}
 
-				for (auto hashU : traits[typeid(U).hash_code()])
+				for (; it2 != list2.end(); it2++)
 				{
-					long long offsetU;
+					T *addressT;
+					U *addressU;
 
-					if constexpr (!std::is_base_of_v<DoNotUse, U>)
+					if constexpr (std::is_base_of_v<DoNotUse, T>)
 					{
-						offsetT = traitMap[std::pair(hashU, typeid(T).hash_code())];
+						addressT = (T *)(DoNotUse *)(*it1);
+					}
+					else
+					{
+						addressT = (T *)((long long)*it1 + (long long)offsetT);
+					}
+					if constexpr (std::is_base_of_v<DoNotUse, U>)
+					{
+						addressU = (U *)(DoNotUse *)(*it2);
+					}
+					else
+					{
+						addressU = (U *)((long long)*it2 + (long long)offsetT);
 					}
 
-					auto &list1 = getListInGrid(gridPosition, hashT);
-					auto &list2 = getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y + gridPosition.y}, hashU);
+					func(*addressT, *addressU, hashT, hashU);
 
-					auto it1		= list1.begin();
-					auto list2Begin = list2.begin();
-
-					std::list<BaseEntity *>::iterator &it2Start = &list1 == &list2 ? it1 : list2Begin;
-
-					for (; it1 != list1.end(); it1++)
+					if constexpr (mirror)
 					{
-						std::list<BaseEntity *>::iterator it2 = it2Start;
-
-						if (&list1 == &list2)
-						{
-							it2++;
-						}
-
-						for (; it2 != list2.end(); it2++)
-						{
-							T *addressT;
-							U *addressU;
-
-							if constexpr (std::is_base_of_v<DoNotUse, T>)
-							{
-								addressT = (T *)(DoNotUse *)(*it1);
-							}
-							else
-							{
-								addressT = (T *)((long long)*it1 + (long long)offsetT);
-							}
-							if constexpr (std::is_base_of_v<DoNotUse, U>)
-							{
-								addressU = (U *)(DoNotUse *)(*it2);
-							}
-							else
-							{
-								addressU = (U *)((long long)*it2 + (long long)offsetT);
-							}
-
-							func(*addressT, *addressU, hashT, hashU);
-
-							if constexpr (mirror)
-							{
-								func(*addressU, *addressT, hashT, hashU);
-							}
-						}
+						func(*addressU, *addressT, hashU, hashT);
 					}
 				}
 			}
@@ -352,7 +356,7 @@ class Environment
 		void update(std::function<void(T &, U &, std::size_t, std::size_t)> func)
 		{
 			agl::Vec<int, 2> startGridOffset;
-			if (!oneWay)
+			if constexpr (!oneWay)
 			{
 				startGridOffset = {-1, -1};
 			}
@@ -360,27 +364,49 @@ class Environment
 			agl::Vec<int, 2> endGridOffset = {1, 1};
 			agl::Vec<int, 2> gridPosition  = {0, 0};
 
-			for (gridPosition.x = 0; gridPosition.x < gridResolution.x; gridPosition.x++)
+			for (gridPosition.y = 0; gridPosition.y < gridResolution.y; gridPosition.y++)
 			{
-				for (gridPosition.y = 0; gridPosition.y < gridResolution.y; gridPosition.y++)
+				for (gridPosition.x = 0; gridPosition.x < gridResolution.x; gridPosition.x++)
 				{
-					for (int x = startGridOffset.x; x <= endGridOffset.x; x++)
-					{
-						if (gridPosition.x + x < 0 || gridPosition.x + x > (gridResolution.x - 1))
+					pool.queue([&, gridPosition = gridPosition, func = func, startGridOffset = startGridOffset,
+								endGridOffset = endGridOffset]() {
+						for (auto hashT : traits[typeid(T).hash_code()])
 						{
-							continue;
-						}
-
-						for (int y = startGridOffset.y; y <= endGridOffset.y; y++)
-						{
-							if (gridPosition.y + y < 0 || gridPosition.y + y > (gridResolution.y - 1))
+							for (auto hashU : traits[typeid(U).hash_code()])
 							{
-								continue;
-							}
+								for (int y = startGridOffset.y; y <= endGridOffset.y; y++)
+								{
+									if (gridPosition.y + y < 0 || gridPosition.y + y > (gridResolution.y - 1))
+									{
+										continue;
+									}
+									for (int x = startGridOffset.x; x <= endGridOffset.x; x++)
+									{
+										if (gridPosition.x + x < 0 || gridPosition.x + x > (gridResolution.x - 1))
+										{
+											continue;
+										}
 
-							gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y});
+										grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
+
+										if (x != 0 && y != 0)
+										{
+											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+										}
+
+										gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT, hashU);
+
+										grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
+
+										if (x != 0 && y != 0)
+										{
+											grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+										}
+									}
+								}
+							}
 						}
-					}
+					});
 				}
 			}
 		}
@@ -415,10 +441,10 @@ class Environment
 			{
 				for (auto &y : x)
 				{
-					for (auto &[key, list] : y)
+					for (auto &[key, cell] : y)
 					{
-						num += list.size();
-						list.clear();
+						num += cell.list.size();
+						cell.list.clear();
 					}
 					size++;
 				}
@@ -539,7 +565,7 @@ class Environment
 
 						agl::Vec<int, 2> gridPosition = toGridPosition((*it)->position);
 
-						auto &list = grid.at(gridPosition.x).at(gridPosition.y)[key];
+						auto &list = grid.at(gridPosition.x).at(gridPosition.y)[key].list;
 
 						auto i = list.begin();
 
@@ -573,5 +599,9 @@ class Environment
 
 			clearGrid();
 			entityList.clear();
+
+			while (pool.active())
+			{
+			}
 		}
 };

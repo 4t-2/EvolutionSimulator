@@ -850,6 +850,10 @@ void Simulation::updateSimulation()
 			}
 		}
 	});
+
+	while (env.pool.active())
+	{
+	}
 }
 
 void Simulation::update()
