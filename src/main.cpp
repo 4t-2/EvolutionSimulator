@@ -633,6 +633,9 @@ int main()
 			}
 		}
 
+		agl::Vec<int, 2> topLeftGrid;
+		agl::Vec<int, 2> bottomRightGrid;
+
 		if (skipRender)
 		{
 			goto skipRendering;
@@ -661,12 +664,22 @@ int main()
 
 		window.updateMvp(camera);
 
+		{
+			agl::Vec<float, 2> tlPos =
+				getCursorScenePosition({0, 0}, windowSize, sizeMultiplier, cameraPosition);
+			topLeftGrid = simulation.env.toGridPosition(tlPos);
+
+			agl::Vec<float, 2> brPos =
+				getCursorScenePosition(windowSize, windowSize, sizeMultiplier, cameraPosition);
+			bottomRightGrid = simulation.env.toGridPosition(brPos);
+		}
+
 		// Draw food
 		simulation.env.view<Food>([&](auto &food, auto) {
 			agl::Vec<float, 2> position = food.position;
 			foodShape.setPosition(position);
 			window.drawShape(foodShape);
-		});
+		}, topLeftGrid, bottomRightGrid);
 
 		simulation.env.view<Meat>([&](auto &meat, auto) {
 			meatShape.setPosition(meat.position);
@@ -674,13 +687,13 @@ int main()
 			meatShape.setOffset({-meat.radius, -meat.radius});
 			meatShape.setRotation({0, 0, meat.rotation});
 			window.drawShape(meatShape);
-		});
+		}, topLeftGrid, bottomRightGrid);
 
 		// draw eggs
 		simulation.env.view<Egg>([&](auto &egg, auto) {
 			eggShape.setPosition(egg.position);
 			window.drawShape(eggShape);
-		});
+		}, topLeftGrid, bottomRightGrid);
 
 		// draw rays
 		if (contains(simulation.env.getList<Creature>(), focusCreature))
@@ -783,7 +796,7 @@ int main()
 			creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -.5});
 
 			window.drawShape(creatureShape);
-		});
+		}, topLeftGrid, bottomRightGrid);
 
 	skipSimRender:;
 

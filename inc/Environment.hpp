@@ -9,6 +9,7 @@
 #include <list>
 #include <map>
 #include <random>
+#include <thread>
 #include <tuple>
 #include <typeinfo>
 
@@ -161,16 +162,28 @@ class Environment
 
 			int index = 0;
 
-			for (int y = 0; y < gridResolution.y; y++)
+			if (size.y > size.x)
+			{
+				for (int y = 0; y < gridResolution.y; y++)
+				{
+					for (int x = 0; x < gridResolution.x; x++)
+					{
+						randomPosition[index] = {x, y};
+						index++;
+					}
+				}
+			}
+			else
 			{
 				for (int x = 0; x < gridResolution.x; x++)
 				{
-					randomPosition[index] = {x, y};
-					index++;
+					for (int y = 0; y < gridResolution.y; y++)
+					{
+						randomPosition[index] = {x, y};
+						index++;
+					}
 				}
 			}
-
-			std::shuffle(randomPosition, randomPosition + index, std::default_random_engine(0));
 		}
 
 		template <typename T> void setupTraits()
@@ -201,6 +214,24 @@ class Environment
 			for (auto it = getList<T>().begin(); it != getList<T>().end(); it++)
 			{
 				func(*(T *)(DoNotUse *)(*it), it);
+			}
+		}
+
+		template <typename T>
+		void view(std::function<void(T &, std::list<BaseEntity *>::iterator &)> func, agl::Vec<int, 2> start,
+				  agl::Vec<int, 2> end)
+		{
+			for (int x = start.x; x <= end.x; x++)
+			{
+				for (int y = start.y; y <= end.y; y++)
+				{
+					auto &list = getListInGrid({x, y}, typeid(T).hash_code());
+
+					for (auto it = list.begin(); it != list.end(); it++)
+					{
+						func(*(T *)(DoNotUse *)(*it), it);
+					}
+				}
 			}
 		}
 
@@ -376,78 +407,108 @@ class Environment
 
 			agl::Vec<int, 2> endGridOffset = {1, 1};
 
-			for (int i = 0; i < (gridResolution.x * gridResolution.y); i++)
-			{
-				agl::Vec<int, 2> &gridPosition = randomPosition[i];
-				pool.queue([&, gridPosition = gridPosition, func = func, startGridOffset = startGridOffset,
-							endGridOffset = endGridOffset]() {
-					for (auto hashT : traits[typeid(T).hash_code()])
+			auto threadedQueue = [&](int start, int end) {
+				pool.queue([&, func = func, startGridOffset = startGridOffset, endGridOffset = endGridOffset,
+							start = start, end = end]() {
+					for (int i = start; i <= end; i++)
 					{
-						for (auto hashU : traits[typeid(U).hash_code()])
+						agl::Vec<int, 2> &gridPosition = randomPosition[i];
+						for (auto hashT : traits[typeid(T).hash_code()])
 						{
-							if constexpr (!oneWay)
+							for (auto hashU : traits[typeid(U).hash_code()])
 							{
-								for (int y = startGridOffset.y; y < 0; y++)
+								if constexpr (!oneWay)
+								{
+									for (int y = startGridOffset.y; y < 0; y++)
+									{
+										if (gridPosition.y + y < 0 || gridPosition.y + y > (gridResolution.y - 1))
+										{
+											continue;
+										}
+										for (int x = startGridOffset.x; x < 0; x++)
+										{
+											if (gridPosition.x + x < 0 || gridPosition.x + x > (gridResolution.x - 1))
+											{
+												continue;
+											}
+
+											grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
+											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+											gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT, hashU);
+											grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+											grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
+										}
+									}
+								}
+
+								if (hashT > hashU)
+								{
+									grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+									grid[gridPosition.x][gridPosition.y][hashU].mtx.lock();
+								}
+								else if (hashT < hashU)
+								{
+									grid[gridPosition.x][gridPosition.y][hashU].mtx.lock();
+									grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+								}
+								else
+								{
+									grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+								}
+								gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {0, 0}, hashT, hashU);
+								if (hashT > hashU)
+								{
+									grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+									grid[gridPosition.x][gridPosition.y][hashU].mtx.unlock();
+								}
+								else if (hashT < hashU)
+								{
+									grid[gridPosition.x][gridPosition.y][hashU].mtx.unlock();
+									grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+								}
+								else
+								{
+									grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+								}
+
+								for (int y = 1; y <= endGridOffset.y; y++)
 								{
 									if (gridPosition.y + y < 0 || gridPosition.y + y > (gridResolution.y - 1))
 									{
 										continue;
 									}
-									for (int x = startGridOffset.x; x < 0; x++)
+									for (int x = 1; x <= startGridOffset.x; x++)
 									{
 										if (gridPosition.x + x < 0 || gridPosition.x + x > (gridResolution.x - 1))
 										{
 											continue;
 										}
 
-										grid[gridPosition.x + x][gridPosition.y +
-										y][hashU].mtx.lock();
 										grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+										grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
 										gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT, hashU);
+										grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
 										grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
-										grid[gridPosition.x + x][gridPosition.y +
-										y][hashU].mtx.unlock();
 									}
-								}
-							}
-
-							grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-							if (hashT != hashU)
-							{
-								grid[gridPosition.x][gridPosition.y][hashU].mtx.lock();
-							}
-							gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {0, 0}, hashT, hashU);
-							if (hashT != hashU)
-							{
-								grid[gridPosition.x][gridPosition.y][hashU].mtx.unlock();
-							}
-							grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
-
-							for (int y = 1; y <= endGridOffset.y; y++)
-							{
-								if (gridPosition.y + y < 0 || gridPosition.y + y > (gridResolution.y - 1))
-								{
-									continue;
-								}
-								for (int x = 1; x <= startGridOffset.x; x++)
-								{
-									if (gridPosition.x + x < 0 || gridPosition.x + x > (gridResolution.x - 1))
-									{
-										continue;
-									}
-
-									grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-									grid[gridPosition.x + x][gridPosition.y +
-									y][hashU].mtx.lock();
-									gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT, hashU);
-									grid[gridPosition.x + x][gridPosition.y +
-									y][hashU].mtx.lock();
-									grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 								}
 							}
 						}
 					}
 				});
+			};
+
+			int gridSize  = gridResolution.x * gridResolution.y;
+			int chunkSize = gridSize / pool.size;
+			int i		  = 0;
+
+			for (; i < pool.size - 1; i++)
+			{
+				threadedQueue(i * chunkSize, (i * chunkSize) + chunkSize - 1);
+			}
+
+			if (i * chunkSize < gridSize)
+			{
+				threadedQueue(i * chunkSize, gridSize - 1);
 			}
 		}
 
