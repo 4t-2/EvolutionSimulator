@@ -705,7 +705,7 @@ void Simulation::updateSimulation()
 					otherCircle.force += force;
 				}
 			}
-		});
+		}, [](PhysicsObj &circle){return circle.radius+50;});
 
 	env.update<Creature, Creature>([](Creature &seeingCreature, Creature &creature, auto, auto) {
 		agl::Vec<float, 2> offset	= seeingCreature.position - creature.position;
@@ -725,7 +725,7 @@ void Simulation::updateSimulation()
 		seeingCreature.creatureRelPos.distance = distance;
 
 		seeingCreature.network->setInputNode(CREATURE_PREFERENCE, creature.preference);
-	});
+	}, [](Creature &creature){return creature.creatureRelPos.distance;});
 
 	env.update<Creature, Food>([](Creature &creature, Food &food, auto, auto) {
 		agl::Vec<float, 2> offset	= creature.position - food.position;
@@ -743,7 +743,7 @@ void Simulation::updateSimulation()
 
 		creature.foodRelPos.rotation = vectorAngle(offset) + creature.rotation;
 		creature.foodRelPos.distance = distance;
-	});
+	}, [](Creature &creature){return creature.foodRelPos.distance;});
 
 	env.update<Creature, Meat>([&](Creature &creature, Meat &meat, auto, auto) {
 		agl::Vec<float, 2> offset	= creature.position - meat.position;
@@ -761,7 +761,7 @@ void Simulation::updateSimulation()
 
 		creature.meatRelPos.rotation = vectorAngle(offset) + creature.rotation;
 		creature.meatRelPos.distance = distance;
-	});
+	}, [](Creature &creature){return creature.meatRelPos.distance;});
 
 	// creature eating
 	env.update<Creature, Food>([&](Creature &creature, Food &food, auto, auto) {
@@ -790,7 +790,7 @@ void Simulation::updateSimulation()
 			food.exists = false;
 			creature.reward += energy * foodVol;
 		}
-	});
+	}, [](Creature &creature){return creature.radius + EATRADIUS + 50;});
 
 	env.update<Creature, Meat>([&](Creature &creature, Meat &meat, auto, auto) {
 		if (!creature.eating)
@@ -818,7 +818,7 @@ void Simulation::updateSimulation()
 			meat.exists = false;
 			creature.reward += energy * meat.energyVol;
 		}
-	});
+	}, [](Creature &creature){return creature.radius + EATRADIUS + 50;});
 
 	env.update<Creature, Creature>([&](Creature &creature, Creature &eatenCreature, auto, auto) {
 		if (eatenCreature.health < 0 || !creature.eating)
@@ -849,7 +849,7 @@ void Simulation::updateSimulation()
 				creature.reward += energy * leachVol;
 			}
 		}
-	});
+	}, [](Creature &creature){return creature.radius + EATRADIUS + 50;});
 
 	while (env.pool.active())
 	{

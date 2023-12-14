@@ -665,35 +665,39 @@ int main()
 		window.updateMvp(camera);
 
 		{
-			agl::Vec<float, 2> tlPos =
-				getCursorScenePosition({0, 0}, windowSize, sizeMultiplier, cameraPosition);
-			topLeftGrid = simulation.env.toGridPosition(tlPos);
+			agl::Vec<float, 2> tlPos = getCursorScenePosition({0, 0}, windowSize, sizeMultiplier, cameraPosition);
+			topLeftGrid				 = simulation.env.toGridPosition(tlPos);
 
-			agl::Vec<float, 2> brPos =
-				getCursorScenePosition(windowSize, windowSize, sizeMultiplier, cameraPosition);
-			bottomRightGrid = simulation.env.toGridPosition(brPos);
+			agl::Vec<float, 2> brPos = getCursorScenePosition(windowSize, windowSize, sizeMultiplier, cameraPosition);
+			bottomRightGrid			 = simulation.env.toGridPosition(brPos);
 		}
 
 		// Draw food
-		simulation.env.view<Food>([&](auto &food, auto) {
-			agl::Vec<float, 2> position = food.position;
-			foodShape.setPosition(position);
-			window.drawShape(foodShape);
-		}, topLeftGrid, bottomRightGrid);
+		simulation.env.view<Food>(
+			[&](auto &food, auto) {
+				agl::Vec<float, 2> position = food.position;
+				foodShape.setPosition(position);
+				window.drawShape(foodShape);
+			},
+			topLeftGrid, bottomRightGrid);
 
-		simulation.env.view<Meat>([&](auto &meat, auto) {
-			meatShape.setPosition(meat.position);
-			meatShape.setSize({meat.radius * 2, meat.radius * 2});
-			meatShape.setOffset({-meat.radius, -meat.radius});
-			meatShape.setRotation({0, 0, meat.rotation});
-			window.drawShape(meatShape);
-		}, topLeftGrid, bottomRightGrid);
+		simulation.env.view<Meat>(
+			[&](auto &meat, auto) {
+				meatShape.setPosition(meat.position);
+				meatShape.setSize({meat.radius * 2, meat.radius * 2});
+				meatShape.setOffset({-meat.radius, -meat.radius});
+				meatShape.setRotation({0, 0, meat.rotation});
+				window.drawShape(meatShape);
+			},
+			topLeftGrid, bottomRightGrid);
 
 		// draw eggs
-		simulation.env.view<Egg>([&](auto &egg, auto) {
-			eggShape.setPosition(egg.position);
-			window.drawShape(eggShape);
-		}, topLeftGrid, bottomRightGrid);
+		simulation.env.view<Egg>(
+			[&](auto &egg, auto) {
+				eggShape.setPosition(egg.position);
+				window.drawShape(eggShape);
+			},
+			topLeftGrid, bottomRightGrid);
 
 		// draw rays
 		if (contains(simulation.env.getList<Creature>(), focusCreature))
@@ -743,60 +747,62 @@ int main()
 		}
 
 		// draw creature
-		simulation.env.view<Creature>([&](auto &creature, auto) {
-			creatureShape.setPosition(creature.position);
-			creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(creature.rotation * 180 / PI)});
+		simulation.env.view<Creature>(
+			[&](auto &creature, auto) {
+				creatureShape.setPosition(creature.position);
+				creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(creature.rotation * 180 / PI)});
 
-			float speed = creature.velocity.length();
+				float speed = creature.velocity.length();
 
-			creatureShape.setTexture(&creatureBodyTexture);
+				creatureShape.setTexture(&creatureBodyTexture);
 
-			int textureFrame = int(simulation.frame * (speed / 8)) % 6;
+				int textureFrame = int(simulation.frame * (speed / 8)) % 6;
 
-			if (textureFrame > 2)
-			{
-				textureFrame -= 2;
+				if (textureFrame > 2)
+				{
+					textureFrame -= 2;
 
-				creatureShape.setTextureScaling({-(1. / 3.), 1});
-			}
-			else
-			{
-				creatureShape.setTextureScaling({1. / 3., 1});
-			}
+					creatureShape.setTextureScaling({-(1. / 3.), 1});
+				}
+				else
+				{
+					creatureShape.setTextureScaling({1. / 3., 1});
+				}
 
-			creatureShape.setTextureTranslation({float(1. / 3.) * textureFrame, 0});
+				creatureShape.setTextureTranslation({float(1. / 3.) * textureFrame, 0});
 
-			if (event.isKeyPressed(agl::Key::Z))
-			{
-				agl::Vec<float, 3> blue	  = agl::Vec<float, 3>{0, 0, 255} * creature.creatureData.usePG;
-				agl::Vec<float, 3> yellow = agl::Vec<float, 3>{255, 255, 0} * creature.creatureData.useNEAT;
+				if (event.isKeyPressed(agl::Key::Z))
+				{
+					agl::Vec<float, 3> blue	  = agl::Vec<float, 3>{0, 0, 255} * creature.creatureData.usePG;
+					agl::Vec<float, 3> yellow = agl::Vec<float, 3>{255, 255, 0} * creature.creatureData.useNEAT;
 
-				creatureShape.setColor({(unsigned char)(blue.x + yellow.x), (unsigned char)(blue.y + yellow.y),
-										(unsigned char)(blue.z + yellow.z)});
-			}
-			else
-			{
-				creatureShape.setColor(hueToRGB(creature.hue));
-			}
+					creatureShape.setColor({(unsigned char)(blue.x + yellow.x), (unsigned char)(blue.y + yellow.y),
+											(unsigned char)(blue.z + yellow.z)});
+				}
+				else
+				{
+					creatureShape.setColor(hueToRGB(creature.hue));
+				}
 
-			float size = creature.size;
+				float size = creature.size;
 
-			creatureShape.setSize(agl::Vec<float, 3>{25 * size, 60 * size, 0});
-			creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -1});
+				creatureShape.setSize(agl::Vec<float, 3>{25 * size, 60 * size, 0});
+				creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -1});
 
-			window.drawShape(creatureShape);
+				window.drawShape(creatureShape);
 
-			creatureShape.setTexture(&creatureExtraTexture);
+				creatureShape.setTexture(&creatureExtraTexture);
 
-			creatureShape.setColor(agl::Color::White);
+				creatureShape.setColor(agl::Color::White);
 
-			creatureShape.setTextureScaling({1, 1});
-			creatureShape.setTextureTranslation({1, 1});
+				creatureShape.setTextureScaling({1, 1});
+				creatureShape.setTextureTranslation({1, 1});
 
-			creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -.5});
+				creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -.5});
 
-			window.drawShape(creatureShape);
-		}, topLeftGrid, bottomRightGrid);
+				window.drawShape(creatureShape);
+			},
+			topLeftGrid, bottomRightGrid);
 
 	skipSimRender:;
 
@@ -810,7 +816,9 @@ int main()
 		{
 			if (contains(simulation.env.getList<Creature>(), focusCreature))
 			{
-				nodeName = nodeNames[creatureNetworkPointers.network->selectedID];
+				nodeName =
+					nodeNames[creatureNetworkPointers.network->selectedID] + " " +
+					std::to_string(focusCreature->network->getNode(creatureNetworkPointers.network->selectedID).value);
 			}
 			else
 			{
@@ -866,6 +874,8 @@ int main()
 			simulationRules.startingCreatures = simMenuPointers.startingCreatures->value;
 
 			simulation.create(simulationRules, simMenuPointers.seed->value);
+
+			background.setSize(simulationRules.size);
 		}
 
 		if (event.keybuffer.find('h') != std::string::npos && FocusableElement::focusedField == nullptr)

@@ -64,7 +64,7 @@ class ThreadPool
 
 		bool active()
 		{
-			if(count || jobList.size())
+			if (count || jobList.size())
 			{
 				return true;
 			}
@@ -92,3 +92,88 @@ class ThreadPool
 			delete[] job;
 		}
 };
+
+// class ThreadDistribute
+// {
+// 	public:
+// 		struct Worker
+// 		{
+// 				std::thread							 *thread = nullptr;
+// 				std::queue<std::function<void(void)>> jobList;
+// 				int									  cursor = 0;
+// 		} *worker;
+//
+// 		std::function<void()> *job = nullptr;
+// 		int					   size;
+// 		bool				   terminateSignal = false;
+//
+// 		static void threadLoop(Worker &worker, bool &terminateSignal)
+// 		{
+// 			while (true)
+// 			{
+// 				while (worker.cursor < worker.jobList.size() && terminateSignal == false)
+// 				{
+// 				}
+//
+// 				if (terminateSignal)
+// 				{
+// 					return;
+// 				}
+//
+// 				worker.jobList.front()();
+//
+// 				worker.cursor++;
+// 			}
+// 		}
+//
+// 		ThreadDistribute(int size) : size(size)
+// 		{
+// 			worker = new Worker[size];
+//
+// 			for (int i = 0; i < size; i++)
+// 			{
+// 				worker[i].thread = new std::thread(threadLoop, worker[i], terminateSignal);
+// 			}
+// 		}
+//
+// 		void queue(std::function<void()> func, int id)
+// 		{
+// 			worker[id].jobList.push(func);
+// 		}
+//
+// 		bool active()
+// 		{
+// 			for (int i = 0; i < size; i++)
+// 			{
+// 				if (worker[i].cursor >= worker[i].jobList.size())
+// 				{
+// 					return true;
+// 				}
+// 			}
+//
+// 			return false;
+// 		}
+//
+// 		void clear()
+// 		{
+// 			for(int i = 0; i < size; i++)
+// 			{
+// 				worker[i].jobList = std::queue<std::function<void()>>();
+// 				worker[i].cursor = 0;
+// 			}
+// 		}
+//
+// 		~ThreadDistribute()
+// 		{
+// 			terminateSignal = true;
+//
+// 			for (int i = 0; i < size; i++)
+// 			{
+// 				worker[i].thread->join();
+//
+// 				delete worker[i].thread;
+// 			}
+//
+// 			delete[] worker;
+// 		}
+// };
