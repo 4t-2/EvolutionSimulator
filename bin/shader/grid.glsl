@@ -15,8 +15,8 @@ void main()
 
 	const int gridSize = 100;
 
-	if(mod(fragPos.x+(.5*scale), gridSize) < (1*scale) || mod(fragPos.y+(.5*scale), gridSize) < (1*scale))
+	if(mod(fragPos.x+(.5*scale), 1280) < (1*scale) || mod(fragPos.y+(.5*scale), 720) < (1*scale))
 	{
-	    color = vec4(0, 0, 0, 1);
+	    color = vec4(1, 1, 1, 1);
 	}
 }

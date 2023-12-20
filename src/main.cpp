@@ -897,13 +897,16 @@ int main()
 
 		if (event.isPointerButtonPressed(agl::Button::Left))
 		{
-			for (int i = 0; i < menuBar.length; i++)
+			if (menuBar.exists)
 			{
-				SimpleMenu *menu = menuBar.menu[i];
-
-				if (pointInArea(event.getPointerWindowPosition(), menu->position, menu->size))
+				for (int i = 0; i < menuBar.length; i++)
 				{
-					goto endif;
+					SimpleMenu *menu = menuBar.menu[i];
+
+					if (pointInArea(event.getPointerWindowPosition(), menu->position, menu->size) && menu->exists)
+					{
+						goto endif;
+					}
 				}
 			}
 
@@ -931,6 +934,7 @@ int main()
 					if (distance < creature.radius)
 					{
 						focusCreature = &creature;
+						simulation.env.selected = focusCreature;
 
 						return;
 					}

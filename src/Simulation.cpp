@@ -707,9 +707,13 @@ void Simulation::updateSimulation()
 			}
 		}, [](PhysicsObj &circle){return circle.radius+50;});
 
-	env.update<Creature, Creature>([](Creature &seeingCreature, Creature &creature, auto, auto) {
+	env.update<Creature, Creature>([env = &env](Creature &seeingCreature, Creature &creature, auto, auto) {
 		agl::Vec<float, 2> offset	= seeingCreature.position - creature.position;
 		float			   distance = offset.length();
+			if(&seeingCreature == env->selected)
+			{
+			std::cout << "possible " << &creature << '\n';
+			}
 
 		if (distance > seeingCreature.creatureRelPos.distance)
 		{

@@ -143,6 +143,8 @@ class Environment
 		ThreadPool												  pool;
 		agl::Vec<int, 2>										 *randomPosition;
 
+		void *selected = nullptr;
+
 		Environment() : pool(1)
 		{
 		}
@@ -434,6 +436,14 @@ class Environment
 					addressU = (U *)((long long)*it2 + (long long)offsetU);
 				}
 
+				if constexpr (!sameGrid && std::is_same<T, U>())
+				{
+					if ((void *)addressU == (void *)addressT)
+					{
+						continue;
+					}
+				}
+
 				func(*addressT, *addressU, hashT, hashU);
 
 				if constexpr (mirror)
@@ -446,13 +456,8 @@ class Environment
 		template <typename T, typename U, bool oneWay = false, bool mirror = false>
 		void update(std::function<void(T &, U &, std::size_t, std::size_t)> func, std::function<float(T &)> distFunc)
 		{
-			agl::Vec<int, 2> startGridOffset = {-1, -1};
-
-			agl::Vec<int, 2> endGridOffset = {1, 1};
-
 			auto threadedQueue = [&](int start, int end) {
-				pool.queue([&, func = func, startGridOffset = startGridOffset, endGridOffset = endGridOffset,
-							start = start, end = end, distFunc = distFunc]() {
+				pool.queue([&, func = func, start = start, end = end, distFunc = distFunc]() {
 					for (int i = start; i <= end; i++)
 					{
 						agl::Vec<int, 2> &gridPosition = randomPosition[i];
@@ -481,29 +486,32 @@ class Environment
 										addressT = (T *)((long long)*it + (long long)offsetT);
 									}
 
-									float distance = distFunc(*addressT);
+									float distance = 1000;
 
 									agl::Vec<int, 2> startGrid =
-										toGridPosition({(*it)->position.x - distance, (*it)->position.y - distance});
+										toGridPosition({(*it)->position.x - distance, (*it)->position.y - distance}) -
+										gridPosition;
 									agl::Vec<int, 2> endGrid =
-										toGridPosition({(*it)->position.x + distance, (*it)->position.y + distance});
+										toGridPosition({(*it)->position.x + distance, (*it)->position.y + distance}) -
+										gridPosition;
+
+									if (addressT == selected)
+									{
+										std::cout << "-------------------" << '\n';
+										std::cout << toGridPosition((*it)->position) << " " << distance << '\n';
+										std::cout << startGrid << " : " << endGrid << '\n';
+									}
 
 									if constexpr (!oneWay)
 									{
-										for (int y = startGrid.y; y < 0; y++)
+										for (int y = startGrid.y; y <= -1; y++)
 										{
-											if (gridPosition.y + y < 0 || gridPosition.y + y > (gridResolution.y - 1))
+											for (int x = startGrid.x; x <= endGrid.x; x++)
 											{
-												continue;
-											}
-											for (int x = startGrid.x; x < 0; x++)
-											{
-												if (gridPosition.x + x < 0 ||
-													gridPosition.x + x > (gridResolution.x - 1))
+												if (addressT == selected)
 												{
-													continue;
+													std::cout << "did " << x << " " << y << '\n';
 												}
-
 												grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
 												grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 												gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT,
@@ -511,6 +519,20 @@ class Environment
 												grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
 												grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
 											}
+										}
+
+										for (int x = startGrid.x; x <= -1; x++)
+										{
+											if (addressT == selected)
+											{
+												std::cout << "did " << x << " " << 0 << '\n';
+											}
+											grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
+											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+											gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, 0}, hashT, hashU,
+																			 addressT, it);
+											grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+											grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.unlock();
 										}
 									}
 
@@ -528,7 +550,7 @@ class Environment
 									{
 										grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 									}
-									if (hashT == hashU)
+									if (hashT == hashU && oneWay)
 									{
 										gridUpdate<T, U, oneWay, mirror, true>(func, gridPosition, {0, 0}, hashT, hashU,
 																			   addressT, it);
@@ -554,19 +576,27 @@ class Environment
 										grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
 									}
 
-									for (int y = 1; y <= endGridOffset.y; y++)
+									for (int x = 1; x <= endGrid.x; x++)
 									{
-										if (gridPosition.y + y < 0 || gridPosition.y + y > (gridResolution.y - 1))
+										if (addressT == selected)
 										{
-											continue;
+											std::cout << "did " << x << " " << 0 << '\n';
 										}
-										for (int x = 1; x <= startGridOffset.x; x++)
+										grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+										grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
+										gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, 0}, hashT, hashU,
+																		 addressT, it);
+										grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.unlock();
+										grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+									}
+									for (int y = 1; y <= endGrid.y; y++)
+									{
+										for (int x = startGrid.x; x <= endGrid.x; x++)
 										{
-											if (gridPosition.x + x < 0 || gridPosition.x + x > (gridResolution.x - 1))
+											if (addressT == selected)
 											{
-												continue;
+												std::cout << "did " << x << " " << y << '\n';
 											}
-
 											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 											grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
 											gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT, hashU,
