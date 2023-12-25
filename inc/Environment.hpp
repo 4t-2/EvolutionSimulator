@@ -145,7 +145,7 @@ class Environment
 
 		void *selected = nullptr;
 
-		Environment() : pool(1)
+		Environment() : pool(10)
 		{
 		}
 
@@ -486,7 +486,7 @@ class Environment
 										addressT = (T *)((long long)*it + (long long)offsetT);
 									}
 
-									float distance = 1000;
+									float distance = distFunc(*addressT);
 
 									agl::Vec<int, 2> startGrid =
 										toGridPosition({(*it)->position.x - distance, (*it)->position.y - distance}) -
@@ -495,23 +495,12 @@ class Environment
 										toGridPosition({(*it)->position.x + distance, (*it)->position.y + distance}) -
 										gridPosition;
 
-									if (addressT == selected)
-									{
-										std::cout << "-------------------" << '\n';
-										std::cout << toGridPosition((*it)->position) << " " << distance << '\n';
-										std::cout << startGrid << " : " << endGrid << '\n';
-									}
-
 									if constexpr (!oneWay)
 									{
 										for (int y = startGrid.y; y <= -1; y++)
 										{
 											for (int x = startGrid.x; x <= endGrid.x; x++)
 											{
-												if (addressT == selected)
-												{
-													std::cout << "did " << x << " " << y << '\n';
-												}
 												grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
 												grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 												gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT,
@@ -523,10 +512,6 @@ class Environment
 
 										for (int x = startGrid.x; x <= -1; x++)
 										{
-											if (addressT == selected)
-											{
-												std::cout << "did " << x << " " << 0 << '\n';
-											}
 											grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
 											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 											gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, 0}, hashT, hashU,
@@ -578,10 +563,6 @@ class Environment
 
 									for (int x = 1; x <= endGrid.x; x++)
 									{
-										if (addressT == selected)
-										{
-											std::cout << "did " << x << " " << 0 << '\n';
-										}
 										grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 										grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
 										gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, 0}, hashT, hashU,
@@ -593,10 +574,6 @@ class Environment
 									{
 										for (int x = startGrid.x; x <= endGrid.x; x++)
 										{
-											if (addressT == selected)
-											{
-												std::cout << "did " << x << " " << y << '\n';
-											}
 											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 											grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
 											gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT, hashU,

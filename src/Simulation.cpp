@@ -39,7 +39,16 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
+		Buffer buf(EXTRA_BYTES);
+		randomData(&buf);
 		CreatureData creatureData(1, .5, 1, 0, basicStructure.totalConnections);
+
+		creatureData.sight		= (buf.data[0] * 2) / 255.;
+		creatureData.speed		= (buf.data[1] * 2) / 255.;
+		creatureData.size		= (buf.data[2] * 2) / 255.;
+		creatureData.hue		= (buf.data[3] * 359.) / 255.;
+		creatureData.preference = (buf.data[4] / 255.);
+		creatureData.metabolism = ((buf.data[5] * 2.) / 255.);
 
 		switch (i % 2)
 		{
@@ -705,155 +714,166 @@ void Simulation::updateSimulation()
 					otherCircle.force += force;
 				}
 			}
-		}, [](PhysicsObj &circle){return circle.radius+50;});
+		},
+		[](PhysicsObj &circle) { return circle.radius + 50; });
 
-	env.update<Creature, Creature>([env = &env](Creature &seeingCreature, Creature &creature, auto, auto) {
-		agl::Vec<float, 2> offset	= seeingCreature.position - creature.position;
-		float			   distance = offset.length();
-			if(&seeingCreature == env->selected)
+	env.update<Creature, Creature>(
+		[env = &env](Creature &seeingCreature, Creature &creature, auto, auto) {
+			agl::Vec<float, 2> offset	= seeingCreature.position - creature.position;
+			float			   distance = offset.length();
+
+			if (distance > seeingCreature.creatureRelPos.distance)
 			{
-			std::cout << "possible " << &creature << '\n';
+				return;
 			}
 
-		if (distance > seeingCreature.creatureRelPos.distance)
-		{
-			return;
-		}
+			if (std::isnan(distance))
+			{
+				return;
+			}
 
-		if (std::isnan(distance))
-		{
-			return;
-		}
+			seeingCreature.creatureRelPos.rotation = vectorAngle(offset) + seeingCreature.rotation;
+			seeingCreature.creatureRelPos.distance = distance;
 
-		seeingCreature.creatureRelPos.rotation = vectorAngle(offset) + seeingCreature.rotation;
-		seeingCreature.creatureRelPos.distance = distance;
+			seeingCreature.network->setInputNode(CREATURE_PREFERENCE, creature.preference);
+		},
+		[](Creature &creature) { return creature.creatureRelPos.distance; });
 
-		seeingCreature.network->setInputNode(CREATURE_PREFERENCE, creature.preference);
-	}, [](Creature &creature){return creature.creatureRelPos.distance;});
+	env.update<Creature, Food>(
+		[](Creature &creature, Food &food, auto, auto) {
+			agl::Vec<float, 2> offset	= creature.position - food.position;
+			float			   distance = offset.length();
 
-	env.update<Creature, Food>([](Creature &creature, Food &food, auto, auto) {
-		agl::Vec<float, 2> offset	= creature.position - food.position;
-		float			   distance = offset.length();
+			if (distance > creature.foodRelPos.distance)
+			{
+				return;
+			}
 
-		if (distance > creature.foodRelPos.distance)
-		{
-			return;
-		}
+			if (std::isnan(distance))
+			{
+				return;
+			}
 
-		if (std::isnan(distance))
-		{
-			return;
-		}
+			creature.foodRelPos.rotation = vectorAngle(offset) + creature.rotation;
+			creature.foodRelPos.distance = distance;
+		},
+		[](Creature &creature) { return creature.foodRelPos.distance; });
 
-		creature.foodRelPos.rotation = vectorAngle(offset) + creature.rotation;
-		creature.foodRelPos.distance = distance;
-	}, [](Creature &creature){return creature.foodRelPos.distance;});
+	env.update<Creature, Meat>(
+		[&](Creature &creature, Meat &meat, auto, auto) {
+			agl::Vec<float, 2> offset	= creature.position - meat.position;
+			float			   distance = offset.length();
 
-	env.update<Creature, Meat>([&](Creature &creature, Meat &meat, auto, auto) {
-		agl::Vec<float, 2> offset	= creature.position - meat.position;
-		float			   distance = offset.length();
+			if (distance > creature.meatRelPos.distance)
+			{
+				return;
+			}
 
-		if (distance > creature.meatRelPos.distance)
-		{
-			return;
-		}
+			if (std::isnan(distance))
+			{
+				return;
+			}
 
-		if (std::isnan(distance))
-		{
-			return;
-		}
-
-		creature.meatRelPos.rotation = vectorAngle(offset) + creature.rotation;
-		creature.meatRelPos.distance = distance;
-	}, [](Creature &creature){return creature.meatRelPos.distance;});
+			creature.meatRelPos.rotation = vectorAngle(offset) + creature.rotation;
+			creature.meatRelPos.distance = distance;
+		},
+		[](Creature &creature) { return creature.meatRelPos.distance; });
 
 	// creature eating
-	env.update<Creature, Food>([&](Creature &creature, Food &food, auto, auto) {
-		if (!creature.eating)
-		{
-			return;
-		}
+	env.update<Creature, Food>(
+		[&](Creature &creature, Food &food, auto, auto) {
+			if (!creature.eating)
+			{
+				return;
+			}
 
-		agl::Vec<float, 2> offset = creature.position - food.position;
+			agl::Vec<float, 2> offset = creature.position - food.position;
 
-		float angleDiff = offset.angle() - creature.rotation;
+			float angleDiff = offset.angle() - creature.rotation;
 
-		if (abs(angleDiff - PI) > (PI / 4))
-		{
-			return;
-		}
+			if (abs(angleDiff - PI) > (PI / 4))
+			{
+				return;
+			}
 
-		if (offset.length() < (creature.radius + food.radius + EATRADIUS))
-		{
-			float energy = foodEnergyDensity * creature.preference * creature.preference * creature.preference;
+			if (offset.length() < (creature.radius + food.radius + EATRADIUS))
+			{
+				float energy = foodEnergyDensity * creature.preference * creature.preference * creature.preference;
 
-			creature.energyDensity = newEnergyDensity(creature.biomass, creature.energyDensity, foodVol, energy);
+				creature.energyDensity = newEnergyDensity(creature.biomass, creature.energyDensity, foodVol, energy);
 
-			creature.biomass += foodVol;
+				creature.biomass += foodVol;
 
-			food.exists = false;
-			creature.reward += energy * foodVol;
-		}
-	}, [](Creature &creature){return creature.radius + EATRADIUS + 50;});
+				food.exists = false;
+				creature.reward += energy * foodVol;
+			}
+		},
+		[](Creature &creature) { return creature.radius + EATRADIUS + 50; });
 
-	env.update<Creature, Meat>([&](Creature &creature, Meat &meat, auto, auto) {
-		if (!creature.eating)
-		{
-			return;
-		}
+	env.update<Creature, Meat>(
+		[&](Creature &creature, Meat &meat, auto, auto) {
+			if (!creature.eating)
+			{
+				return;
+			}
 
-		agl::Vec<float, 2> offset = creature.position - meat.position;
+			agl::Vec<float, 2> offset = creature.position - meat.position;
 
-		float angleDiff = offset.angle() - creature.rotation;
+			float angleDiff = offset.angle() - creature.rotation;
 
-		if (abs(angleDiff - PI) > (PI / 4))
-		{
-			return;
-		}
+			if (abs(angleDiff - PI) > (PI / 4))
+			{
+				return;
+			}
 
-		if (offset.length() < (creature.radius + meat.radius + EATRADIUS))
-		{
-			float energy = (meatEnergyDensity * (1 - creature.preference));
-
-			creature.energyDensity = newEnergyDensity(creature.biomass, creature.energyDensity, meat.energyVol, energy);
-
-			creature.biomass += meat.energyVol;
-
-			meat.exists = false;
-			creature.reward += energy * meat.energyVol;
-		}
-	}, [](Creature &creature){return creature.radius + EATRADIUS + 50;});
-
-	env.update<Creature, Creature>([&](Creature &creature, Creature &eatenCreature, auto, auto) {
-		if (eatenCreature.health < 0 || !creature.eating)
-		{
-			return;
-		}
-
-		agl::Vec<float, 2> offset = creature.position - eatenCreature.position;
-
-		float angleDiff = offset.angle() - creature.rotation;
-
-		if (abs(angleDiff - PI) > (PI / 4))
-		{
-			return;
-		}
-
-		if (offset.length() < (creature.radius + eatenCreature.radius + EATRADIUS))
-		{
-			// if (frame % BITEDELAY == 0)
+			if (offset.length() < (creature.radius + meat.radius + EATRADIUS))
 			{
 				float energy = (meatEnergyDensity * (1 - creature.preference));
 
-				creature.energyDensity = newEnergyDensity(creature.biomass, creature.energyDensity, leachVol, energy);
+				creature.energyDensity =
+					newEnergyDensity(creature.biomass, creature.energyDensity, meat.energyVol, energy);
 
-				creature.biomass += leachVol;
+				creature.biomass += meat.energyVol;
 
-				eatenCreature.health -= damage;
-				creature.reward += energy * leachVol;
+				meat.exists = false;
+				creature.reward += energy * meat.energyVol;
 			}
-		}
-	}, [](Creature &creature){return creature.radius + EATRADIUS + 50;});
+		},
+		[](Creature &creature) { return creature.radius + EATRADIUS + 50; });
+
+	env.update<Creature, Creature>(
+		[&](Creature &creature, Creature &eatenCreature, auto, auto) {
+			if (eatenCreature.health < 0 || !creature.eating)
+			{
+				return;
+			}
+
+			agl::Vec<float, 2> offset = creature.position - eatenCreature.position;
+
+			float angleDiff = offset.angle() - creature.rotation;
+
+			if (abs(angleDiff - PI) > (PI / 4))
+			{
+				return;
+			}
+
+			if (offset.length() < (creature.radius + eatenCreature.radius + EATRADIUS))
+			{
+				// if (frame % BITEDELAY == 0)
+				{
+					float energy = (meatEnergyDensity * (1 - creature.preference));
+
+					creature.energyDensity =
+						newEnergyDensity(creature.biomass, creature.energyDensity, leachVol, energy);
+
+					creature.biomass += leachVol;
+
+					eatenCreature.health -= damage;
+					creature.reward += energy * leachVol;
+				}
+			}
+		},
+		[](Creature &creature) { return creature.radius + EATRADIUS + 50; });
 
 	while (env.pool.active())
 	{
