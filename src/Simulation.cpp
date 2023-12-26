@@ -6,6 +6,7 @@
 #include <random>
 #include <thread>
 #include <type_traits>
+#include <chrono>
 
 #define newEnergyDensity(biomass, bioEnergy, additional, addEnergy) \
 	((biomass * bioEnergy) + (additional * addEnergy)) / (biomass + additional)
@@ -43,28 +44,15 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 		randomData(&buf);
 		CreatureData creatureData(1, .5, 1, 0, basicStructure.totalConnections);
 
-		creatureData.sight		= (buf.data[0] * 2) / 255.;
-		creatureData.speed		= (buf.data[1] * 2) / 255.;
-		creatureData.size		= (buf.data[2] * 2) / 255.;
-		creatureData.hue		= (buf.data[3] * 359.) / 255.;
-		creatureData.preference = (buf.data[4] / 255.);
-		creatureData.metabolism = ((buf.data[5] * 2.) / 255.);
+		// creatureData.sight		= (buf.data[0] * 2) / 255.;
+		// creatureData.speed		= (buf.data[1] * 2) / 255.;
+		// creatureData.size		= (buf.data[2] * 2) / 255.;
+		// creatureData.hue		= (buf.data[3] * 359.) / 255.;
+		// creatureData.preference = (buf.data[4] / 255.);
+		// creatureData.metabolism = ((buf.data[5] * 2.) / 255.);
 
-		switch (i % 2)
-		{
-			case 0:
 				creatureData.useNEAT = true;
 				creatureData.usePG	 = false;
-				break;
-			case 1:
-				creatureData.useNEAT = false;
-				creatureData.usePG	 = true;
-				break;
-			case 2:
-				creatureData.useNEAT = true;
-				creatureData.usePG	 = true;
-				break;
-		}
 
 		in::NetworkStructure::randomWeights(basicStructure);
 		creatureData.setNetwork(basicStructure);
@@ -86,6 +74,8 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	}
 
 	foodCap = simulationRules.foodCap;
+
+	env.setThreads(simulationRules.threads);
 
 	return;
 }
@@ -519,7 +509,7 @@ void Simulation::updateSimulation()
 			{
 				CreatureData creatureData = creature.creatureData;
 
-				mutate(&creatureData, 50, 3);
+				mutate(&creatureData, simulationRules.bodyMutation, simulationRules.brainMutation);
 
 				creatureData.startEnergy = creature.eggEnergyCost;
 

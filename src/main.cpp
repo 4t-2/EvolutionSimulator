@@ -464,18 +464,28 @@ int main()
 			FieldElement<int>	*maxFood;
 			FieldElement<float> *damage;
 			FieldElement<float> *energyCostMultiplier;
+			FieldElement<float> *learnRate;
+			FieldElement<int>	*brainMutation;
+			FieldElement<int>	*bodyMutation;
+			FieldElement<float> *exploration;
+			FieldElement<float> *vaporize;
 	} simRulesPointers;
 
 	simulation.foodCap = simulationRules.foodCap;
 
-	Menu simRules("SimRules", 200,												   //
-				  FieldElement<float>{"FdEnDn", simulation.foodEnergyDensity},	   //
-				  FieldElement<float>{"FdVol", (simulation.foodVol)},			   //
-				  FieldElement<float>{"MtEnDn", (simulation.meatEnergyDensity)},   //
-				  FieldElement<float>{"LeVol", (simulation.leachVol)},			   //
-				  FieldElement<int>{"maxFd", (simulation.foodCap)},				   //
-				  FieldElement<float>{"dmg", (simulation.damage)},				   //
-				  FieldElement<float>{"EnCoMu", (simulation.energyCostMultiplier)} //
+	Menu simRules("SimRules", 200,													//
+				  FieldElement<float>{"FdEnDn", simulation.foodEnergyDensity},		//
+				  FieldElement<float>{"FdVol", (simulation.foodVol)},				//
+				  FieldElement<float>{"MtEnDn", (simulation.meatEnergyDensity)},	//
+				  FieldElement<float>{"LeVol", (simulation.leachVol)},				//
+				  FieldElement<int>{"maxFd", (simulation.foodCap)},					//
+				  FieldElement<float>{"dmg", (simulation.damage)},					//
+				  FieldElement<float>{"EnCoMu", (simulation.energyCostMultiplier)}, //
+				  FieldElement<float>{"Lrate", (simulationRules.learningRate)},		//
+				  FieldElement<int>{"braMut", (simulationRules.brainMutation)},		//
+				  FieldElement<int>{"bodMut", (simulationRules.bodyMutation)},		//
+				  FieldElement<float>{"xplor", (simulationRules.exploration)},		//
+				  FieldElement<float>{"vapor", (simulationRules.vaporize)}		//
 	);
 
 	simRules.bindPointers(&simRulesPointers);
@@ -504,6 +514,8 @@ int main()
 			FieldElement<int>	  *sizeY;
 			FieldElement<int>	  *gridX;
 			FieldElement<int>	  *gridY;
+			FieldElement<int>	  *threads;
+			FieldElement<int>	  *memory;
 			FieldElement<int>	  *startingCreatures;
 			FieldElement<int>	  *seed;
 			FieldElement<float>	  *simCycles;
@@ -517,6 +529,8 @@ int main()
 				 FieldElement<int>{"sizeY", (simulationRules.size.y)},					  //
 				 FieldElement<int>{"gridX", (simulationRules.gridResolution.x)},		  //
 				 FieldElement<int>{"gridY", (simulationRules.gridResolution.y)},		  //
+				 FieldElement<int>{"Thread", (simulationRules.threads)},				  //
+				 FieldElement<int>{"CreMem", (simulationRules.memory)},					  //
 				 FieldElement<int>{"startCreature", (simulationRules.startingCreatures)}, //
 				 FieldElement<int>{"seed", 0},											  //
 				 FieldElement<float>{"simCycles", 1.0},									  //
@@ -872,6 +886,7 @@ int main()
 			simulationRules.gridResolution.x  = simMenuPointers.gridX->value;
 			simulationRules.gridResolution.y  = simMenuPointers.gridY->value;
 			simulationRules.startingCreatures = simMenuPointers.startingCreatures->value;
+			simulationRules.threads			  = simMenuPointers.threads->value;
 
 			simulation.create(simulationRules, simMenuPointers.seed->value);
 
@@ -933,7 +948,7 @@ int main()
 
 					if (distance < creature.radius)
 					{
-						focusCreature = &creature;
+						focusCreature			= &creature;
 						simulation.env.selected = focusCreature;
 
 						return;
@@ -1031,13 +1046,18 @@ int main()
 		endif:;
 		}
 
-		simulation.foodEnergyDensity	= simRulesPointers.foodDen->value;
-		simulation.foodVol				= simRulesPointers.foodVol->value;
-		simulation.meatEnergyDensity	= simRulesPointers.meatDen->value;
-		simulation.leachVol				= simRulesPointers.leachVol->value;
-		simulation.foodCap				= simRulesPointers.maxFood->value;
-		simulation.damage				= simRulesPointers.damage->value;
-		simulation.energyCostMultiplier = simRulesPointers.energyCostMultiplier->value;
+		simulation.foodEnergyDensity			 = simRulesPointers.foodDen->value;
+		simulation.foodVol						 = simRulesPointers.foodVol->value;
+		simulation.meatEnergyDensity			 = simRulesPointers.meatDen->value;
+		simulation.leachVol						 = simRulesPointers.leachVol->value;
+		simulation.foodCap						 = simRulesPointers.maxFood->value;
+		simulation.damage						 = simRulesPointers.damage->value;
+		simulation.energyCostMultiplier			 = simRulesPointers.energyCostMultiplier->value;
+		simulation.simulationRules.learningRate	 = simRulesPointers.learnRate->value;
+		simulation.simulationRules.brainMutation = simRulesPointers.brainMutation->value;
+		simulation.simulationRules.bodyMutation	 = simRulesPointers.bodyMutation->value;
+		simulation.simulationRules.exploration	 = simRulesPointers.exploration->value;
+		simulation.simulationRules.vaporize		 = simRulesPointers.vaporize->value;
 
 	deadSim:;
 

@@ -94,6 +94,7 @@ class Creature : public Entity<PhysicsObj>
 		void setup(CreatureData &creatureData, SimulationRules *simulationRules);
 		void clear();
 
+		void learnBrain(SimulationRules &simRules);
 		void updateNetwork();
 		void updateActions();
 };

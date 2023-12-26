@@ -145,8 +145,14 @@ class Environment
 
 		void *selected = nullptr;
 
-		Environment() : pool(10)
+		Environment() : pool(THREADS)
 		{
+		}
+
+		void setThreads(int threads)
+		{
+			pool.ThreadPool::~ThreadPool();
+			new (&pool) ThreadPool(threads);
 		}
 
 		void setupGrid(agl::Vec<float, 2> size, agl::Vec<int, 2> gridResolution)

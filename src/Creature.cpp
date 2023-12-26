@@ -1,5 +1,6 @@
 #include "../inc/Creature.hpp"
 #include "../inc/Buffer.hpp"
+#include <thread>
 
 Creature::Creature() : Entity<PhysicsObj>(exists, position)
 {
@@ -76,7 +77,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	creatureRelPos = {0, rayLength};
 	foodRelPos	   = {0, rayLength};
 	meatRelPos	   = {0, rayLength};
-	
+
 	std::vector<in::Connection> connection(creatureData.connection,
 										   creatureData.connection + creatureData.totalConnections);
 
@@ -121,17 +122,21 @@ float closerObject(agl::Vec<float, 2> offset, float nearestDistance)
 	return nearestDistance;
 }
 
+void Creature::learnBrain(SimulationRules &simRules)
+{
+}
+
 void Creature::updateNetwork()
 {
 	if (creatureData.usePG)
 	{
-		int memSlot = (maxLife - life) % 240;
+		int memSlot = (maxLife - life) % simulationRules->memory;
 
 		if (memSlot == 0)
 		{
 			for (int i = 0; i < TOTAL_OUTPUT; i++)
 			{
-				shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * .5;
+				shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * simulationRules->exploration;
 			}
 		}
 
@@ -150,21 +155,22 @@ void Creature::updateNetwork()
 		}
 	}
 
-	if ((maxLife - life) % 240 == 0 && maxLife != life && creatureData.usePG)
+	if ((maxLife - life) % simulationRules->memory == 0 && maxLife != life && creatureData.usePG)
 	{
 		float loss = 0;
 
-		for (int x = 240 - 1; x >= 0; x--)
+		for (int x = simulationRules->memory - 1; x >= 0; x--)
 		{
-			for (int y = 1; (x + y) < 240; y++)
+			for (int y = 1; (x + y) < simulationRules->memory; y++)
 			{
-				memory[x].reward += memory[x + y].reward * std::pow(.9, y);
+				float old = memory[x].reward;
+				memory[x].reward += memory[x + y].reward * std::pow(simulationRules->vaporize, y);
 			}
 
 			loss += memory[x].reward;
 		}
 
-		loss /= 240;
+		loss /= simulationRules->memory;
 
 		int oldLoss = loss;
 		loss -= baseline;
@@ -175,7 +181,7 @@ void Creature::updateNetwork()
 
 		network->setupGradients(&gradients);
 
-		for (int i = 0; i < 240; i++)
+		for (int i = 0; i < simulationRules->memory; i++)
 		{
 			for (int x = 0; x < TOTAL_INPUT; x++)
 			{
@@ -194,7 +200,8 @@ void Creature::updateNetwork()
 			network->calcGradients(&gradients, target);
 		}
 
-		network->applyGradients(gradients, loss, 240);
+		network->learningRate = simulationRules->learningRate;
+		network->applyGradients(gradients, loss, simulationRules->memory);
 	}
 
 	network->setInputNode(CONSTANT_INPUT, 1);
@@ -220,7 +227,6 @@ void Creature::updateNetwork()
 	creatureRelPos = {0, rayLength};
 	foodRelPos	   = {0, rayLength};
 	meatRelPos	   = {0, rayLength};
-
 
 	network->setInputNode(ENERGY_INPUT, energy / maxEnergy);
 	network->setInputNode(HEALTH_INPUT, health / maxHealth);
@@ -298,9 +304,14 @@ void Creature::updateActions()
 
 	agl::Vec<float, 2> velNor;
 
+	if (std::isinf(velMag))
+	{
+		velMag = 0;
+	}
+
 	if (velMag == 0)
 	{
-		velNor = {1, 0};
+		velNor = {0, 0};
 	}
 	else
 	{

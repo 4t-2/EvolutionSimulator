@@ -23,12 +23,9 @@
 // food experiences a pushback force at the border of the simulation
 #define FOODBORDER
 
-#define THREADS	  2
+#define THREADS	  1
 #define EATRADIUS 5
 #define DAMAGE	  4
-
-#define MEMLENGTH 240
-#define DEVIATION .5
 
 #define FOODVOL	 40
 #define MEATVOL	 60
