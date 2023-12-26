@@ -33,6 +33,7 @@ class Simulation
 
         Simulation()
         {
+			env.setupTraits<PhyCircle>();
             env.setupTraits<Creature>();
             env.setupTraits<Food>();
             env.setupTraits<Meat>();

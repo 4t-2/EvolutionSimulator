@@ -14,6 +14,8 @@
 #include <string>
 #include <thread>
 
+agl::Circle *PhyCircle::circle;
+
 class Listener
 {
 	private:
@@ -583,42 +585,17 @@ int main()
 
 	bool quiting = false;
 
+	agl::Circle circleShape(50);
+	circleShape.setTexture(&blank);
+
+	PhyCircle::circle = &circleShape;
+
 	while (!event.windowClose())
 	{
 		static int milliDiff = 0;
 		int		   start	 = getMillisecond();
 
 		event.poll();
-
-		// if (event.isKeyPressed(agl::Key::M))
-		// {
-		// 	mHeld = true;
-		// }
-		// else if (mHeld)
-		// {
-		// 	mHeld = false;
-		//
-		// 	CreatureData creatureData(1, 1, 1, 60, 15);
-		//
-		// 	creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
-		// 	creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
-		// 	creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
-		// 	creatureData.setConnection(3, CREATURE_ROTATION, LEFT_OUTPUT, 1);
-		// 	creatureData.setConnection(4, CREATURE_ROTATION, RIGHT_OUTPUT, -1);
-		// 	creatureData.setConnection(5, CONSTANT_INPUT, RIGHT_OUTPUT, -1);
-		// 	creatureData.setConnection(6, CONSTANT_INPUT, LEFT_OUTPUT, -1);
-		// 	creatureData.setConnection(7, CREATURE_PREFERENCE, RIGHT_OUTPUT, 1);
-		// 	creatureData.setConnection(8, CREATURE_PREFERENCE, LEFT_OUTPUT, 1);
-		//
-		// 	creatureData.preference = 0;
-		// 	creatureData.metabolism = METABOLISM;
-		//
-		// 	agl::Vec<float, 2> position;
-		// 	position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
-		// 	position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
-		//
-		// 	simulation.addCreature(creatureData, position);
-		// }
 
 		if (!simMenuPointers.pause->state && simulation.active)
 		{
@@ -672,137 +649,7 @@ int main()
 			bottomRightGrid			 = simulation.env.toGridPosition(brPos);
 		}
 
-		// Draw food
-		simulation.env.view<Food>(
-			[&](auto &food, auto) {
-				agl::Vec<float, 2> position = food.position;
-				foodShape.setPosition(position);
-				window.drawShape(foodShape);
-			},
-			topLeftGrid, bottomRightGrid);
-
-		simulation.env.view<Meat>(
-			[&](auto &meat, auto) {
-				meatShape.setPosition(meat.position);
-				meatShape.setSize({meat.radius * 2, meat.radius * 2});
-				meatShape.setOffset({-meat.radius, -meat.radius});
-				meatShape.setRotation({0, 0, meat.rotation});
-				window.drawShape(meatShape);
-			},
-			topLeftGrid, bottomRightGrid);
-
-		// draw eggs
-		simulation.env.view<Egg>(
-			[&](auto &egg, auto) {
-				eggShape.setPosition(egg.position);
-				window.drawShape(eggShape);
-			},
-			topLeftGrid, bottomRightGrid);
-
-		// draw rays
-		if (contains(simulation.env.getList<Creature>(), focusCreature))
-		{
-			rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH * focusCreature->sight});
-			rayShape.setPosition(focusCreature->position);
-
-			{
-				float angleOffset = focusCreature->network->getNode(CREATURE_ROTATION).value * 180;
-				angleOffset += 180;
-
-				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->rotation);
-
-				float weight = focusCreature->network->getNode(CREATURE_DISTANCE).value;
-
-				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-
-				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
-				window.drawShape(rayShape);
-			}
-			{
-				float angleOffset = focusCreature->network->getNode(FOOD_ROTATION).value * 180;
-				angleOffset += 180;
-
-				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->rotation);
-
-				float weight = focusCreature->network->getNode(FOOD_DISTANCE).value;
-
-				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-
-				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
-				window.drawShape(rayShape);
-			}
-			{
-				float angleOffset = focusCreature->network->getNode(MEAT_ROTATION).value * 180;
-				angleOffset += 180;
-
-				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->rotation);
-
-				float weight = focusCreature->network->getNode(MEAT_DISTANCE).value;
-
-				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-
-				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
-				window.drawShape(rayShape);
-			}
-		}
-
-		// draw creature
-		simulation.env.view<Creature>(
-			[&](auto &creature, auto) {
-				creatureShape.setPosition(creature.position);
-				creatureShape.setRotation(agl::Vec<float, 3>{0, 0, -float(creature.rotation * 180 / PI)});
-
-				float speed = creature.velocity.length();
-
-				creatureShape.setTexture(&creatureBodyTexture);
-
-				int textureFrame = int(simulation.frame * (speed / 8)) % 6;
-
-				if (textureFrame > 2)
-				{
-					textureFrame -= 2;
-
-					creatureShape.setTextureScaling({-(1. / 3.), 1});
-				}
-				else
-				{
-					creatureShape.setTextureScaling({1. / 3., 1});
-				}
-
-				creatureShape.setTextureTranslation({float(1. / 3.) * textureFrame, 0});
-
-				if (event.isKeyPressed(agl::Key::Z))
-				{
-					agl::Vec<float, 3> blue	  = agl::Vec<float, 3>{0, 0, 255} * creature.creatureData.usePG;
-					agl::Vec<float, 3> yellow = agl::Vec<float, 3>{255, 255, 0} * creature.creatureData.useNEAT;
-
-					creatureShape.setColor({(unsigned char)(blue.x + yellow.x), (unsigned char)(blue.y + yellow.y),
-											(unsigned char)(blue.z + yellow.z)});
-				}
-				else
-				{
-					creatureShape.setColor(hueToRGB(creature.hue));
-				}
-
-				float size = creature.size;
-
-				creatureShape.setSize(agl::Vec<float, 3>{25 * size, 60 * size, 0});
-				creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -1});
-
-				window.drawShape(creatureShape);
-
-				creatureShape.setTexture(&creatureExtraTexture);
-
-				creatureShape.setColor(agl::Color::White);
-
-				creatureShape.setTextureScaling({1, 1});
-				creatureShape.setTextureTranslation({1, 1});
-
-				creatureShape.setOffset(agl::Vec<float, 3>{(float)-12.5 * size, (float)-12.5 * size, -.5});
-
-				window.drawShape(creatureShape);
-			},
-			topLeftGrid, bottomRightGrid);
+		simulation.env.view<PhyCircle>([&window = window](PhyCircle &dt, auto) { dt.drawFunc(window); });
 
 	skipSimRender:;
 
@@ -888,156 +735,52 @@ int main()
 			goto deadSim;
 		}
 
+		// funky new shit
+
+		if (menuBar.exists)
+		{
+			for (int i = 0; i < menuBar.length; i++)
+			{
+				SimpleMenu *menu = menuBar.menu[i];
+
+				if (pointInArea(event.getPointerWindowPosition(), menu->position, menu->size) && menu->exists)
+				{
+					goto endif;
+				}
+			}
+		}
+
+		if (leftClick)
+		{
+			agl::Vec<float, 2> mousePos =
+				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
+
+			auto &a	   = simulation.env.addEntity<PhyCircle>();
+			a.position = mousePos;
+		}
+
 		// input
 
-		if (event.isKeyPressed(agl::Key::R))
+		if (event.isPointerButtonPressed(agl::Button::Right))
 		{
-			focusCreature = nullptr;
+			agl::Vec<int, 2> cursorRelPos =
+				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
+
+			simulation.env.getArea<PhyCircle>(
+				[&](auto &obj) {
+					agl::Vec<float, 2> offset	= obj.position - cursorRelPos;
+					float			   distance = offset.length();
+
+					float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
+
+					agl::Vec<float, 2> force = offset.normalized() * forceScalar;
+
+					obj.force += force;
+				},
+				simulation.env.toGridPosition(cursorRelPos));
 		}
 
-		if (event.isPointerButtonPressed(agl::Button::Left))
-		{
-			if (menuBar.exists)
-			{
-				for (int i = 0; i < menuBar.length; i++)
-				{
-					SimpleMenu *menu = menuBar.menu[i];
-
-					if (pointInArea(event.getPointerWindowPosition(), menu->position, menu->size) && menu->exists)
-					{
-						goto endif;
-					}
-				}
-			}
-
-			if (leftMenuPointers.food->state) // add food
-			{
-				simulation.addFood(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
-														  cameraPosition));
-			}
-			if (leftMenuPointers.meat->state) // add meat
-			{
-				simulation.addMeat(getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
-														  cameraPosition));
-			}
-			if (leftMenuPointers.select->state) // select creature
-			{
-				simulation.env.view<Creature>([&](auto &creature, auto it) {
-					agl::Vec<float, 2> mouse;
-					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
-							  cameraPosition.x;
-					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
-							  cameraPosition.y;
-
-					float distance = (mouse - creature.position).length();
-
-					if (distance < creature.radius)
-					{
-						focusCreature = &creature;
-						simulation.env.selected = focusCreature;
-
-						return;
-					}
-				});
-			}
-			if (leftMenuPointers.kill->state) // kill creature
-			{
-				simulation.env.view<Creature>([&](auto &creature, auto it) {
-					agl::Vec<float, 2> mouse;
-					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
-							  cameraPosition.x;
-					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
-							  cameraPosition.y;
-
-					float distance = (mouse - creature.position).length();
-
-					if (distance < creature.radius)
-					{
-						it--;
-						simulation.addMeat(creature.position, creature.maxHealth / 4);
-						simulation.env.removeEntity<Creature>(it);
-
-						return;
-					}
-				});
-			}
-			if (leftMenuPointers.forceFood->state)
-			{
-				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
-																	   sizeMultiplier, cameraPosition);
-
-				simulation.env.getArea<Food>(
-					[&](Food &food) {
-						agl::Vec<float, 2> offset	= food.position - cursorRelPos;
-						float			   distance = offset.length();
-
-						float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
-
-						agl::Vec<float, 2> force = offset.normalized() * forceScalar;
-
-						food.force += force;
-					},
-					simulation.env.toGridPosition(cursorRelPos));
-				{
-				}
-			}
-			if (leftMenuPointers.forceMeat->state)
-			{
-				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
-																	   sizeMultiplier, cameraPosition);
-
-				simulation.env.getArea<Meat>(
-					[&](Meat &meat) {
-						agl::Vec<float, 2> offset	= meat.position - cursorRelPos;
-						float			   distance = offset.length();
-
-						float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
-
-						agl::Vec<float, 2> force = offset.normalized() * forceScalar;
-
-						meat.force += force;
-					},
-					simulation.env.toGridPosition(cursorRelPos));
-			}
-			if (leftMenuPointers.forceCreature->state)
-			{
-				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
-																	   sizeMultiplier, cameraPosition);
-
-				simulation.env.getArea<Creature>(
-					[&](Creature &creature) {
-						agl::Vec<float, 2> offset	= creature.position - cursorRelPos;
-						float			   distance = offset.length();
-
-						float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
-
-						agl::Vec<float, 2> force = offset.normalized() * forceScalar;
-
-						creature.force += force;
-
-						sendDebugLog(std::to_string(force.length()));
-					},
-					simulation.env.toGridPosition(cursorRelPos));
-			}
-			if (leftMenuPointers.sendTo->state)
-			{
-				if (focusCreature != nullptr)
-				{
-					focusCreature->position = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
-																	 sizeMultiplier, cameraPosition);
-				}
-			}
-
-		endif:;
-		}
-
-		simulation.foodEnergyDensity	= simRulesPointers.foodDen->value;
-		simulation.foodVol				= simRulesPointers.foodVol->value;
-		simulation.meatEnergyDensity	= simRulesPointers.meatDen->value;
-		simulation.leachVol				= simRulesPointers.leachVol->value;
-		simulation.foodCap				= simRulesPointers.maxFood->value;
-		simulation.damage				= simRulesPointers.damage->value;
-		simulation.energyCostMultiplier = simRulesPointers.energyCostMultiplier->value;
+	endif:;
 
 	deadSim:;
 

@@ -145,7 +145,7 @@ class Environment
 
 		void *selected = nullptr;
 
-		Environment() : pool(10)
+		Environment() : pool(1)
 		{
 		}
 
@@ -606,22 +606,41 @@ class Environment
 
 		template <typename T> void selfUpdate(std::function<void(T &)> func)
 		{
-			auto &list = entityList[typeid(T).hash_code()];
-
-			for (auto it = list.begin(); it != list.end(); it++)
+			for (auto &hashT : traits[typeid(T).hash_code()])
 			{
-				BaseEntity &entity = **it;
+				auto	 &list = entityList[hashT];
+				long long offsetT;
 
-				func(*(T *)(DoNotUse *)(*it));
-
-				if (!entity.exists)
+				if constexpr (!std::is_base_of_v<DoNotUse, T>)
 				{
-					it--;
-					list.erase(std::next(it, 1));
+					offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
 				}
-				else
+				for (auto it = list.begin(); it != list.end(); it++)
 				{
-					addToGrid<T>(entity);
+					BaseEntity &entity = **it;
+
+					T *addressT;
+
+					if constexpr (std::is_base_of_v<DoNotUse, T>)
+					{
+						addressT = (T *)(DoNotUse *)(*it);
+					}
+					else
+					{
+						addressT = (T *)((long long)*it + (long long)offsetT);
+					}
+
+					func(*addressT);
+
+					if (!entity.exists)
+					{
+						it--;
+						list.erase(std::next(it, 1));
+					}
+					else
+					{
+						addToGrid<T>(entity);
+					}
 				}
 			}
 		}
