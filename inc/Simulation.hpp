@@ -34,10 +34,7 @@ class Simulation
         Simulation()
         {
 			env.setupTraits<PhyCircle>();
-            env.setupTraits<Creature>();
-            env.setupTraits<Food>();
-            env.setupTraits<Meat>();
-            env.setupTraits<Egg>();
+			env.setupTraits<PhySquare>();
         }
 
 		void create(SimulationRules simulationRules, int seed);
@@ -58,12 +55,8 @@ class Simulation
 
 		void addFood(agl::Vec<float, 2> position);
 		void removeFood(std::list<BaseEntity *>::iterator food);
-		// depricated - WILL REMOVE
-		void removeFood(Food *food);
 
 		void addMeat(agl::Vec<float, 2> position);
 		void addMeat(agl::Vec<float, 2> position, float energy);
 		void removeMeat(std::list<BaseEntity *>::iterator meat);
-		// depricated - WILL REMOVE
-		void removeMeat(Meat *meat);
 };

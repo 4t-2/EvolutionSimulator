@@ -35,10 +35,10 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	env.setupGrid(simulationRules.size, simulationRules.gridResolution);
 
-	auto a = env.addEntity<PhyCircle>();
-
-	a.position = {0, 0};
-
+	{
+		auto &a	   = env.addEntity<PhyCircle>();
+		a.position = {0, 0};
+	}
 	return;
 }
 
@@ -103,44 +103,19 @@ void Simulation::removeEgg(std::list<BaseEntity *>::iterator egg)
 
 void Simulation::addFood(agl::Vec<float, 2> position)
 {
-	Food &newFood	 = env.addEntity<Food>();
-	newFood.position = position;
-	newFood.energy	 = simulationRules.foodEnergy;
 
 #ifdef ACTIVEFOOD
 	newFood.nextRandPos(simulationRules.size);
 #endif
 }
 
-void Simulation::removeFood(Food *food)
-{
-	std::list<BaseEntity *>::iterator iterator;
-
-	env.view<Food>([&](auto, auto it) {
-		if (*it == (BaseEntity *)(DoNotUse *)food)
-		{
-			iterator = it;
-		}
-	});
-
-	removeFood(iterator);
-}
-
 void Simulation::removeFood(std::list<BaseEntity *>::iterator food)
 {
-	env.removeEntity<Food>(food, [&](Food &food) {});
-
 	return;
 }
 
 void Simulation::addMeat(agl::Vec<float, 2> position, float energy)
 {
-	Meat &newMeat	  = env.addEntity<Meat>();
-	newMeat.position  = position;
-	newMeat.energyVol = (float)energy / meatEnergyDensity;
-	newMeat.radius	  = (energy / 50.) * 5;
-	newMeat.rotation  = ((float)rand() / (float)RAND_MAX) * 360;
-	newMeat.lifetime  = newMeat.energyVol * 288;
 }
 
 void Simulation::addMeat(agl::Vec<float, 2> position)
@@ -150,23 +125,7 @@ void Simulation::addMeat(agl::Vec<float, 2> position)
 
 void Simulation::removeMeat(std::list<BaseEntity *>::iterator meat)
 {
-	env.removeEntity<Meat>(meat, [&](Meat &meat) {});
-
 	return;
-}
-
-void Simulation::removeMeat(Meat *meat)
-{
-	std::list<BaseEntity *>::iterator iterator;
-
-	env.view<Meat>([&](auto, auto it) {
-		if (*it == (BaseEntity *)(DoNotUse *)meat)
-		{
-			iterator = it;
-		}
-	});
-
-	removeMeat(iterator);
 }
 
 float mutShift(float f, float min, float max)
@@ -376,21 +335,6 @@ template <typename T, typename U> void correctPosition(T &circle, U &otherCircle
 		circle.force -= pushback * actingMass;
 		otherCircle.force += pushback * actingMass;
 	}
-
-#ifdef FOODPRESSURE
-	else if constexpr (std::is_same_v<T, Food> && std::is_same_v<U, Food>)
-	{
-		if (circleDistance < 700)
-		{
-			float forceScalar = FOODPRESSURE / (circleDistance * circleDistance);
-
-			agl::Vec<float, 2> force = circleOffset.normalized() * forceScalar;
-
-			circle.force -= force;
-			otherCircle.force += force;
-		}
-	}
-#endif
 }
 
 void multithreadedRecurse(int size, std::function<void(int i)> lambda)
@@ -440,9 +384,10 @@ void Simulation::updateSimulation()
 	env.clearGrid();
 
 	env.selfUpdate<PhyCircle>([](PhyCircle &o) { o.updatePhysics(); });
+	env.selfUpdate<PhySquare>([](PhySquare &o) { o.updatePhysics(); });
 
-	env.update<PhysicsObj, PhysicsObj, true>(
-		[](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT, std::size_t hashU) {
+	env.update<PhyCircle, PhyCircle, true>(
+		[](PhyCircle &circle, PhyCircle &otherCircle, std::size_t hashT, std::size_t hashU) {
 			agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
 
 			float circleDistance = circleOffset.length();
@@ -476,20 +421,72 @@ void Simulation::updateSimulation()
 				circle.force -= pushback * actingMass;
 				otherCircle.force += pushback * actingMass;
 			}
-			else if (hashT == typeid(Food).hash_code() && hashU == typeid(Food).hash_code())
+		},
+		[](PhyCircle &circle) { return circle.radius + 50; });
+
+	env.update<PhyCircle, PhySquare, true>(
+		[](PhyCircle &circle, PhySquare &square, std::size_t hashT, std::size_t hashU) {
+			agl::Vec<float, 2> interOffset;
+
+		{
+			agl::Vec<float, 2> circleOffset = square.position - circle.position;
+
+			float circleDistance = circleOffset.length();
+
+			float angleDelta = circleOffset.angle();
+			float distance;
+
+			angleDelta = abs(angleDelta);
+
+			interOffset.x = -std::sin(angleDelta) * circleDistance;
+			interOffset.y = std::cos(angleDelta) * circleDistance;
+
+			if (interOffset.x > (square.length / 2))
 			{
-				if (circleDistance < 700)
+				interOffset.x = square.length / 2;
+			}
+			else if (interOffset.x < (-square.length / 2))
+			{
+				interOffset.x = -square.length / 2;
+			}
+			if (interOffset.y > (square.length / 2))
+			{
+				interOffset.y = square.length / 2;
+			}
+			else if (interOffset.y < (-square.length / 2))
+			{
+				interOffset.y = -square.length / 2;
+			}
+		}
+
+			agl::Vec<float, 2> squarePointVec = interOffset + square.position;
+			agl::Vec<float, 2> offset = squarePointVec - circle.position;
+			float distance = offset.length();
+
+			float overlap = circle.radius - distance;
+
+			if (overlap > 0)
+			{
+				agl::Vec<float, 2> offsetNormal = offset.normalized();
+
+				if (std::isnan(offsetNormal.x))
 				{
-					float forceScalar = FOODPRESSURE / (circleDistance * circleDistance);
-
-					agl::Vec<float, 2> force = circleOffset.normalized() * forceScalar;
-
-					circle.force -= force;
-					otherCircle.force += force;
+					offsetNormal.x = 1;
+					offsetNormal.y = 0;
 				}
+
+				agl::Vec<float, 2> pushback = offsetNormal * overlap;
+
+				float actingMass = circle.mass > square.mass ? square.mass : circle.mass;
+
+				circle.posOffset -= pushback * (square.mass / (circle.mass + square.mass));
+				square.posOffset += pushback * (circle.mass / (circle.mass + square.mass));
+
+				circle.force -= pushback * actingMass;
+				square.force += pushback * actingMass;
 			}
 		},
-		[](PhysicsObj &circle) { return circle.radius + 50; });
+		[](PhyCircle &circle) { return circle.radius + 50; });
 
 	while (env.pool.active())
 	{

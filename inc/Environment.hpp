@@ -213,9 +213,29 @@ class Environment
 
 		template <typename T> void view(std::function<void(T &, std::list<BaseEntity *>::iterator &)> func)
 		{
-			for (auto it = getList<T>().begin(); it != getList<T>().end(); it++)
+			for (auto &hashT : traits[typeid(T).hash_code()])
 			{
-				func(*(T *)(DoNotUse *)(*it), it);
+				auto	 &list = entityList[hashT];
+				long long offsetT;
+				if constexpr (!std::is_base_of_v<DoNotUse, T>)
+				{
+					offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
+				}
+				for (auto it = getList<T>().begin(); it != getList<T>().end(); it++)
+				{
+					T *addressT;
+
+					if constexpr (std::is_base_of_v<DoNotUse, T>)
+					{
+						addressT = (T *)(DoNotUse *)(*it);
+					}
+					else
+					{
+						addressT = (T *)((long long)*it + (long long)offsetT);
+					}
+
+					func(*addressT, it);
+				}
 			}
 		}
 
@@ -606,41 +626,24 @@ class Environment
 
 		template <typename T> void selfUpdate(std::function<void(T &)> func)
 		{
-			for (auto &hashT : traits[typeid(T).hash_code()])
+			auto &list = getList<T>();
+			for (auto it = list.begin(); it != list.end(); it++)
 			{
-				auto	 &list = entityList[hashT];
-				long long offsetT;
+				BaseEntity &entity = **it;
 
-				if constexpr (!std::is_base_of_v<DoNotUse, T>)
+				T *addressT;
+				addressT = (T *)(DoNotUse *)(*it);
+
+				func(*addressT);
+
+				if (!entity.exists)
 				{
-					offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
+					it--;
+					list.erase(std::next(it, 1));
 				}
-				for (auto it = list.begin(); it != list.end(); it++)
+				else
 				{
-					BaseEntity &entity = **it;
-
-					T *addressT;
-
-					if constexpr (std::is_base_of_v<DoNotUse, T>)
-					{
-						addressT = (T *)(DoNotUse *)(*it);
-					}
-					else
-					{
-						addressT = (T *)((long long)*it + (long long)offsetT);
-					}
-
-					func(*addressT);
-
-					if (!entity.exists)
-					{
-						it--;
-						list.erase(std::next(it, 1));
-					}
-					else
-					{
-						addToGrid<T>(entity);
-					}
+					addToGrid<T>(entity);
 				}
 			}
 		}

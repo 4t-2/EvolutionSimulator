@@ -14,7 +14,8 @@
 #include <string>
 #include <thread>
 
-agl::Circle *PhyCircle::circle;
+agl::Circle	   *PhyCircle::circle;
+agl::Rectangle *PhySquare::rect;
 
 class Listener
 {
@@ -290,27 +291,7 @@ int main()
 			int meat;
 	} statsForSimInfo;
 
-	Menu simulationInfo("SimInfo", 125, //
-						ValueElement<int>{"Creatures",
-										  [&]() {
-											  statsForSimInfo.creatures = simulation.env.getList<Creature>().size();
-											  return &statsForSimInfo.creatures;
-										  }}, //
-						ValueElement<int>{"Eggs",
-										  [&]() {
-											  statsForSimInfo.eggs = simulation.env.getList<Egg>().size();
-											  return &statsForSimInfo.eggs;
-										  }}, //
-						ValueElement<int>{"Food",
-										  [&]() {
-											  statsForSimInfo.food = simulation.env.getList<Food>().size();
-											  return &statsForSimInfo.food;
-										  }}, //
-						ValueElement<int>{"Meat",
-										  [&]() {
-											  statsForSimInfo.meat = simulation.env.getList<Meat>().size();
-											  return &statsForSimInfo.meat;
-										  }},											 //
+	Menu simulationInfo("SimInfo", 125,													 //
 						ValueElement<int>{"Frame", [&]() { return &simulation.frame; }}, //
 						ValueElement<float>{"FPS", [&]() { return &fps; }}				 //
 	);
@@ -587,8 +568,11 @@ int main()
 
 	agl::Circle circleShape(50);
 	circleShape.setTexture(&blank);
+	agl::Rectangle rectShape;
+	rectShape.setTexture(&blank);
 
 	PhyCircle::circle = &circleShape;
+	PhySquare::rect	  = &rectShape;
 
 	while (!event.windowClose())
 	{
@@ -650,6 +634,7 @@ int main()
 		}
 
 		simulation.env.view<PhyCircle>([&window = window](PhyCircle &dt, auto) { dt.drawFunc(window); });
+		simulation.env.view<PhySquare>([&window = window](PhySquare &dt, auto) { dt.drawFunc(window); });
 
 	skipSimRender:;
 
@@ -750,12 +735,19 @@ int main()
 			}
 		}
 
-		if (leftClick)
+		if (event.keybuffer.find('q') != -1)
 		{
 			agl::Vec<float, 2> mousePos =
 				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
 
 			auto &a	   = simulation.env.addEntity<PhyCircle>();
+			a.position = mousePos;
+		}
+		if (event.keybuffer.find('w') != -1)
+		{
+			agl::Vec<float, 2> mousePos =
+				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
+			auto &a	   = simulation.env.addEntity<PhySquare>();
 			a.position = mousePos;
 		}
 
