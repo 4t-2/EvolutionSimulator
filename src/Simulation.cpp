@@ -428,46 +428,65 @@ void Simulation::updateSimulation()
 		[](PhyCircle &circle, PhySquare &square, std::size_t hashT, std::size_t hashU) {
 			agl::Vec<float, 2> interOffset;
 
-		{
-			agl::Vec<float, 2> circleOffset = square.position - circle.position;
-
-			float circleDistance = circleOffset.length();
-
-			float angleDelta = circleOffset.angle();
-			float distance;
-
-			angleDelta = abs(angleDelta);
-
-			interOffset.x = -std::sin(angleDelta) * circleDistance;
-			interOffset.y = std::cos(angleDelta) * circleDistance;
-
-			if (interOffset.x > (square.length / 2))
 			{
-				interOffset.x = square.length / 2;
+				agl::Vec<float, 2> circleOffset = square.position - circle.position;
+
+				float circleDistance = circleOffset.length();
+
+				float angleDelta = circleOffset.angle() + square.rotation;
+				float distance;
+
+				angleDelta = abs(angleDelta);
+
+				interOffset.x = -std::sin(angleDelta) * circleDistance;
+				interOffset.y = std::cos(angleDelta) * circleDistance;
+
+				if (interOffset.x > (square.length / 2))
+				{
+					interOffset.x = square.length / 2;
+				}
+				else if (interOffset.x < (-square.length / 2))
+				{
+					interOffset.x = -square.length / 2;
+				}
+				if (interOffset.y > (square.length / 2))
+				{
+					interOffset.y = square.length / 2;
+				}
+				else if (interOffset.y < (-square.length / 2))
+				{
+					interOffset.y = -square.length / 2;
+				}
 			}
-			else if (interOffset.x < (-square.length / 2))
-			{
-				interOffset.x = -square.length / 2;
-			}
-			if (interOffset.y > (square.length / 2))
-			{
-				interOffset.y = square.length / 2;
-			}
-			else if (interOffset.y < (-square.length / 2))
-			{
-				interOffset.y = -square.length / 2;
-			}
-		}
+
+			agl::Mat4f rot;
+			rot.rotateZ(square.radToDeg());
+
+			interOffset = rot * interOffset;
 
 			agl::Vec<float, 2> squarePointVec = interOffset + square.position;
-			agl::Vec<float, 2> offset = squarePointVec - circle.position;
-			float distance = offset.length();
+			agl::Vec<float, 2> offset		  = squarePointVec - circle.position;
+			float			   distance		  = offset.length();
 
 			float overlap = circle.radius - distance;
+
+#define DEBUGLOG(x) std::cout << #x << " = " << x << '\n';
+
+			std::cout << "\n";
+			DEBUGLOG(overlap);
+			DEBUGLOG(interOffset);
+			DEBUGLOG(distance);
+
+			// return 0;
 
 			if (overlap > 0)
 			{
 				agl::Vec<float, 2> offsetNormal = offset.normalized();
+				agl::Vec<float, 2> test =
+					agl::Vec<float, 2>{offsetNormal.y * interOffset.x, offsetNormal.x * interOffset.y};
+
+				DEBUGLOG(offsetNormal);
+				DEBUGLOG(test);
 
 				if (std::isnan(offsetNormal.x))
 				{
@@ -475,15 +494,33 @@ void Simulation::updateSimulation()
 					offsetNormal.y = 0;
 				}
 
-				agl::Vec<float, 2> pushback = offsetNormal * overlap;
+				float restitution = 1;
 
-				float actingMass = circle.mass > square.mass ? square.mass : circle.mass;
+				auto relVel = square.velocity - circle.velocity;
 
-				circle.posOffset -= pushback * (square.mass / (circle.mass + square.mass));
-				square.posOffset += pushback * (circle.mass / (circle.mass + square.mass));
+				float impulse = (relVel * -(1 + restitution)).dot(offsetNormal) //
+								/												//
+								offsetNormal.dot(offsetNormal * ((1 / square.mass) + (1 / circle.mass)));
 
-				circle.force -= pushback * actingMass;
-				square.force += pushback * actingMass;
+                square.velocity += offsetNormal * (impulse / square.mass);
+                circle.velocity -= offsetNormal * (impulse / circle.mass);
+
+				// agl::Vec<float, 2> pushback = offsetNormal * overlap;
+				//
+				// float actingMass = circle.mass > square.mass ? square.mass :
+				// circle.mass;
+				//
+				// circle.posOffset -= pushback * (square.mass / (circle.mass +
+				// square.mass)); square.posOffset += pushback * (circle.mass /
+				// (circle.mass + square.mass));
+				//
+				// circle.force -= pushback * actingMass;
+				// square.force += pushback * actingMass;
+				//
+				// float force = (pushback * actingMass).length();
+				//
+				// square.angularVelocity += (2 * force) / (actingMass * test.x);
+				// square.angularVelocity += (2 * force) / (actingMass * test.y);
 			}
 		},
 		[](PhyCircle &circle) { return circle.radius + 50; });

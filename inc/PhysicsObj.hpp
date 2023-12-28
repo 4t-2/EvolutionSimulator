@@ -11,7 +11,10 @@ class PhysicsObj : public BaseEntity
 		agl::Vec<float, 2> velocity;
 		agl::Vec<float, 2> force;
 		float			   mass = 1;
-
+		float			   rotation;
+		float			   angularVelocity;
+		// F = I x α, where F is force (N), I is moment of inertia (kgm^2), and α is
+		// angular acceleration (radians/s^2)
 		PhysicsObj(bool &exists, agl::Vec<float, 2> &position) : BaseEntity(exists, position)
 		{
 		}
@@ -23,6 +26,8 @@ class PhysicsObj : public BaseEntity
 
 			position = position + posOffset;
 			position = position + velocity;
+
+            rotation += angularVelocity;
 
 			posOffset = {0, 0};
 		}
@@ -69,6 +74,11 @@ class PhySquare : public Entity<PhysicsObj, CanBeDrawn>
 		static agl::Rectangle *rect;
 		float				   length = 20;
 
+		float radToDeg()
+		{
+			return agl::radianToDegree(rotation);
+		}
+
 		PhySquare() : Entity<PhysicsObj, CanBeDrawn>(exists, position)
 		{
 			mass = 1;
@@ -78,6 +88,7 @@ class PhySquare : public Entity<PhysicsObj, CanBeDrawn>
 				rect->setSize(agl::Vec<float, 2>{length, length});
 				rect->setPosition(position);
 				rect->setColor(agl::Color::White);
+				rect->setRotation({0, 0, radToDeg()});
 
 				window.drawShape(*rect);
 			};

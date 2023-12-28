@@ -749,6 +749,7 @@ int main()
 				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
 			auto &a	   = simulation.env.addEntity<PhySquare>();
 			a.position = mousePos;
+			a.rotation = PI / 3;
 		}
 
 		// input
@@ -762,6 +763,7 @@ int main()
 				[&](auto &obj) {
 					agl::Vec<float, 2> offset	= obj.position - cursorRelPos;
 					float			   distance = offset.length();
+
 
 					float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
 
