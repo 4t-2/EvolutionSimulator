@@ -15,7 +15,7 @@
 #include <thread>
 
 agl::Circle	   *PhyCircle::circle;
-agl::Rectangle *PhySquare::rect;
+agl::Rectangle *PhyRect::rect;
 
 class Listener
 {
@@ -440,25 +440,17 @@ int main()
 
 	struct
 	{
-			FieldElement<float> *foodDen;
-			FieldElement<float> *foodVol;
-			FieldElement<float> *meatDen;
-			FieldElement<float> *leachVol;
-			FieldElement<int>	*maxFood;
-			FieldElement<float> *damage;
-			FieldElement<float> *energyCostMultiplier;
+			FieldElement<float> *gravityX;
+			FieldElement<float> *gravityY;
+			FieldElement<float> *nextMass;
 	} simRulesPointers;
 
 	simulation.foodCap = simulationRules.foodCap;
 
-	Menu simRules("SimRules", 200,												   //
-				  FieldElement<float>{"FdEnDn", simulation.foodEnergyDensity},	   //
-				  FieldElement<float>{"FdVol", (simulation.foodVol)},			   //
-				  FieldElement<float>{"MtEnDn", (simulation.meatEnergyDensity)},   //
-				  FieldElement<float>{"LeVol", (simulation.leachVol)},			   //
-				  FieldElement<int>{"maxFd", (simulation.foodCap)},				   //
-				  FieldElement<float>{"dmg", (simulation.damage)},				   //
-				  FieldElement<float>{"EnCoMu", (simulation.energyCostMultiplier)} //
+	Menu simRules("SimRules", 200,				   //
+				  FieldElement<float>{"GravX", 0}, //
+				  FieldElement<float>{"GravY", 0}, //
+				  FieldElement<float>{"Mass", 1}   //
 	);
 
 	simRules.bindPointers(&simRulesPointers);
@@ -543,15 +535,11 @@ int main()
 
 	// menubar
 
-	MenuBar menuBar(&quitMenu,		  //
-					&simulationInfo,  //
-					&simMenu,		  //
-					&leftMenu,		  //
-					&simRules,		  //
-					&creatureNetwork, //
-					&creatureVectors, //
-					&creatureMisc,	  //
-					&debugLog		  //
+	MenuBar menuBar(&quitMenu,		 //
+					&simulationInfo, //
+					&simMenu,		 //
+					&simRules,		 //
+					&debugLog		 //
 	);
 
 	bool mHeld		= false;
@@ -572,7 +560,7 @@ int main()
 	rectShape.setTexture(&blank);
 
 	PhyCircle::circle = &circleShape;
-	PhySquare::rect	  = &rectShape;
+	PhyRect::rect	  = &rectShape;
 
 	while (!event.windowClose())
 	{
@@ -634,7 +622,85 @@ int main()
 		}
 
 		simulation.env.view<PhyCircle>([&window = window](PhyCircle &dt, auto) { dt.drawFunc(window); });
-		simulation.env.view<PhySquare>([&window = window](PhySquare &dt, auto) { dt.drawFunc(window); });
+		simulation.env.view<PhyRect>([&window = window](PhyRect &dt, auto) { dt.drawFunc(window); });
+
+		{
+			static bool				  drawing = false;
+			static agl::Vec<float, 2> start;
+			static agl::Vec<float, 2> end;
+
+			end = getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
+
+			if (event.keybuffer.find('q') != -1)
+			{
+				if (!drawing)
+				{
+					start = getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
+												   cameraPosition);
+				}
+
+				drawing = !drawing;
+
+				if (!drawing)
+				{
+					auto &a = simulation.env.addEntity<PhyCircle>();
+
+					a.position = start;
+					a.radius = std::abs(start.x - end.x);
+                    a.setMass(simRulesPointers.nextMass->value);
+				}
+			}
+
+			if (drawing)
+			{
+				circleShape.setColor(agl::Color::Gray);
+
+				circleShape.setSize({std::abs(start.x - end.x), std::abs(start.x - end.x)});
+				circleShape.setPosition(start);
+				circleShape.setRotation({0, 0, 0});
+
+				window.drawShape(circleShape);
+			}
+		}
+		{
+			static bool				  drawing = false;
+			static agl::Vec<float, 2> start;
+			static agl::Vec<float, 2> end;
+
+			end = getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
+
+			if (event.keybuffer.find('w') != -1)
+			{
+				if (!drawing)
+				{
+					start = getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
+												   cameraPosition);
+				}
+
+				drawing = !drawing;
+
+				if (!drawing)
+				{
+					auto &a = simulation.env.addEntity<PhyRect>();
+
+					a.position = start;
+					a.width	   = std::abs(start.x - end.x) * 2;
+					a.height   = std::abs(start.y - end.y) * 2;
+                    a.setMass(simRulesPointers.nextMass->value);
+				}
+			}
+
+			if (drawing)
+			{
+				rectShape.setColor(agl::Color::Gray);
+				rectShape.setSize(agl::Vec<float, 2>{std::abs(start.x - end.x), std::abs(start.y - end.y)} * 2);
+				rectShape.setPosition(start);
+				rectShape.setOffset(rectShape.getSize() * -.5);
+				rectShape.setRotation({0, 0, 0});
+
+				window.drawShape(rectShape);
+			}
+		}
 
 	skipSimRender:;
 
@@ -735,22 +801,6 @@ int main()
 			}
 		}
 
-		if (event.keybuffer.find('q') != -1)
-		{
-			agl::Vec<float, 2> mousePos =
-				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
-
-			auto &a	   = simulation.env.addEntity<PhyCircle>();
-			a.position = mousePos;
-		}
-		if (event.keybuffer.find('w') != -1)
-		{
-			agl::Vec<float, 2> mousePos =
-				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
-			auto &a	   = simulation.env.addEntity<PhySquare>();
-			a.position = mousePos;
-		}
-
 		// input
 
 		if (event.isPointerButtonPressed(agl::Button::Right))
@@ -763,7 +813,6 @@ int main()
 					agl::Vec<float, 2> offset	= obj.position - cursorRelPos;
 					float			   distance = offset.length();
 
-
 					float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
 
 					agl::Vec<float, 2> force = offset.normalized() * forceScalar;
@@ -774,6 +823,9 @@ int main()
 		}
 
 	endif:;
+
+		simulation.gravity.x = simRulesPointers.gravityX->value;
+		simulation.gravity.y = simRulesPointers.gravityY->value;
 
 	deadSim:;
 

@@ -7,6 +7,7 @@
 #include <thread>
 #include <type_traits>
 
+#define DEBUGLOG(x) std::cout << #x << " = " << x << '\n';
 #define newEnergyDensity(biomass, bioEnergy, additional, addEnergy) \
 	((biomass * bioEnergy) + (additional * addEnergy)) / (biomass + additional)
 
@@ -35,22 +36,29 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	env.setupGrid(simulationRules.size, simulationRules.gridResolution);
 
+	// {
+	// 	auto &a	   = env.addEntity<PhyCircle>();
+	// 	a.position = {0, 0};
+	// 	a.velocity = {0, 0};
+	// }
 	{
-		auto &a	   = env.addEntity<PhyCircle>();
-		a.position = {-30, 100};
-		// a.velocity = {0, -5};
+		auto &a	   = env.addEntity<PhyRect>();
+		a.position = {0, 70};
+		a.width	   = 100;
+		a.height   = 30;
+		a.setMass(1);
 	}
 	{
-		// auto &a	   = env.addEntity<PhyCircle>();
-		// a.position = {100, -40};
-		// a.velocity = {-1, 0};
-	} {
-		auto &a	   = env.addEntity<PhySquare>();
-		a.position = {0, 0};
-		a.velocity = {0, 0};
-		a.rotation = PI / 3;
-		// a.angularVelocity = .2;
+		auto &a	   = env.addEntity<PhyRect>();
+		a.position = {0, 700};
+		a.width	   = 100;
+		a.height   = 30;
+		a.velocity = {0, -1};
+		// a.angularVelocity = 0.01;
+		a.rotation = .5;
+		a.setMass(1);
 	}
+
 	return;
 }
 
@@ -395,127 +403,60 @@ void Simulation::updateSimulation()
 
 	env.clearGrid();
 
-	env.selfUpdate<PhyCircle>([](PhyCircle &o) { o.updatePhysics(); });
-	env.selfUpdate<PhySquare>([](PhySquare &o) { o.updatePhysics(); });
+	env.selfUpdate<PhyCircle>([gravity = gravity](PhyCircle &o) {
+		o.force += gravity;
+		o.updatePhysics();
+	});
+	env.selfUpdate<PhyRect>([gravity = gravity](PhyRect &o) {
+		o.force += gravity;
+		o.updatePhysics();
+	});
+
+	// std::cout << env.getList<PhyCircle>().size() << '\n';
 
 	env.update<PhyCircle, PhyCircle, true>(
 		[](PhyCircle &circle, PhyCircle &otherCircle, std::size_t hashT, std::size_t hashU) {
-			agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
+			Collision col;
+			col.checkCollision(circle, otherCircle);
 
-			float circleDistance = circleOffset.length();
-
-			float circleOverlap = (otherCircle.radius + circle.radius) - circleDistance;
-
-			if (circleOverlap > 0)
+			if (col.contact)
 			{
-				if (circleDistance == 0)
-				{
-					circleOffset   = {rand() / (float)RAND_MAX - (float).5, rand() / (float)RAND_MAX - (float).5};
-					circleDistance = circleOffset.length();
-					circleOverlap  = (otherCircle.radius + circle.radius) - circleDistance;
-				}
-
-				agl::Vec<float, 2> offsetNormal = circleOffset.normalized();
-
-				if (std::isnan(offsetNormal.x))
-				{
-					offsetNormal.x = 1;
-					offsetNormal.y = 0;
-				}
-
-				agl::Vec<float, 2> pushback = offsetNormal * circleOverlap;
-
-				float actingMass = circle.mass > otherCircle.mass ? otherCircle.mass : circle.mass;
-
-				circle.posOffset -= pushback * (otherCircle.mass / (circle.mass + otherCircle.mass));
-				otherCircle.posOffset += pushback * (circle.mass / (circle.mass + otherCircle.mass));
-
-				circle.force -= pushback * actingMass;
-				otherCircle.force += pushback * actingMass;
-			}
-		},
-		[](PhyCircle &circle) { return circle.radius + 50; });
-
-	env.update<PhyCircle, PhySquare, true>(
-		[frame = frame](PhyCircle &circle, PhySquare &square, std::size_t hashT, std::size_t hashU) {
-#define DEBUGLOG(x) std::cout << #x << " = " << x << '\n';
-			agl::Vec<float, 2> interOffset;
-			float			   overlap;
-
-			{
-				agl::Vec<float, 2> vert[4];
-
-				vert[0] = agl::Vec<float, 2>{square.width / 2, square.height / 2};
-				vert[1] = agl::Vec<float, 2>{-square.width / 2, square.height / 2};
-				vert[2] = agl::Vec<float, 2>{-square.width / 2, -square.height / 2};
-				vert[3] = agl::Vec<float, 2>{square.width / 2, -square.height / 2};
-
-				agl::Mat4f rot;
-				rot.rotateZ(square.radToDeg());
-
-				vert[0] = rot * vert[0];
-				vert[1] = rot * vert[1];
-				vert[2] = rot * vert[2];
-				vert[3] = rot * vert[3];
-
-				vert[0] += square.position;
-				vert[1] += square.position;
-				vert[2] += square.position;
-				vert[3] += square.position;
-
-				agl::Vec<float, 2> closest;
-				float			   closeDist = MAXFLOAT;
-
-				for (int i = 0; i < 3; i++)
-				{
-					agl::Vec<float, 2> point = Collision::closestPointToLine(vert[i], vert[i + 1], circle.position);
-					std::cout << point << '\n';
-					DEBUGLOG(point);
-
-					float dist = (point - circle.position).length();
-					DEBUGLOG(dist);
-
-					if (dist < closeDist)
-					{
-						closeDist = dist;
-						closest	  = point;
-					}
-				}
-
-				{
-					agl::Vec<float, 2> point = Collision::closestPointToLine(vert[3], vert[0], circle.position);
-					float dist = (point - circle.position).length();
-
-					if (dist < closeDist)
-					{
-						closeDist = dist;
-						closest	  = point;
-					}
-				}
-
-				interOffset = closest - square.position;
-				overlap		= circle.radius - closeDist;
-			}
-
-			DEBUGLOG(overlap);
-			DEBUGLOG(interOffset);
-// return;
-			if (overlap > 0)
-			{
-				agl::Vec<float, 2> normal = ((interOffset + square.position) - circle.position).normalized();
-
-				DEBUGLOG(normal);
-
-				if (std::isnan(normal.x))
-				{
-					normal = {1, 0};
-				}
-
-				Collision::resolveCollision(square, circle, interOffset, normal * circle.radius, normal, 0, overlap);
+				col.resolveCollision(circle, otherCircle, .5);
 				return;
 			}
 		},
 		[](PhyCircle &circle) { return circle.radius + 50; });
+
+	env.update<PhyRect, PhyRect, true>(
+		[](PhyRect &rect, PhyRect &otherRect, std::size_t hashT, std::size_t hashU) {
+			Collision col;
+			col.checkCollision(rect, otherRect);
+
+			if (col.contact)
+			{
+				col.resolveCollision(rect, otherRect, .5);
+				return;
+			}
+		},
+		[](PhyRect &rect) { return (rect.width > rect.height ? rect.width : rect.height) + 50; });
+
+	env.update<PhyCircle, PhyRect, true>(
+		[](PhyCircle &circle, PhyRect &rect, std::size_t hashT, std::size_t hashU) {
+			Collision col;
+			col.checkCollision(rect, circle);
+
+			if (col.contact)
+			{
+				col.resolveCollision(rect, circle, .5);
+				return;
+			}
+		},
+		[](PhyCircle &circle) { return circle.radius + 50; });
+
+	env.view<PhysicsObj>([](auto &o, auto it) {
+		o.position += o.posOffset;
+		o.posOffset = {0, 0};
+	});
 
 	// env.view<PhysicsObj>([](auto o, auto it) {
 	// 		o.updatePhysics();

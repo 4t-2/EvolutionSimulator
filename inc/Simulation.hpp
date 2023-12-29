@@ -15,6 +15,8 @@ class Simulation
 		SimulationRules simulationRules;
 		Environment		env;
 
+        agl::Vec<float, 2> gravity;
+
 		bool active;
 
 		std::vector<int> totalNEAT;
@@ -34,7 +36,7 @@ class Simulation
         Simulation()
         {
 			env.setupTraits<PhyCircle>();
-			env.setupTraits<PhySquare>();
+			env.setupTraits<PhyRect>();
         }
 
 		void create(SimulationRules simulationRules, int seed);
