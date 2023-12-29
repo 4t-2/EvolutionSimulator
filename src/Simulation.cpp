@@ -37,7 +37,19 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	{
 		auto &a	   = env.addEntity<PhyCircle>();
+		a.position = {-30, 100};
+		// a.velocity = {0, -5};
+	}
+	{
+		// auto &a	   = env.addEntity<PhyCircle>();
+		// a.position = {100, -40};
+		// a.velocity = {-1, 0};
+	} {
+		auto &a	   = env.addEntity<PhySquare>();
 		a.position = {0, 0};
+		a.velocity = {0, 0};
+		a.rotation = PI / 3;
+		// a.angularVelocity = .2;
 	}
 	return;
 }
@@ -425,105 +437,90 @@ void Simulation::updateSimulation()
 		[](PhyCircle &circle) { return circle.radius + 50; });
 
 	env.update<PhyCircle, PhySquare, true>(
-		[](PhyCircle &circle, PhySquare &square, std::size_t hashT, std::size_t hashU) {
+		[frame = frame](PhyCircle &circle, PhySquare &square, std::size_t hashT, std::size_t hashU) {
+#define DEBUGLOG(x) std::cout << #x << " = " << x << '\n';
 			agl::Vec<float, 2> interOffset;
+			float			   overlap;
 
 			{
-				agl::Vec<float, 2> circleOffset = square.position - circle.position;
+				agl::Vec<float, 2> vert[4];
 
-				float circleDistance = circleOffset.length();
+				vert[0] = agl::Vec<float, 2>{square.width / 2, square.height / 2};
+				vert[1] = agl::Vec<float, 2>{-square.width / 2, square.height / 2};
+				vert[2] = agl::Vec<float, 2>{-square.width / 2, -square.height / 2};
+				vert[3] = agl::Vec<float, 2>{square.width / 2, -square.height / 2};
 
-				float angleDelta = circleOffset.angle() + square.rotation;
-				float distance;
+				agl::Mat4f rot;
+				rot.rotateZ(square.radToDeg());
 
-				angleDelta = abs(angleDelta);
+				vert[0] = rot * vert[0];
+				vert[1] = rot * vert[1];
+				vert[2] = rot * vert[2];
+				vert[3] = rot * vert[3];
 
-				interOffset.x = -std::sin(angleDelta) * circleDistance;
-				interOffset.y = std::cos(angleDelta) * circleDistance;
+				vert[0] += square.position;
+				vert[1] += square.position;
+				vert[2] += square.position;
+				vert[3] += square.position;
 
-				if (interOffset.x > (square.length / 2))
+				agl::Vec<float, 2> closest;
+				float			   closeDist = MAXFLOAT;
+
+				for (int i = 0; i < 3; i++)
 				{
-					interOffset.x = square.length / 2;
+					agl::Vec<float, 2> point = Collision::closestPointToLine(vert[i], vert[i + 1], circle.position);
+					std::cout << point << '\n';
+					DEBUGLOG(point);
+
+					float dist = (point - circle.position).length();
+					DEBUGLOG(dist);
+
+					if (dist < closeDist)
+					{
+						closeDist = dist;
+						closest	  = point;
+					}
 				}
-				else if (interOffset.x < (-square.length / 2))
+
 				{
-					interOffset.x = -square.length / 2;
+					agl::Vec<float, 2> point = Collision::closestPointToLine(vert[3], vert[0], circle.position);
+					float dist = (point - circle.position).length();
+
+					if (dist < closeDist)
+					{
+						closeDist = dist;
+						closest	  = point;
+					}
 				}
-				if (interOffset.y > (square.length / 2))
-				{
-					interOffset.y = square.length / 2;
-				}
-				else if (interOffset.y < (-square.length / 2))
-				{
-					interOffset.y = -square.length / 2;
-				}
+
+				interOffset = closest - square.position;
+				overlap		= circle.radius - closeDist;
 			}
 
-			agl::Mat4f rot;
-			rot.rotateZ(square.radToDeg());
-
-			interOffset = rot * interOffset;
-
-			agl::Vec<float, 2> squarePointVec = interOffset + square.position;
-			agl::Vec<float, 2> offset		  = squarePointVec - circle.position;
-			float			   distance		  = offset.length();
-
-			float overlap = circle.radius - distance;
-
-#define DEBUGLOG(x) std::cout << #x << " = " << x << '\n';
-
-			std::cout << "\n";
 			DEBUGLOG(overlap);
 			DEBUGLOG(interOffset);
-			DEBUGLOG(distance);
-
-			// return 0;
-
+// return;
 			if (overlap > 0)
 			{
-				agl::Vec<float, 2> offsetNormal = offset.normalized();
-				agl::Vec<float, 2> test =
-					agl::Vec<float, 2>{offsetNormal.y * interOffset.x, offsetNormal.x * interOffset.y};
+				agl::Vec<float, 2> normal = ((interOffset + square.position) - circle.position).normalized();
 
-				DEBUGLOG(offsetNormal);
-				DEBUGLOG(test);
+				DEBUGLOG(normal);
 
-				if (std::isnan(offsetNormal.x))
+				if (std::isnan(normal.x))
 				{
-					offsetNormal.x = 1;
-					offsetNormal.y = 0;
+					normal = {1, 0};
 				}
 
-				float restitution = 1;
-
-				auto relVel = square.velocity - circle.velocity;
-
-				float impulse = (relVel * -(1 + restitution)).dot(offsetNormal) //
-								/												//
-								offsetNormal.dot(offsetNormal * ((1 / square.mass) + (1 / circle.mass)));
-
-                square.velocity += offsetNormal * (impulse / square.mass);
-                circle.velocity -= offsetNormal * (impulse / circle.mass);
-
-				// agl::Vec<float, 2> pushback = offsetNormal * overlap;
-				//
-				// float actingMass = circle.mass > square.mass ? square.mass :
-				// circle.mass;
-				//
-				// circle.posOffset -= pushback * (square.mass / (circle.mass +
-				// square.mass)); square.posOffset += pushback * (circle.mass /
-				// (circle.mass + square.mass));
-				//
-				// circle.force -= pushback * actingMass;
-				// square.force += pushback * actingMass;
-				//
-				// float force = (pushback * actingMass).length();
-				//
-				// square.angularVelocity += (2 * force) / (actingMass * test.x);
-				// square.angularVelocity += (2 * force) / (actingMass * test.y);
+				Collision::resolveCollision(square, circle, interOffset, normal * circle.radius, normal, 0, overlap);
+				return;
 			}
 		},
 		[](PhyCircle &circle) { return circle.radius + 50; });
+
+	// env.view<PhysicsObj>([](auto o, auto it) {
+	// 		o.updatePhysics();
+	// 		std::cout << &o << '\n';
+	// });
 
 	while (env.pool.active())
 	{

@@ -59,6 +59,8 @@ template <typename... T> class Entity : public DoNotUse, public T...
 
 template <typename... T> const Signature<T...> Entity<T...>::signature;
 
+class PhysicsObj;
+
 class Environment
 {
 	private:
@@ -221,7 +223,10 @@ class Environment
 				{
 					offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
 				}
-				for (auto it = getList<T>().begin(); it != getList<T>().end(); it++)
+
+                auto listT = entityList.at(hashT);
+
+				for (auto it = listT.begin(); it != listT.end(); it++)
 				{
 					T *addressT;
 

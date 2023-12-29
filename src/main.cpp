@@ -567,7 +567,7 @@ int main()
 	bool quiting = false;
 
 	agl::Circle circleShape(50);
-	circleShape.setTexture(&blank);
+	circleShape.setTexture(&foodTexture);
 	agl::Rectangle rectShape;
 	rectShape.setTexture(&blank);
 
@@ -749,7 +749,6 @@ int main()
 				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
 			auto &a	   = simulation.env.addEntity<PhySquare>();
 			a.position = mousePos;
-			a.rotation = PI / 3;
 		}
 
 		// input
