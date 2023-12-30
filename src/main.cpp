@@ -342,21 +342,28 @@ int main()
 
 	} creatureVectorsPointers;
 
-	Menu creatureVectors("CreatureVectors", 200,												 //
-						 TextElement{"- Position -"},											 //
-						 ValueElement<float>{"X", [&]() { return &focusCreature->position.x; }}, //
-						 ValueElement<float>{"Y", [&]() { return &focusCreature->position.y; }}, //
-						 TextElement{"- Velocity -"},											 //
-						 ValueElement<float>{"X", [&]() { return &focusCreature->velocity.x; }}, //
-						 ValueElement<float>{"Y", [&]() { return &focusCreature->velocity.y; }}, //
-						 TextElement{"- Force -"},												 //
-						 ValueElement<float>{"X", [&]() { return &focusCreature->force.x; }},	 //
-						 ValueElement<float>{"Y", [&]() { return &focusCreature->force.y; }}	 //
-	);
+	// Menu creatureVectors("CreatureVectors", 200,
+	// // 					 TextElement{"- Position -"},
+	// // 					 ValueElement<float>{"X", [&]() { return
+	// &focusCreature->position.x; }},
+	// // 					 ValueElement<float>{"Y", [&]() { return
+	// &focusCreature->position.y; }},
+	// // 					 TextElement{"- Velocity -"},
+	// // 					 ValueElement<float>{"X", [&]() { return
+	// &focusCreature->velocity.x; }},
+	// // 					 ValueElement<float>{"Y", [&]() { return
+	// &focusCreature->velocity.y; }},
+	// // 					 TextElement{"- Force -"},
+	// // 					 ValueElement<float>{"X", [&]() { return
+	// &focusCreature->force.x; }},
+	// // 					 ValueElement<float>{"Y", [&]() { return
+	// &focusCreature->force.y; }}
+	// //
+	// );
 
-	creatureVectors.bindPointers(&creatureVectorsPointers);
+	// creatureVectors.bindPointers(&creatureVectorsPointers);
 
-	creatureVectors.requirement = creatureNetwork.requirement;
+	// creatureVectors.requirement = creatureNetwork.requirement;
 
 	// creatureMisc
 
@@ -401,7 +408,7 @@ int main()
 
 	creatureMisc.bindPointers(&creatureMiscPointers);
 
-	creatureMisc.requirement = creatureVectors.requirement;
+	// creatureMisc.requirement = creatureVectors.requirement;
 
 	// leftMenu
 
@@ -624,44 +631,47 @@ int main()
 		simulation.env.view<PhyCircle>([&window = window](PhyCircle &dt, auto) { dt.drawFunc(window); });
 		simulation.env.view<PhyRect>([&window = window](PhyRect &dt, auto) { dt.drawFunc(window); });
 
-		{
-			static bool				  drawing = false;
-			static agl::Vec<float, 2> start;
-			static agl::Vec<float, 2> end;
-
-			end = getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
-
-			if (event.keybuffer.find('q') != -1)
-			{
-				if (!drawing)
-				{
-					start = getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
-												   cameraPosition);
-				}
-
-				drawing = !drawing;
-
-				if (!drawing)
-				{
-					auto &a = simulation.env.addEntity<PhyCircle>();
-
-					a.position = start;
-					a.radius = std::abs(start.x - end.x);
-                    a.setMass(simRulesPointers.nextMass->value);
-				}
-			}
-
-			if (drawing)
-			{
-				circleShape.setColor(agl::Color::Gray);
-
-				circleShape.setSize({std::abs(start.x - end.x), std::abs(start.x - end.x)});
-				circleShape.setPosition(start);
-				circleShape.setRotation({0, 0, 0});
-
-				window.drawShape(circleShape);
-			}
-		}
+		// {
+		// 	static bool				  drawing = false;
+		// 	static agl::Vec<float, 2> start;
+		// 	static agl::Vec<float, 2> end;
+		//
+		// 	end = getCursorScenePosition(event.getPointerWindowPosition(),
+		// windowSize, sizeMultiplier, cameraPosition);
+		//
+		// 	if (event.keybuffer.find('q') != -1)
+		// 	{
+		// 		if (!drawing)
+		// 		{
+		// 			start =
+		// getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
+		// sizeMultiplier,
+		// cameraPosition);
+		// 		}
+		//
+		// 		drawing = !drawing;
+		//
+		// 		if (!drawing)
+		// 		{
+		// 			auto &a = simulation.env.addEntity<PhyCircle>();
+		//
+		// 			a.position = start;
+		// 			a.radius = std::abs(start.x - end.x);
+		//                   a.setMass(simRulesPointers.nextMass->value);
+		// 		}
+		// 	}
+		//
+		// 	if (drawing)
+		// 	{
+		// 		circleShape.setColor(agl::Color::Gray);
+		//
+		// 		circleShape.setSize({std::abs(start.x - end.x), std::abs(start.x
+		// - end.x)}); 		circleShape.setPosition(start);
+		// circleShape.setRotation({0, 0, 0});
+		//
+		// 		window.drawShape(circleShape);
+		// 	}
+		// }
 		{
 			static bool				  drawing = false;
 			static agl::Vec<float, 2> start;
@@ -682,11 +692,7 @@ int main()
 				if (!drawing)
 				{
 					auto &a = simulation.env.addEntity<PhyRect>();
-
-					a.position = start;
-					a.width	   = std::abs(start.x - end.x) * 2;
-					a.height   = std::abs(start.y - end.y) * 2;
-                    a.setMass(simRulesPointers.nextMass->value);
+					a.setup({std::abs(start.x - end.x) * 2, std::abs(start.y - end.y) * 2}, start, simulation.phyWorld);
 				}
 			}
 
@@ -808,16 +814,16 @@ int main()
 			agl::Vec<int, 2> cursorRelPos =
 				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
 
-			simulation.env.getArea<PhyCircle>(
-				[&](auto &obj) {
+			simulation.env.getArea<PhyRect>(
+				[&](PhyRect &obj) {
 					agl::Vec<float, 2> offset	= obj.position - cursorRelPos;
 					float			   distance = offset.length();
 
-					float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
+					float forceScalar = leftMenuPointers.forceMultiplier->value / distance * distance;
 
-					agl::Vec<float, 2> force = offset.normalized() * forceScalar;
+					agl::Vec<float, 2> force = offset.normalized() * forceScalar * 1000;
 
-					obj.force += force;
+					obj.phyBody->ApplyForceToCenter(PhysicsObj::scaleForce(force), true);
 				},
 				simulation.env.toGridPosition(cursorRelPos));
 		}
@@ -912,6 +918,8 @@ int main()
 		leftClickListener.update(event.isPointerButtonPressed(agl::Button::Left));
 
 		milliDiff = getMillisecond() - start;
+
+        simulation.env.view<PhyRect>([](PhyRect &o, auto it){std::cout << o.phyBody->GetPosition().x << " " << o.phyBody->GetAngularVelocity() << '\n';});
 	}
 
 	if (simulation.active)

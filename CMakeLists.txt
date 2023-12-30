@@ -27,7 +27,7 @@ endif()
 add_executable(EvolutionSimulator ${SRC} ${AGL} ${PHY} ${IN})
 
 if(LINUX)
-	target_link_libraries(EvolutionSimulator -lX11 -lGL -lGLEW -lSOIL -lfreetype)
+	target_link_libraries(EvolutionSimulator -lX11 -lGL -lGLEW -lSOIL -lfreetype -lbox2d)
 	include_directories("/usr/include/freetype2")
 endif()
 

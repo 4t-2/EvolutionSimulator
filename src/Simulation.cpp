@@ -42,21 +42,12 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	// 	a.velocity = {0, 0};
 	// }
 	{
-		auto &a	   = env.addEntity<PhyRect>();
-		a.position = {0, 70};
-		a.width	   = 100;
-		a.height   = 30;
-		a.setMass(1);
+		auto &a = env.addEntity<PhyRect>();
+		a.setup({1000, 50}, {0, 1000}, phyWorld, b2_staticBody);
 	}
 	{
-		auto &a	   = env.addEntity<PhyRect>();
-		a.position = {0, 700};
-		a.width	   = 100;
-		a.height   = 30;
-		a.velocity = {0, -1};
-		// a.angularVelocity = 0.01;
-		a.rotation = .5;
-		a.setMass(1);
+		auto &a = env.addEntity<PhyRect>();
+		a.setup({10, 10}, {0, 0}, phyWorld, b2_dynamicBody);
 	}
 
 	return;
@@ -403,65 +394,10 @@ void Simulation::updateSimulation()
 
 	env.clearGrid();
 
-	env.selfUpdate<PhyCircle>([gravity = gravity](PhyCircle &o) {
-		o.force += gravity;
-		o.updatePhysics();
-	});
-	env.selfUpdate<PhyRect>([gravity = gravity](PhyRect &o) {
-		o.force += gravity;
-		o.updatePhysics();
-	});
+	phyWorld.Step(1, 8, 3);
 
-	// std::cout << env.getList<PhyCircle>().size() << '\n';
-
-	env.update<PhyCircle, PhyCircle, true>(
-		[](PhyCircle &circle, PhyCircle &otherCircle, std::size_t hashT, std::size_t hashU) {
-			Collision col;
-			col.checkCollision(circle, otherCircle);
-
-			if (col.contact)
-			{
-				col.resolveCollision(circle, otherCircle, .5);
-				return;
-			}
-		},
-		[](PhyCircle &circle) { return circle.radius + 50; });
-
-	env.update<PhyRect, PhyRect, true>(
-		[](PhyRect &rect, PhyRect &otherRect, std::size_t hashT, std::size_t hashU) {
-			Collision col;
-			col.checkCollision(rect, otherRect);
-
-			if (col.contact)
-			{
-				col.resolveCollision(rect, otherRect, .5);
-				return;
-			}
-		},
-		[](PhyRect &rect) { return (rect.width > rect.height ? rect.width : rect.height) + 50; });
-
-	env.update<PhyCircle, PhyRect, true>(
-		[](PhyCircle &circle, PhyRect &rect, std::size_t hashT, std::size_t hashU) {
-			Collision col;
-			col.checkCollision(rect, circle);
-
-			if (col.contact)
-			{
-				col.resolveCollision(rect, circle, .5);
-				return;
-			}
-		},
-		[](PhyCircle &circle) { return circle.radius + 50; });
-
-	env.view<PhysicsObj>([](auto &o, auto it) {
-		o.position += o.posOffset;
-		o.posOffset = {0, 0};
-	});
-
-	// env.view<PhysicsObj>([](auto o, auto it) {
-	// 		o.updatePhysics();
-	// 		std::cout << &o << '\n';
-	// });
+	env.selfUpdate<PhyCircle>([gravity = gravity](PhyCircle &o) {});
+	env.selfUpdate<PhyRect>([gravity = gravity](PhyRect &o) { o.sync(); });
 
 	while (env.pool.active())
 	{

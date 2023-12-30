@@ -25,7 +25,7 @@ struct RelPos
 	float distance = 0;
 };
 
-class Creature : public Entity<PhysicsObj>
+class Creature : public Entity<PhyOld>
 {
 	public:
         bool exists;

@@ -1,7 +1,7 @@
 #include "../inc/Creature.hpp"
 #include "../inc/Buffer.hpp"
 
-Creature::Creature() : Entity<PhysicsObj>(exists, position)
+Creature::Creature() : Entity<PhyOld>(exists, position)
 {
 	mass = 1;
 	return;

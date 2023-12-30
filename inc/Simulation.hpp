@@ -5,6 +5,7 @@
 #include "Egg.hpp"
 #include "Food.hpp"
 #include "Meat.hpp"
+#include "PhysicsObj.hpp"
 #include "SimulationRules.hpp"
 #include "macro.hpp"
 #include <list>
@@ -15,7 +16,9 @@ class Simulation
 		SimulationRules simulationRules;
 		Environment		env;
 
-        agl::Vec<float, 2> gravity;
+		b2World phyWorld;
+
+		agl::Vec<float, 2> gravity;
 
 		bool active;
 
@@ -33,11 +36,13 @@ class Simulation
 		float &damage				= simulationRules.damage;
 		float &energyCostMultiplier = simulationRules.energyCostMultiplier;
 
-        Simulation()
-        {
+		Simulation() : phyWorld({})
+		{
+			phyWorld.SetGravity(PhysicsObj::scaleGrav({0, .3}));
+
 			env.setupTraits<PhyCircle>();
 			env.setupTraits<PhyRect>();
-        }
+		}
 
 		void create(SimulationRules simulationRules, int seed);
 		void destroy();
