@@ -36,6 +36,8 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	env.setupGrid(simulationRules.size, simulationRules.gridResolution);
 
+	phyWorld = new b2World(PhysicsObj::scaleGrav(gravity));
+
 	// {
 	// 	auto &a	   = env.addEntity<PhyCircle>();
 	// 	a.position = {0, 0};
@@ -43,7 +45,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	// }
 	{
 		auto &a = env.addEntity<PhyRect>();
-		a.setup({1000, 50}, {0, 1000}, 0, phyWorld, b2_staticBody);
+		a.setup({100000, 50}, {40000, 100}, 0, *phyWorld, b2_staticBody);
 	}
 	{
 		// auto &a = env.addEntity<PhyRect>();
@@ -63,6 +65,8 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 void Simulation::destroy()
 {
 	active = false;
+
+	delete phyWorld;
 
 	env.destroy();
 
@@ -397,11 +401,11 @@ agl::Vec<int, 2> indexToPosition(int i, agl::Vec<int, 2> size)
 
 void Simulation::updateSimulation()
 {
-	phyWorld.SetGravity(PhysicsObj::scalePos(gravity));
+	phyWorld->SetGravity(PhysicsObj::scalePos(gravity));
 
 	env.clearGrid();
 
-	phyWorld.Step(1, 8, 3);
+	phyWorld->Step(1, 8, 3);
 
 	env.selfUpdate<PhyCircle>([gravity = gravity](PhyCircle &o) {});
 	env.selfUpdate<PhyRect>([gravity = gravity](PhyRect &o) { o.sync(); });

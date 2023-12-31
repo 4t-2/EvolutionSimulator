@@ -16,7 +16,7 @@ class Simulation
 		SimulationRules simulationRules;
 		Environment		env;
 
-		b2World phyWorld;
+		b2World *phyWorld;
 
 		agl::Vec<float, 2> gravity;
 
@@ -36,10 +36,8 @@ class Simulation
 		float &damage				= simulationRules.damage;
 		float &energyCostMultiplier = simulationRules.energyCostMultiplier;
 
-		Simulation() : phyWorld({})
+		Simulation()
 		{
-			phyWorld.SetGravity(PhysicsObj::scaleGrav({0, 0}));
-
 			env.setupTraits<PhyRect>();
 		}
 

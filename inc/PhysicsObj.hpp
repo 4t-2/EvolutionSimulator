@@ -110,8 +110,9 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 		bool				   exists	= false;
 		static agl::Rectangle *rect;
 		agl::Vec<float, 2>	   size;
-		float				   rotation = 0;
-		agl::Color			   color	= agl::Color::White;
+		float				   rotation	 = 0;
+		agl::Color			   color	 = agl::Color::White;
+		agl::Color			   realColor = agl::Color::White;
 
 		b2Body *phyBody;
 
@@ -172,13 +173,24 @@ class PhyJoint
 {
 	public:
 		b2RevoluteJoint *joint;
+		PhyRect			*start;
+		PhyRect			*end;
+
+		agl::Vec<float, 2> local1;
+		agl::Vec<float, 2> local2;
 
 		PhyJoint()
 		{
 		}
 
-		void setup(PhyRect &rect1, PhyRect &rect2, agl::Vec<float, 2> local1, agl::Vec<float, 2> local2, b2World &world)
+		void setup(PhyRect &rect1, PhyRect &rect2, agl::Vec<float, 2> local1, agl::Vec<float, 2> local2, b2World &world,
+				   float speed = PI / 50)
 		{
+			start		 = &rect1;
+			end			 = &rect2;
+			this->local1 = local1;
+			this->local2 = local2;
+
 			b2RevoluteJointDef revoluteJointDef;
 			revoluteJointDef.bodyA			  = rect1.phyBody;
 			revoluteJointDef.bodyB			  = rect2.phyBody;
@@ -191,12 +203,12 @@ class PhyJoint
 			revoluteJointDef.localAnchorB.Set(b2l2.x, b2l2.y);
 
 			revoluteJointDef.enableLimit = false;
-			revoluteJointDef.upperAngle	 = PI / 2;
-			revoluteJointDef.lowerAngle	 = PI / -2;
+			revoluteJointDef.upperAngle	 = PI;
+			revoluteJointDef.lowerAngle	 = -PI;
 
 			revoluteJointDef.enableMotor	= true;
 			revoluteJointDef.maxMotorTorque = 50;
-			revoluteJointDef.motorSpeed		= PI / 50;
+			revoluteJointDef.motorSpeed		= (1. / 50) * (((rand() / (float)RAND_MAX)));
 
 			joint = (b2RevoluteJoint *)world.CreateJoint(&revoluteJointDef);
 		}

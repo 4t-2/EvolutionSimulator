@@ -180,7 +180,7 @@ int main()
 
 	agl::Rectangle background;
 	background.setTexture(&blank);
-	background.setColor(CLEARCOLOR);
+	background.setColor({40, 40, 60});
 	background.setPosition({0, 0, 0});
 
 	agl::Rectangle foodShape;
@@ -295,9 +295,16 @@ int main()
 			int meat;
 	} statsForSimInfo;
 
+	struct
+	{
+			int			 x		  = 0;
+			NewCreature *creature = nullptr;
+	} leadCreature;
+
 	Menu simulationInfo("SimInfo", 125,													 //
 						ValueElement<int>{"Frame", [&]() { return &simulation.frame; }}, //
-						ValueElement<float>{"FPS", [&]() { return &fps; }}				 //
+						ValueElement<float>{"FPS", [&]() { return &fps; }},				 //
+						ValueElement<int>{"LeadDist", [&]() { return &leadCreature.x; }} //
 	);
 
 	simulationInfo.bindPointers(&simulationInfoPointers);
@@ -458,10 +465,10 @@ int main()
 
 	simulation.foodCap = simulationRules.foodCap;
 
-	Menu simRules("SimRules", 200,				   //
-				  FieldElement<float>{"GravX", 0}, //
+	Menu simRules("SimRules", 200,					//
+				  FieldElement<float>{"GravX", 0},	//
 				  FieldElement<float>{"GravY", .3}, //
-				  FieldElement<float>{"Mass", 1}   //
+				  FieldElement<float>{"Mass", 1}	//
 	);
 
 	simRules.bindPointers(&simRulesPointers);
@@ -513,6 +520,62 @@ int main()
 
 	simMenu.bindPointers(&simMenuPointers);
 
+	struct
+	{
+			FieldElement<int>	  *creatures;
+			FieldElement<float>	  *simCycles;
+			ButtonElement<Toggle> *simulate;
+			ButtonElement<Toggle> *pause;
+			TextElement			  *t1;
+			TextElement			  *t2;
+			TextElement			  *t3;
+			TextElement			  *t4;
+			TextElement			  *t5;
+			TextElement			  *t6;
+			TextElement			  *t7;
+			TextElement			  *t8;
+			TextElement			  *t9;
+			TextElement			  *t10;
+			TextElement			  *t11;
+			TextElement			  *t12;
+			TextElement			  *t13;
+			TextElement			  *t14;
+			TextElement			  *t15;
+			TextElement			  *t16;
+			TextElement			  *t17;
+			TextElement			  *t18;
+			TextElement			  *t19;
+	} buildMenuPointers;
+
+	Menu buildMenu("buildMenu", 500,								  //
+				   FieldElement<int>{"Creatures", (5)},				  //
+				   FieldElement<float>{"simCycles", 1.0},			  //
+				   ButtonElement<Toggle>{"SIMULATE"},				  //
+				   ButtonElement<Toggle>{"PAUSE"},					  //
+				   TextElement("Instructions"),						  //
+				   TextElement("1) Design a creature"),				  //
+				   TextElement("    Click a body part to select it"), //
+				   TextElement("    Press W and drag as far as you want to make the body part long"),
+				   TextElement("    (use Q and E to change thickness)"),						  //
+				   TextElement("    Press W to finish building body part"),						  //
+				   TextElement("2) Press SIMULATE to watch your creation learn"),				  //
+				   TextElement(""),																  //
+				   TextElement("Controls"),														  //
+				   TextElement("Left Click - Select Part"),										  //
+				   TextElement("R - UnSelect Part"),											  //
+				   TextElement("Middle Click Drag - Move Camera (only when building or paused)"), //
+				   TextElement("Scroll - Zoom"),												  //
+				   TextElement("W - Build new part on selected"),								  //
+				   TextElement("Q & E - Change thickness"),										  //
+				   TextElement("T - Reset Creature"),											  //
+				   TextElement("H - Hide UI"),													  //
+				   TextElement(""),																  //
+				   TextElement("Click on the menu bar above to open new menus (you can drag "
+							   "them)") //
+	);
+
+	buildMenu.bindPointers(&buildMenuPointers);
+
 	// debugLog
 
 	struct
@@ -532,6 +595,22 @@ int main()
 
 	debugLog.bindPointers(&debugLogPointers);
 
+	Menu creditsMenu("Credits", 450,
+					 TextElement("This simulator was made by MakingFromScratch (YouTube Channel)"), //
+					 TextElement(""),																//
+					 TextElement("Why does this exist"),											//
+					 TextElement("This is an experiment to test the viability of creatures "
+								 "with different"), //
+					 TextElement("kinds of body structures. Later on this will be combined "
+								 "into my own"),
+					 TextElement("ALife EvolutionSimulator so that creatures will not only evolve"),
+					 TextElement("custom brains but also custom body plans that aren't just some"),
+					 TextElement("variation of different sliders"), //
+					 TextElement(""),								//
+					 TextElement("This specific project was inspired by Evolution (By Keiwan),"),
+					 TextElement("And Codebullet's \"AI learns how to walk\"") //
+	);
+
 	auto sendDebugLog = [&](std::string str) {
 		debugLogPointers.t1->str = debugLogPointers.t2->str;
 		debugLogPointers.t2->str = debugLogPointers.t3->str;
@@ -548,10 +627,12 @@ int main()
 
 	MenuBar menuBar(&quitMenu,		 //
 					&simulationInfo, //
-					&simMenu,		 //
-					&simRules,		 //
-					&debugLog		 //
+					&buildMenu,		 //
+					// &creditsMenu,	 //
+					&debugLog //
 	);
+
+	buildMenu.open({50, 50});
 
 	bool mHeld		= false;
 	bool b1Held		= false;
@@ -559,7 +640,7 @@ int main()
 
 	bool skipRender = false;
 
-	float sizeMultiplier = 1;
+	float sizeMultiplier = 0.167772;
 
 	printf("entering sim loop\n");
 
@@ -573,8 +654,7 @@ int main()
 	PhyCircle::circle = &circleShape;
 	PhyRect::rect	  = &rectShape;
 
-	NewCreature::world = &simulation.phyWorld;
-	NewCreature::env   = &simulation.env;
+	NewCreature::env = &simulation.env;
 
 	{
 		SimulationRules simulationRules;
@@ -586,12 +666,16 @@ int main()
 
 		simulation.create(simulationRules, simMenuPointers.seed->value);
 
-		background.setSize(simulationRules.size);
+		background.setSize(simulationRules.size * 2);
+		background.setPosition({-2000, -50000});
 	}
 
 	simMenuPointers.pause->state = true;
+	NewCreature::world			 = simulation.phyWorld;
 
-	NewCreature creature;
+	std::vector<NewCreature> creatures;
+	creatures.emplace_back();
+	creatures[creatures.size() - 1].def();
 
 	while (!event.windowClose())
 	{
@@ -600,16 +684,18 @@ int main()
 
 		event.poll();
 
-		if (!simMenuPointers.pause->state && simulation.active)
 		{
-			static float cycle = 0;
-
-			cycle += simMenuPointers.simCycles->value;
-
-			for (int i = 0; i < cycle; i++)
+			if (!buildMenuPointers.pause->state && simulation.active && buildMenuPointers.simulate->state)
 			{
-				cycle--;
-				simulation.update();
+				static float cycle = 0;
+
+				cycle += simMenuPointers.simCycles->value;
+
+				for (int i = 0; i < cycle; i++)
+				{
+					cycle--;
+					simulation.update();
+				}
 			}
 		}
 
@@ -678,8 +764,8 @@ int main()
 			}
 
 			if (event.keybuffer.find('w') != -1 &&
-				(creature.touchingSelected(getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
-																  sizeMultiplier, cameraPosition)) ||
+				(creatures[0].touchingSelected(getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
+																	  sizeMultiplier, cameraPosition)) ||
 				 drawing))
 			{
 				if (!drawing)
@@ -696,7 +782,7 @@ int main()
 					float			   height	= (start - end).length();
 					agl::Vec<float, 2> normal	= (end - start).normalized();
 
-					creature.createPart({width, height}, start + (normal * height / 2), rotation, start);
+					creatures[0].createPart({width, height}, start + (normal * height / 2), rotation, start);
 				}
 			}
 
@@ -720,7 +806,7 @@ int main()
 		{
 			auto pos =
 				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
-			creature.selectRect(pos);
+			creatures[0].selectRect(pos);
 		}
 
 	skipSimRender:;
@@ -778,30 +864,66 @@ int main()
 			quitMenuPointers.cancel->state = false;
 		}
 
-		if (simMenuPointers.kill->state && simulation.active)
 		{
-			simulation.destroy();
-			focusCreature = nullptr;
-		}
-		else if (simMenuPointers.start->state && !simulation.active)
-		{
-			// SimulationRules simulationRules;
-			// simulationRules.size.x			  =
-			// simMenuPointers.sizeX->value;
-			// simulationRules.size.y			  =
-			// simMenuPointers.sizeY->value; simulationRules.gridResolution.x  =
-			// simMenuPointers.gridX->value; simulationRules.gridResolution.y  =
-			// simMenuPointers.gridY->value; simulationRules.startingCreatures =
-			// simMenuPointers.startingCreatures->value;
-			//
-			// simulation.create(simulationRules, simMenuPointers.seed->value);
-			//
-			// background.setSize(simulationRules.size);
+			static bool didit = true;
+
+			if (!buildMenuPointers.simulate->state && simulation.active && !didit)
+			{
+				creatures.clear();
+
+				simulation.destroy();
+				focusCreature = nullptr;
+
+				buildMenuPointers.pause->state = false;
+
+				SimulationRules simulationRules;
+				simulationRules.size.x			  = simMenuPointers.sizeX->value;
+				simulationRules.size.y			  = simMenuPointers.sizeY->value;
+				simulationRules.gridResolution.x  = simMenuPointers.gridX->value;
+				simulationRules.gridResolution.y  = simMenuPointers.gridY->value;
+				simulationRules.startingCreatures = simMenuPointers.startingCreatures->value;
+
+				simulation.create(simulationRules, simMenuPointers.seed->value);
+
+				cameraPosition = {0, 0};
+
+				NewCreature::world = simulation.phyWorld;
+
+				creatures.emplace_back();
+				creatures[creatures.size() - 1].def();
+
+				didit = true;
+			}
+
+			if (buildMenuPointers.simulate->state && didit)
+			{
+				for (int i = 0; i < buildMenuPointers.creatures->value - 1; i++)
+				{
+					creatures.emplace_back();
+					creatures[creatures.size() - 1].clone(creatures[0]);
+				}
+
+				didit = false;
+			}
+
+			if (!buildMenuPointers.simulate->state)
+			{
+				if (event.isKeyPressed(agl::Key::R))
+				{
+					creatures[0].unselect();
+				}
+				if (event.isKeyPressed(agl::Key::T))
+				{
+					creatures[0].clear();
+					creatures[0].def();
+				}
+			}
 		}
 
 		if (event.keybuffer.find('h') != std::string::npos && FocusableElement::focusedField == nullptr)
 		{
 			menuBar.exists = !menuBar.exists;
+			// sec.clone(creature);
 		}
 
 		if (!simulation.active)
@@ -850,6 +972,21 @@ int main()
 		simulation.gravity.x = simRulesPointers.gravityX->value;
 		simulation.gravity.y = simRulesPointers.gravityY->value;
 
+		if (buildMenuPointers.simulate->state)
+		{
+			leadCreature.x		  = creatures[0].rect[0]->position.x;
+			leadCreature.creature = &creatures[0];
+
+			for (NewCreature &c : creatures)
+			{
+				if (c.rect[0]->position.x > leadCreature.x)
+				{
+					leadCreature.x		  = c.rect[0]->position.x;
+					leadCreature.creature = &c;
+				}
+			}
+		}
+
 	deadSim:;
 
 		// camera movement
@@ -857,31 +994,38 @@ int main()
 		static agl::Vec<float, 2> cameraOffset;
 		static agl::Vec<float, 2> startPos;
 
-		if (event.isPointerButtonPressed(agl::Button::Middle))
+		if (!buildMenuPointers.simulate->state || buildMenuPointers.pause->state)
 		{
-			if (b1Held) // holding click
+			if (event.isPointerButtonPressed(agl::Button::Middle))
 			{
-				cameraPosition = cameraPosition - cameraOffset;
+				if (b1Held) // holding click
+				{
+					cameraPosition = cameraPosition - cameraOffset;
 
-				cameraOffset = startPos - event.getPointerWindowPosition();
-				cameraOffset.x *= sizeMultiplier;
-				cameraOffset.y *= sizeMultiplier;
+					cameraOffset = startPos - event.getPointerWindowPosition();
+					cameraOffset.x *= sizeMultiplier;
+					cameraOffset.y *= sizeMultiplier;
 
-				cameraPosition.x += cameraOffset.x;
-				cameraPosition.y += cameraOffset.y;
+					cameraPosition.x += cameraOffset.x;
+					cameraPosition.y += cameraOffset.y;
+				}
+				else // first click
+				{
+					window.setCursorShape(agl::CursorType::Arrow);
+					startPos = event.getPointerWindowPosition();
+					b1Held	 = true;
+				}
 			}
-			else // first click
+			else if (b1Held) // let go
 			{
 				window.setCursorShape(agl::CursorType::Arrow);
-				startPos = event.getPointerWindowPosition();
-				b1Held	 = true;
+				cameraOffset = {0, 0};
+				b1Held		 = false;
 			}
 		}
-		else if (b1Held) // let go
+		else
 		{
-			window.setCursorShape(agl::CursorType::Arrow);
-			cameraOffset = {0, 0};
-			b1Held		 = false;
+			cameraPosition = leadCreature.creature->rect[0]->position;
 		}
 
 		static float cameraSpeed = 4;
@@ -896,6 +1040,8 @@ int main()
 				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
 
 			sizeMultiplier -= scale;
+
+			std::cout << sizeMultiplier << '\n';
 
 			agl::Vec<float, 2> newPos =
 				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
