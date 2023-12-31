@@ -38,9 +38,8 @@ class Simulation
 
 		Simulation() : phyWorld({})
 		{
-			phyWorld.SetGravity(PhysicsObj::scaleGrav({0, .3}));
+			phyWorld.SetGravity(PhysicsObj::scaleGrav({0, 0}));
 
-			env.setupTraits<PhyCircle>();
 			env.setupTraits<PhyRect>();
 		}
 

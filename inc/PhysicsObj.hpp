@@ -13,40 +13,40 @@ class PhysicsObj : public BaseEntity
 		{
 		}
 
-        static b2Vec2 scalePos(agl::Vec<float, 2> pos)
-        {
-            agl::Vec<float, 2> conv = pos / SIMSCALE;
+		static b2Vec2 scalePos(agl::Vec<float, 2> pos)
+		{
+			agl::Vec<float, 2> conv = pos / SIMSCALE;
 
-            return {conv.x, conv.y};
-        }
+			return {conv.x, conv.y};
+		}
 
-        static b2Vec2 scaleVel(agl::Vec<float, 2> vel)
-        {
-            agl::Vec<float, 2> conv = vel / SIMSCALE;
+		static b2Vec2 scaleVel(agl::Vec<float, 2> vel)
+		{
+			agl::Vec<float, 2> conv = vel / SIMSCALE;
 
-            return {conv.x, conv.y};
-        }
+			return {conv.x, conv.y};
+		}
 
-        static float scaleMass(float mass)
-        {
-            float conv = mass / (SIMSCALE * SIMSCALE);
+		static float scaleMass(float mass)
+		{
+			float conv = mass / (SIMSCALE * SIMSCALE);
 
-            return conv;
-        }
+			return conv;
+		}
 
-        static b2Vec2 scaleGrav(agl::Vec<float, 2> grav)
-        {
-            agl::Vec<float, 2> conv = grav / (SIMSCALE);
+		static b2Vec2 scaleGrav(agl::Vec<float, 2> grav)
+		{
+			agl::Vec<float, 2> conv = grav / (SIMSCALE);
 
-            return {conv.x, conv.y};
-        }
+			return {conv.x, conv.y};
+		}
 
-        static b2Vec2 scaleForce(agl::Vec<float, 2> force)
-        {
-            agl::Vec<float, 2> conv = force / (SIMSCALE * SIMSCALE *SIMSCALE);
+		static b2Vec2 scaleForce(agl::Vec<float, 2> force)
+		{
+			agl::Vec<float, 2> conv = force / (SIMSCALE * SIMSCALE * SIMSCALE);
 
-            return {conv.x, conv.y};
-        }
+			return {conv.x, conv.y};
+		}
 };
 
 class CanBeDrawn : public BaseEntity
@@ -111,6 +111,7 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 		static agl::Rectangle *rect;
 		agl::Vec<float, 2>	   size;
 		float				   rotation = 0;
+		agl::Color			   color	= agl::Color::White;
 
 		b2Body *phyBody;
 
@@ -120,24 +121,26 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 				rect->setOffset(size * -.5);
 				rect->setSize(size);
 				rect->setPosition(position);
-				rect->setColor(agl::Color::White);
+				rect->setColor(color);
 				rect->setRotation({0, 0, agl::radianToDegree(rotation)});
 
 				window.drawShape(*rect);
 			};
 		}
 
-		void setup(agl::Vec<float, 2> size, agl::Vec<float, 2> pos, b2World &world, b2BodyType type = b2_dynamicBody)
+		void setup(agl::Vec<float, 2> size, agl::Vec<float, 2> pos, float rotation, b2World &world,
+				   b2BodyType type = b2_dynamicBody)
 		{
 			b2BodyDef bodyDef;
-			bodyDef.type	 = type;
-			bodyDef.position = PhysicsObj::scalePos(pos);
-            bodyDef.fixedRotation = false;
+			bodyDef.type		  = type;
+			bodyDef.position	  = PhysicsObj::scalePos(pos);
+			bodyDef.fixedRotation = false;
+			bodyDef.angle		  = rotation;
 
 			b2PolygonShape shapeDef;
 			shapeDef.SetAsBox((size.x / 2) / SIMSCALE, (size.y / 2) / SIMSCALE);
-		
-            b2FixtureDef fixtureDef;
+
+			b2FixtureDef fixtureDef;
 			fixtureDef.density	= 1;
 			fixtureDef.friction = 1;
 			fixtureDef.shape	= &shapeDef;
@@ -148,13 +151,53 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 			phyBody->CreateFixture(&fixtureDef);
 
 			this->size = size;
+
+			sync();
 		}
 
-        void sync()
-        {
-            position.x = phyBody->GetPosition().x * SIMSCALE;
-            position.y = phyBody->GetPosition().y * SIMSCALE;
-            rotation = -phyBody->GetAngle();
-            std::cout << rotation << '\n';
-        }
+		void sync()
+		{
+			position.x = phyBody->GetPosition().x * SIMSCALE;
+			position.y = phyBody->GetPosition().y * SIMSCALE;
+			rotation   = -phyBody->GetAngle();
+		}
+};
+
+struct JointDef
+{
+		b2RevoluteJoint def;
+};
+
+class PhyJoint
+{
+	public:
+		b2RevoluteJoint *joint;
+
+		PhyJoint()
+		{
+		}
+
+		void setup(PhyRect &rect1, PhyRect &rect2, agl::Vec<float, 2> local1, agl::Vec<float, 2> local2, b2World &world)
+		{
+			b2RevoluteJointDef revoluteJointDef;
+			revoluteJointDef.bodyA			  = rect1.phyBody;
+			revoluteJointDef.bodyB			  = rect2.phyBody;
+			revoluteJointDef.collideConnected = false;
+
+			b2Vec2 b2l1 = PhysicsObj::scalePos(local1);
+			b2Vec2 b2l2 = PhysicsObj::scalePos(local2);
+
+			revoluteJointDef.localAnchorA.Set(b2l1.x, b2l1.y);
+			revoluteJointDef.localAnchorB.Set(b2l2.x, b2l2.y);
+
+			revoluteJointDef.enableLimit = false;
+			revoluteJointDef.upperAngle	 = PI / 2;
+			revoluteJointDef.lowerAngle	 = PI / -2;
+
+			revoluteJointDef.enableMotor	= true;
+			revoluteJointDef.maxMotorTorque = 50;
+			revoluteJointDef.motorSpeed		= PI / 50;
+
+			joint = (b2RevoluteJoint *)world.CreateJoint(&revoluteJointDef);
+		}
 };

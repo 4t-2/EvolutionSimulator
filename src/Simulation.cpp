@@ -43,11 +43,18 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	// }
 	{
 		auto &a = env.addEntity<PhyRect>();
-		a.setup({1000, 50}, {0, 1000}, phyWorld, b2_staticBody);
+		a.setup({1000, 50}, {0, 1000}, 0, phyWorld, b2_staticBody);
 	}
 	{
-		auto &a = env.addEntity<PhyRect>();
-		a.setup({10, 10}, {0, 0}, phyWorld, b2_dynamicBody);
+		// auto &a = env.addEntity<PhyRect>();
+		// a.setup({10, 200}, {0, 0}, phyWorld, b2_dynamicBody);
+		//
+		// auto &b = env.addEntity<PhyRect>();
+		// b.setup({100, 10}, {0, 0}, phyWorld, b2_dynamicBody);
+		//
+		// PhyJoint joint;
+		//
+		// joint.setup(a, b, {5, -100}, {50, -5}, phyWorld);
 	}
 
 	return;
@@ -390,7 +397,7 @@ agl::Vec<int, 2> indexToPosition(int i, agl::Vec<int, 2> size)
 
 void Simulation::updateSimulation()
 {
-	// adding more food
+	phyWorld.SetGravity(PhysicsObj::scalePos(gravity));
 
 	env.clearGrid();
 

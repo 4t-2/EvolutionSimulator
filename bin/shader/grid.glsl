@@ -13,7 +13,7 @@ void main()
 {
     color = fragColor;
 
-	const int gridSize = 100;
+	const int gridSize = 5;
 
 	if(mod(fragPos.x+(.5*scale), gridSize) < (1*scale) || mod(fragPos.y+(.5*scale), gridSize) < (1*scale))
 	{
