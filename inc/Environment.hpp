@@ -819,5 +819,7 @@ class Environment
 			while (pool.active())
 			{
 			}
+
+            delete []randomPosition;
 		}
 };

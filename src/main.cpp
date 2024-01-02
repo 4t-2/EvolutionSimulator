@@ -19,7 +19,10 @@
 agl::Circle	   *PhyCircle::circle;
 agl::Rectangle *PhyRect::rect;
 b2World		   *NewCreature::world;
+PhyRect		   *NewCreature::grund;
 Environment	   *NewCreature::env;
+
+#define TIMEPERGEN 600
 
 class Listener
 {
@@ -297,14 +300,16 @@ int main()
 
 	struct
 	{
-			int			 x		  = 0;
-			NewCreature *creature = nullptr;
+			int			 x			= 0;
+			NewCreature *creature	= nullptr;
+			int			 generation = 0;
 	} leadCreature;
 
-	Menu simulationInfo("SimInfo", 125,													 //
-						ValueElement<int>{"Frame", [&]() { return &simulation.frame; }}, //
-						ValueElement<float>{"FPS", [&]() { return &fps; }},				 //
-						ValueElement<int>{"LeadDist", [&]() { return &leadCreature.x; }} //
+	Menu simulationInfo("SimInfo", 125,														 //
+						ValueElement<int>{"Frame", [&]() { return &simulation.frame; }},	 //
+						ValueElement<float>{"FPS", [&]() { return &fps; }},					 //
+						ValueElement<int>{"LeadDist", [&]() { return &leadCreature.x; }},	 //
+						ValueElement<int>{"Gen", [&]() { return &leadCreature.generation; }} //
 	);
 
 	simulationInfo.bindPointers(&simulationInfoPointers);
@@ -672,10 +677,11 @@ int main()
 
 	simMenuPointers.pause->state = true;
 	NewCreature::world			 = simulation.phyWorld;
+	NewCreature::grund			 = simulation.grund;
 
-	std::vector<NewCreature> creatures;
-	creatures.emplace_back();
-	creatures[creatures.size() - 1].def();
+	std::list<NewCreature> creatures;
+	creatures.emplace_back(1);
+	creatures.front().def();
 
 	while (!event.windowClose())
 	{
@@ -689,12 +695,60 @@ int main()
 			{
 				static float cycle = 0;
 
-				cycle += simMenuPointers.simCycles->value;
+				cycle += buildMenuPointers.simCycles->value;
 
 				for (int i = 0; i < cycle; i++)
 				{
 					cycle--;
 					simulation.update();
+
+					for (NewCreature &c : creatures)
+					{
+						c.updateNetwork();
+					}
+
+					if (simulation.frame > TIMEPERGEN)
+					{
+						NewCreature best(1);
+						best.clone(*leadCreature.creature);
+						best.clonePerfectNetwork(*leadCreature.creature);
+
+						creatures.clear();
+
+						simulation.destroy();
+						focusCreature = nullptr;
+
+						buildMenuPointers.pause->state = false;
+
+						SimulationRules simulationRules;
+						simulationRules.size.x			  = simMenuPointers.sizeX->value;
+						simulationRules.size.y			  = simMenuPointers.sizeY->value;
+						simulationRules.gridResolution.x  = simMenuPointers.gridX->value;
+						simulationRules.gridResolution.y  = simMenuPointers.gridY->value;
+						simulationRules.startingCreatures = simMenuPointers.startingCreatures->value;
+
+						simulation.create(simulationRules, simMenuPointers.seed->value);
+
+						cameraPosition = {0, 0};
+
+						NewCreature::world = simulation.phyWorld;
+						NewCreature::grund = simulation.grund;
+
+						leadCreature.generation++;
+
+						creatures.emplace_back(1);
+						creatures.back().clone(best);
+						creatures.front().clonePerfectNetwork(best);
+
+						for (int i = 0; i < buildMenuPointers.creatures->value - 1; i++)
+						{
+							creatures.emplace_back(i + 2);
+							creatures.back().clone(best);
+							creatures.back().cloneMutateNetwork(best);
+						}
+
+						best.clear();
+					}
 				}
 			}
 		}
@@ -764,8 +818,8 @@ int main()
 			}
 
 			if (event.keybuffer.find('w') != -1 &&
-				(creatures[0].touchingSelected(getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
-																	  sizeMultiplier, cameraPosition)) ||
+				(creatures.front().touchingSelected(getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
+																		   sizeMultiplier, cameraPosition)) ||
 				 drawing))
 			{
 				if (!drawing)
@@ -782,7 +836,7 @@ int main()
 					float			   height	= (start - end).length();
 					agl::Vec<float, 2> normal	= (end - start).normalized();
 
-					creatures[0].createPart({width, height}, start + (normal * height / 2), rotation, start);
+					creatures.front().createPart({width, height}, start + (normal * height / 2), rotation, start);
 				}
 			}
 
@@ -806,7 +860,7 @@ int main()
 		{
 			auto pos =
 				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
-			creatures[0].selectRect(pos);
+			creatures.front().selectRect(pos);
 		}
 
 	skipSimRender:;
@@ -888,19 +942,25 @@ int main()
 				cameraPosition = {0, 0};
 
 				NewCreature::world = simulation.phyWorld;
+				NewCreature::grund = simulation.grund;
 
-				creatures.emplace_back();
-				creatures[creatures.size() - 1].def();
+				creatures.emplace_back(1);
+				creatures.back().def();
 
 				didit = true;
+
+				leadCreature.generation = 0;
 			}
 
 			if (buildMenuPointers.simulate->state && didit)
 			{
+				creatures.front().setupNetwork();
+
 				for (int i = 0; i < buildMenuPointers.creatures->value - 1; i++)
 				{
-					creatures.emplace_back();
-					creatures[creatures.size() - 1].clone(creatures[0]);
+					creatures.emplace_back(i + 2);
+					creatures.back().clone(creatures.front());
+					creatures.back().setupNetwork();
 				}
 
 				didit = false;
@@ -910,12 +970,12 @@ int main()
 			{
 				if (event.isKeyPressed(agl::Key::R))
 				{
-					creatures[0].unselect();
+					creatures.front().unselect();
 				}
 				if (event.isKeyPressed(agl::Key::T))
 				{
-					creatures[0].clear();
-					creatures[0].def();
+					creatures.front().clear();
+					creatures.front().def();
 				}
 			}
 		}
@@ -974,8 +1034,8 @@ int main()
 
 		if (buildMenuPointers.simulate->state)
 		{
-			leadCreature.x		  = creatures[0].rect[0]->position.x;
-			leadCreature.creature = &creatures[0];
+			leadCreature.x		  = creatures.front().rect[0]->position.x;
+			leadCreature.creature = &creatures.front();
 
 			for (NewCreature &c : creatures)
 			{
@@ -1040,8 +1100,6 @@ int main()
 				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
 
 			sizeMultiplier -= scale;
-
-			std::cout << sizeMultiplier << '\n';
 
 			agl::Vec<float, 2> newPos =
 				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);

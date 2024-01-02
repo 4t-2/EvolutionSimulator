@@ -8,15 +8,36 @@
 #include "PhysicsObj.hpp"
 #include "SimulationRules.hpp"
 #include "macro.hpp"
+#include <box2d/b2_world_callbacks.h>
 #include <list>
+
+class CollisionFilter : public b2ContactFilter
+{
+		virtual bool ShouldCollide(b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			if (fixtureA->GetFilterData().groupIndex == 0 || fixtureB->GetFilterData().groupIndex == 0)
+			{
+				return true;
+			}
+			else if (fixtureA->GetFilterData().groupIndex == fixtureB->GetFilterData().groupIndex)
+			{
+				return true;
+			}
+
+			return false;
+		}
+};
 
 class Simulation
 {
 	public:
+		CollisionFilter filter;
+
 		SimulationRules simulationRules;
 		Environment		env;
 
 		b2World *phyWorld;
+		PhyRect *grund;
 
 		agl::Vec<float, 2> gravity;
 

@@ -130,7 +130,7 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 		}
 
 		void setup(agl::Vec<float, 2> size, agl::Vec<float, 2> pos, float rotation, b2World &world,
-				   b2BodyType type = b2_dynamicBody)
+				   b2BodyType type = b2_dynamicBody, int groupIndex = 0)
 		{
 			b2BodyDef bodyDef;
 			bodyDef.type		  = type;
@@ -142,9 +142,10 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 			shapeDef.SetAsBox((size.x / 2) / SIMSCALE, (size.y / 2) / SIMSCALE);
 
 			b2FixtureDef fixtureDef;
-			fixtureDef.density	= 1;
-			fixtureDef.friction = 1;
-			fixtureDef.shape	= &shapeDef;
+			fixtureDef.density			 = 1;
+			fixtureDef.friction			 = 1;
+			fixtureDef.shape			 = &shapeDef;
+			fixtureDef.filter.groupIndex = groupIndex;
 
 			// Now we have a body for our Box object
 			phyBody = world.CreateBody(&bodyDef);
@@ -202,13 +203,15 @@ class PhyJoint
 			revoluteJointDef.localAnchorA.Set(b2l1.x, b2l1.y);
 			revoluteJointDef.localAnchorB.Set(b2l2.x, b2l2.y);
 
-			revoluteJointDef.enableLimit = false;
-			revoluteJointDef.upperAngle	 = PI;
-			revoluteJointDef.lowerAngle	 = -PI;
+			revoluteJointDef.enableLimit = true;
+			revoluteJointDef.upperAngle	 = PI / 2;
+			revoluteJointDef.lowerAngle	 = -PI / 2;
 
 			revoluteJointDef.enableMotor	= true;
-			revoluteJointDef.maxMotorTorque = 50;
-			revoluteJointDef.motorSpeed		= (1. / 50) * (((rand() / (float)RAND_MAX)));
+			revoluteJointDef.maxMotorTorque = 100;
+			// revoluteJointDef.motorSpeed		= 1. / 6;
+
+			revoluteJointDef.referenceAngle = rect1.rotation - rect2.rotation;
 
 			joint = (b2RevoluteJoint *)world.CreateJoint(&revoluteJointDef);
 		}

@@ -37,6 +37,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	env.setupGrid(simulationRules.size, simulationRules.gridResolution);
 
 	phyWorld = new b2World(PhysicsObj::scaleGrav(gravity));
+	phyWorld->SetContactFilter(&filter);
 
 	// {
 	// 	auto &a	   = env.addEntity<PhyCircle>();
@@ -44,8 +45,8 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	// 	a.velocity = {0, 0};
 	// }
 	{
-		auto &a = env.addEntity<PhyRect>();
-		a.setup({100000, 50}, {40000, 100}, 0, *phyWorld, b2_staticBody);
+		grund = &env.addEntity<PhyRect>();
+		grund->setup({100000, 50}, {40000, 100}, 0, *phyWorld, b2_staticBody);
 	}
 	{
 		// auto &a = env.addEntity<PhyRect>();
