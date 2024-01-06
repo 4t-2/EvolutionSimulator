@@ -203,10 +203,17 @@ class NewCreature
 				{
 					b2Contact *c = ce->contact;
 
-					if (ce->other == grund->phyBody)
+					if (grund != nullptr)
 					{
-						network->setInputNode(node, 1);
-						break;
+						if (ce->other == grund->phyBody)
+						{
+							network->setInputNode(node, 1);
+							break;
+						}
+						else
+						{
+							network->setInputNode(node, 0);
+						}
 					}
 					else
 					{
@@ -232,6 +239,8 @@ class NewCreature
 				{
 					float ang = joint[i].joint->GetJointAngle();
 					float net = network->outputNode[i].value * (PI / 2);
+
+					net = sin(frame / 10.);
 
 					joint[i].joint->SetMotorSpeed((1. / 6) * (net - ang));
 				}

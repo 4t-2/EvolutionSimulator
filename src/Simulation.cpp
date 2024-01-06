@@ -45,10 +45,9 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	// 	a.velocity = {0, 0};
 	// }
 	{
-		grund = &env.addEntity<PhyRect>();
-		grund->setup({100000, 50}, {40000, 100}, 0, *phyWorld, b2_staticBody);
-	}
-	{
+		// grund = &env.addEntity<PhyRect>();
+		// grund->setup({100000, 50}, {40000, 100}, 0, *phyWorld, b2_staticBody);
+	} {
 		// auto &a = env.addEntity<PhyRect>();
 		// a.setup({10, 200}, {0, 0}, phyWorld, b2_dynamicBody);
 		//
@@ -409,7 +408,58 @@ void Simulation::updateSimulation()
 	phyWorld->Step(1, 8, 3);
 
 	env.selfUpdate<PhyCircle>([gravity = gravity](PhyCircle &o) {});
-	env.selfUpdate<PhyRect>([gravity = gravity](PhyRect &o) { o.sync(); });
+	env.selfUpdate<PhyRect>([gravity = gravity](PhyRect &o) {
+		o.sync();
+
+		{
+			agl::Vec<float, 2> vel = {o.phyBody->GetLinearVelocity().x, o.phyBody->GetLinearVelocity().y};
+
+			float velAng = vel.angle();
+
+			if (std::isnan(velAng))
+			{
+				return;
+			}
+
+			float			   velMag = vel.length();
+			agl::Vec<float, 2> velNor = vel.normalized();
+
+			float relAng = velAng - o.phyBody->GetAngle();
+
+			float side1 = abs(o.size.x * cos(relAng));
+			float side2 = abs(o.size.y * sin(relAng));
+
+			float density = 10;
+
+			agl::Vec<float, 2> drag1 = velNor * (-velMag * velMag * density * side1);
+			agl::Vec<float, 2> drag2 = velNor * (-velMag * velMag * density * side2);
+
+			o.phyBody->ApplyForceToCenter(PhysicsObj::scaleForce(drag1 + drag2), true);
+
+			std::cout << vel << '\n';
+		}
+
+		{
+			// agl::Vec<float, 2> vel = {o.phyBody->GetLinearVelocity().x,
+			// o.phyBody->GetLinearVelocity().y};
+			//
+			// agl::Vec<float, 2> velNor = vel.normalized();
+			//
+			// float velMag = vel.length();
+			//
+			// if (velMag == 0)
+			// {
+			// 	velNor = {0, 0};
+			// }
+			//
+			// constexpr float num = 100;
+			//
+			// std::cout << velMag << '\n';
+			//
+			// o.phyBody->ApplyForceToCenter(PhysicsObj::scaleForce(velNor * (-velMag
+			// * velMag * num)), true);
+		}
+	});
 
 	while (env.pool.active())
 	{

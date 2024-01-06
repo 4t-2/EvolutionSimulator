@@ -154,6 +154,8 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 
 			this->size = size;
 
+            // phyBody->ApplyTorque(1, true);
+
 			sync();
 		}
 

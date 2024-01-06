@@ -472,7 +472,7 @@ int main()
 
 	Menu simRules("SimRules", 200,					//
 				  FieldElement<float>{"GravX", 0},	//
-				  FieldElement<float>{"GravY", .3}, //
+				  FieldElement<float>{"GravY", 0}, //
 				  FieldElement<float>{"Mass", 1}	//
 	);
 
@@ -1020,7 +1020,7 @@ int main()
 
 					float forceScalar = leftMenuPointers.forceMultiplier->value / distance * distance;
 
-					agl::Vec<float, 2> force = offset.normalized() * forceScalar * 1000;
+					agl::Vec<float, 2> force = offset.normalized() * forceScalar * 50;
 
 					obj.phyBody->ApplyForceToCenter(PhysicsObj::scaleForce(force), true);
 				},
