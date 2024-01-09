@@ -43,6 +43,8 @@ class Simulation
 
 		bool active;
 
+        float density = .4;
+
 		std::vector<int> totalNEAT;
 		std::vector<int> totalRL;
 		std::vector<int> totalBOTH;

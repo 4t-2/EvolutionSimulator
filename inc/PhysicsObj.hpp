@@ -165,6 +165,11 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 			position.y = phyBody->GetPosition().y * SIMSCALE;
 			rotation   = -phyBody->GetAngle();
 		}
+
+        agl::Vec<float, 2> getVel()
+        {
+            return {phyBody->GetLinearVelocity().x * SIMSCALE, phyBody->GetLinearVelocity().y * SIMSCALE};
+        }
 };
 
 struct JointDef

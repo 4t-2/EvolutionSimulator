@@ -45,8 +45,8 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	// 	a.velocity = {0, 0};
 	// }
 	{
-		// grund = &env.addEntity<PhyRect>();
-		// grund->setup({100000, 50}, {40000, 100}, 0, *phyWorld, b2_staticBody);
+		grund = &env.addEntity<PhyRect>();
+		grund->setup({100000, 50}, {40000, 100}, 0, *phyWorld, b2_staticBody);
 	} {
 		// auto &a = env.addEntity<PhyRect>();
 		// a.setup({10, 200}, {0, 0}, phyWorld, b2_dynamicBody);
@@ -408,11 +408,11 @@ void Simulation::updateSimulation()
 	phyWorld->Step(1, 8, 3);
 
 	env.selfUpdate<PhyCircle>([gravity = gravity](PhyCircle &o) {});
-	env.selfUpdate<PhyRect>([gravity = gravity](PhyRect &o) {
+	env.selfUpdate<PhyRect>([gravity = gravity, density = density](PhyRect &o) {
 		o.sync();
 
 		{
-			agl::Vec<float, 2> vel = {o.phyBody->GetLinearVelocity().x, o.phyBody->GetLinearVelocity().y};
+			agl::Vec<float, 2> vel = o.getVel();
 
 			float velAng = vel.angle();
 
@@ -429,14 +429,10 @@ void Simulation::updateSimulation()
 			float side1 = abs(o.size.x * cos(relAng));
 			float side2 = abs(o.size.y * sin(relAng));
 
-			float density = 10;
-
 			agl::Vec<float, 2> drag1 = velNor * (-velMag * velMag * density * side1);
 			agl::Vec<float, 2> drag2 = velNor * (-velMag * velMag * density * side2);
 
 			o.phyBody->ApplyForceToCenter(PhysicsObj::scaleForce(drag1 + drag2), true);
-
-			std::cout << vel << '\n';
 		}
 
 		{

@@ -29,6 +29,9 @@ class NewCreature
 		static b2World	   *world;
 		static Environment *env;
 
+        static float torque;
+        static int brainMutations;
+
 		int id = 0;
 
 		int frame = 0;
@@ -240,7 +243,7 @@ class NewCreature
 					float ang = joint[i].joint->GetJointAngle();
 					float net = network->outputNode[i].value * (PI / 2);
 
-					net = sin(frame / 10.);
+					// net = sin(frame / 10.);
 
 					joint[i].joint->SetMotorSpeed((1. / 6) * (net - ang));
 				}
@@ -262,7 +265,7 @@ class NewCreature
 		{
 			in::NetworkStructure ns = creature.network->structure;
 
-			for (int i = 0; i < 10; i++)
+			for (int i = 0; i < brainMutations; i++)
 			{
 				ns.mutate();
 			}

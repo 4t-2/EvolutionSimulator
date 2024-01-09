@@ -21,6 +21,8 @@ agl::Rectangle *PhyRect::rect;
 b2World		   *NewCreature::world;
 PhyRect		   *NewCreature::grund;
 Environment	   *NewCreature::env;
+float			NewCreature::torque;
+int				NewCreature::brainMutations;
 
 #define TIMEPERGEN 600
 
@@ -470,10 +472,10 @@ int main()
 
 	simulation.foodCap = simulationRules.foodCap;
 
-	Menu simRules("SimRules", 200,					//
-				  FieldElement<float>{"GravX", 0},	//
+	Menu simRules("SimRules", 200,				   //
+				  FieldElement<float>{"GravX", 0}, //
 				  FieldElement<float>{"GravY", 0}, //
-				  FieldElement<float>{"Mass", 1}	//
+				  FieldElement<float>{"Mass", 1}   //
 	);
 
 	simRules.bindPointers(&simRulesPointers);
@@ -529,6 +531,13 @@ int main()
 	{
 			FieldElement<int>	  *creatures;
 			FieldElement<float>	  *simCycles;
+			ButtonElement<Toggle> *leaderOnly;
+			FieldElement<float>	  *gravX;
+			FieldElement<float>	  *gravY;
+			FieldElement<float>	  *density;
+			FieldElement<float>	  *torque;
+			FieldElement<int>	  *mutations;
+			ButtonElement<Toggle> *haveGround;
 			ButtonElement<Toggle> *simulate;
 			ButtonElement<Toggle> *pause;
 			TextElement			  *t1;
@@ -555,6 +564,13 @@ int main()
 	Menu buildMenu("buildMenu", 500,								  //
 				   FieldElement<int>{"Creatures", (5)},				  //
 				   FieldElement<float>{"simCycles", 1.0},			  //
+				   ButtonElement<Toggle>{"Show Lead Creature Only"},  //
+				   FieldElement<float>{"gravX", 0.0},				  //
+				   FieldElement<float>{"gravY", 0.3},				  //
+				   FieldElement<float>{"density", 0.4},				  //
+				   FieldElement<float>{"torque", 100},				  //
+				   FieldElement<int>{"brainMutations", 10},			  //
+				   ButtonElement<Toggle>{"HaveGround?"},			  //
 				   ButtonElement<Toggle>{"SIMULATE"},				  //
 				   ButtonElement<Toggle>{"PAUSE"},					  //
 				   TextElement("Instructions"),						  //
@@ -581,6 +597,8 @@ int main()
 
 	buildMenu.bindPointers(&buildMenuPointers);
 
+	buildMenuPointers.haveGround->state = true;
+
 	// debugLog
 
 	struct
@@ -600,7 +618,7 @@ int main()
 
 	debugLog.bindPointers(&debugLogPointers);
 
-	Menu creditsMenu("Credits", 450,
+	Menu creditsMenu("CreditsAndStuff", 450,
 					 TextElement("This simulator was made by MakingFromScratch (YouTube Channel)"), //
 					 TextElement(""),																//
 					 TextElement("Why does this exist"),											//
@@ -608,8 +626,10 @@ int main()
 								 "with different"), //
 					 TextElement("kinds of body structures. Later on this will be combined "
 								 "into my own"),
-					 TextElement("ALife EvolutionSimulator so that creatures will not only evolve"),
-					 TextElement("custom brains but also custom body plans that aren't just some"),
+					 TextElement("ALife Evolution Simulator (Vitanova) so that creatures will "
+								 "not only"),
+					 TextElement("evolve custom brains but also custom body plans that aren't "
+								 "just some"),
 					 TextElement("variation of different sliders"), //
 					 TextElement(""),								//
 					 TextElement("This specific project was inspired by Evolution (By Keiwan),"),
@@ -633,8 +653,8 @@ int main()
 	MenuBar menuBar(&quitMenu,		 //
 					&simulationInfo, //
 					&buildMenu,		 //
-					// &creditsMenu,	 //
-					&debugLog //
+					&creditsMenu,	 //
+					&debugLog		 //
 	);
 
 	buildMenu.open({50, 50});
@@ -792,9 +812,30 @@ int main()
 			bottomRightGrid			 = simulation.env.toGridPosition(brPos);
 		}
 
-		simulation.env.view<PhyCircle>([&window = window](PhyCircle &dt, auto) { dt.drawFunc(window); });
-		simulation.env.view<PhyRect>([&window = window](PhyRect &dt, auto) { dt.drawFunc(window); });
+		if (buildMenuPointers.haveGround->state)
+		{
+			simulation.grund->drawFunc(window);
+		}
 
+		if (buildMenuPointers.leaderOnly->state && buildMenuPointers.simulate->state)
+		{
+			for (auto &r : leadCreature.creature->rect)
+			{
+				r->drawFunc(window);
+			}
+		}
+		else
+		{
+			for (NewCreature &nc : creatures)
+			{
+				for (auto &r : nc.rect)
+				{
+					r->drawFunc(window);
+				}
+			}
+		}
+
+		if (!buildMenuPointers.simulate->state)
 		{
 			static bool				  drawing = false;
 			static agl::Vec<float, 2> start;
@@ -963,6 +1004,11 @@ int main()
 					creatures.back().setupNetwork();
 				}
 
+				for (NewCreature &c : creatures)
+				{
+					c.unselect();
+				}
+
 				didit = false;
 			}
 
@@ -972,8 +1018,9 @@ int main()
 				{
 					creatures.front().unselect();
 				}
-				if (event.isKeyPressed(agl::Key::T))
+				if (event.isKeyPressed(agl::Key::Escape))
 				{
+					creatures.front().unselect();
 					creatures.front().clear();
 					creatures.front().def();
 				}
@@ -1029,8 +1076,19 @@ int main()
 
 	endif:;
 
-		simulation.gravity.x = simRulesPointers.gravityX->value;
-		simulation.gravity.y = simRulesPointers.gravityY->value;
+		if (buildMenuPointers.haveGround->state)
+		{
+			simulation.grund->phyBody->SetTransform({40000 / SIMSCALE, 100 / SIMSCALE}, 0);
+		}
+		else
+		{
+			simulation.grund->phyBody->SetTransform({-99999, -99999}, 0);
+		}
+		simulation.gravity.x		= buildMenuPointers.gravX->value;
+		simulation.gravity.y		= buildMenuPointers.gravY->value;
+		simulation.density			= buildMenuPointers.density->value;
+		NewCreature::torque			= buildMenuPointers.torque->value;
+		NewCreature::brainMutations = buildMenuPointers.mutations->value;
 
 		if (buildMenuPointers.simulate->state)
 		{
