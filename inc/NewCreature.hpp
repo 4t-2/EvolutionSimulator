@@ -29,8 +29,8 @@ class NewCreature
 		static b2World	   *world;
 		static Environment *env;
 
-        static float torque;
-        static int brainMutations;
+		static float torque;
+		static int	 brainMutations;
 
 		int id = 0;
 
@@ -72,6 +72,53 @@ class NewCreature
 			{
 				selected->color = selected->realColor;
 				selected		= nullptr;
+			}
+		}
+
+		void deletePart(PhyRect *phy)
+		{
+			if (phy == rect[0] || phy == nullptr)
+			{
+				return;
+			}
+
+			for (auto it = joint.begin(); it != joint.end(); it++)
+			{
+				PhyJoint &j = *it;
+
+				if (j.start == phy || j.end == phy)
+				{
+					auto s = j.start;
+
+					world->DestroyJoint(j.joint);
+
+					it--;
+					joint.erase(std::next(it, 1));
+
+					if (j.start == phy)
+					{
+						deletePart(j.end);
+					}
+				}
+			}
+
+			for (auto it = rect.begin(); it != rect.end(); it++)
+			{
+				PhyRect *&r = *it;
+
+				if (r == phy)
+				{
+					world->DestroyBody(r->phyBody);
+
+					int i = it - rect.begin();
+
+					it--;
+					rect.erase(std::next(it, 1));
+
+					defs.erase(std::next(defs.begin(), i));
+
+					break;
+				}
 			}
 		}
 

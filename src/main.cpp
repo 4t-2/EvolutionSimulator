@@ -35,6 +35,8 @@ class Listener
 		bool				  pastState = false;
 
 	public:
+		int curr = 0;
+
 		Listener(std::function<void()> first, std::function<void()> hold, std::function<void()> last);
 		void update(bool state);
 };
@@ -53,18 +55,21 @@ void Listener::update(bool state)
 		if (pastState)
 		{
 			hold();
+			curr = 2;
 		}
 		else
 		{
 			first();
 
 			pastState = true;
+			curr	  = 1;
 		}
 	}
 	else if (pastState)
 	{
 		last();
 		pastState = false;
+		curr	  = 0;
 	}
 }
 
@@ -532,6 +537,7 @@ int main()
 			FieldElement<int>	  *creatures;
 			FieldElement<float>	  *simCycles;
 			ButtonElement<Toggle> *leaderOnly;
+			ButtonElement<Toggle> *saveLeader;
 			FieldElement<float>	  *gravX;
 			FieldElement<float>	  *gravY;
 			FieldElement<float>	  *density;
@@ -559,26 +565,28 @@ int main()
 			TextElement			  *t17;
 			TextElement			  *t18;
 			TextElement			  *t19;
+			TextElement			  *t20;
 	} buildMenuPointers;
 
-	Menu buildMenu("buildMenu", 500,								  //
-				   FieldElement<int>{"Creatures", (5)},				  //
-				   FieldElement<float>{"simCycles", 1.0},			  //
-				   ButtonElement<Toggle>{"Show Lead Creature Only"},  //
-				   FieldElement<float>{"gravX", 0.0},				  //
-				   FieldElement<float>{"gravY", 0.3},				  //
-				   FieldElement<float>{"density", 0.4},				  //
-				   FieldElement<float>{"torque", 100},				  //
-				   FieldElement<int>{"brainMutations", 10},			  //
-				   ButtonElement<Toggle>{"HaveGround?"},			  //
-				   ButtonElement<Toggle>{"SIMULATE"},				  //
-				   ButtonElement<Toggle>{"PAUSE"},					  //
-				   TextElement("Instructions"),						  //
-				   TextElement("1) Design a creature"),				  //
-				   TextElement("    Click a body part to select it"), //
-				   TextElement("    Press W and drag as far as you want to make the body part long"),
+	Menu buildMenu("buildMenu", 500,														   //
+				   FieldElement<int>{"Creatures", (5)},										   //
+				   FieldElement<float>{"simCycles", 1.0},									   //
+				   ButtonElement<Toggle>{"Show Lead Creature Only"},						   //
+				   ButtonElement<Toggle>{"Save Lead Creature (at end of every gen in saves)"}, //
+				   FieldElement<float>{"gravX", 0.0},										   //
+				   FieldElement<float>{"gravY", 0.3},										   //
+				   FieldElement<float>{"drag", 0.4},										   //
+				   FieldElement<float>{"torque", 100},										   //
+				   FieldElement<int>{"brainMutations", 10},									   //
+				   ButtonElement<Toggle>{"HaveGround?"},									   //
+				   ButtonElement<Toggle>{"SIMULATE"},										   //
+				   ButtonElement<Toggle>{"PAUSE"},											   //
+				   TextElement("Instructions"),												   //
+				   TextElement("1) Design a creature"),										   //
+				   TextElement("    Click a body part to select it"),						   //
+				   TextElement("    Click and drag as far as you want to make the body part long"),
 				   TextElement("    (use Q and E to change thickness)"),						  //
-				   TextElement("    Press W to finish building body part"),						  //
+				   TextElement("    Click again to finish building body part"),					  //
 				   TextElement("2) Press SIMULATE to watch your creation learn"),				  //
 				   TextElement(""),																  //
 				   TextElement("Controls"),														  //
@@ -586,9 +594,10 @@ int main()
 				   TextElement("R - UnSelect Part"),											  //
 				   TextElement("Middle Click Drag - Move Camera (only when building or paused)"), //
 				   TextElement("Scroll - Zoom"),												  //
-				   TextElement("W - Build new part on selected"),								  //
+				   TextElement("Left Click - Build new part on selected"),						  //
+				   TextElement("D - delete selected and ALL attached parts"),					  //
 				   TextElement("Q & E - Change thickness"),										  //
-				   TextElement("T - Reset Creature"),											  //
+				   TextElement("Esc - Reset Creature"),											  //
 				   TextElement("H - Hide UI"),													  //
 				   TextElement(""),																  //
 				   TextElement("Click on the menu bar above to open new menus (you can drag "
@@ -858,7 +867,7 @@ int main()
 				width = 2;
 			}
 
-			if (event.keybuffer.find('w') != -1 &&
+			if (leftClickListener.curr == 1 &&
 				(creatures.front().touchingSelected(getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
 																		   sizeMultiplier, cameraPosition)) ||
 				 drawing))
@@ -895,13 +904,19 @@ int main()
 
 				window.drawShape(rectShape);
 			}
-		}
 
-		if (event.isPointerButtonPressed(agl::Button::Left))
-		{
-			auto pos =
-				getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
-			creatures.front().selectRect(pos);
+			if (leftClickListener.curr == 1)
+			{
+				auto pos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier,
+												  cameraPosition);
+				creatures.front().selectRect(pos);
+			}
+
+			if (event.isKeyPressed(agl::Key::D))
+			{
+				creatures.front().deletePart(creatures.front().selected);
+				creatures.front().selected = nullptr;
+			}
 		}
 
 	skipSimRender:;
