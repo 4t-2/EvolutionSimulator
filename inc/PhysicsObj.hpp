@@ -172,11 +172,6 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
         }
 };
 
-struct JointDef
-{
-		b2RevoluteJoint def;
-};
-
 class PhyJoint
 {
 	public:

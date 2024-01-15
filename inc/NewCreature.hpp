@@ -4,6 +4,7 @@
 #include "Environment.hpp"
 #include "IN/inc/NeuralNetwork.hpp"
 #include "PhysicsObj.hpp"
+#include <iterator>
 
 struct RectDef
 {
@@ -13,17 +14,27 @@ struct RectDef
 		agl::Color		   col;
 };
 
+struct JointDef
+{
+		int				   start;
+		int				   end;
+		agl::Vec<float, 2> local1;
+		agl::Vec<float, 2> local2;
+};
+
 class NewCreature
 {
 	public:
-		std::vector<RectDef> defs;
+		std::vector<RectDef>  rectDefs;
+		std::vector<JointDef> jointDefs;
 
 		std::vector<PhyRect *> rect;
 		std::vector<PhyJoint>  joint;
 
 		in::NeuralNetwork *network = nullptr;
 
-		PhyRect		   *selected = nullptr;
+		PhyRect		   *selected		= nullptr;
+		int				indexOfSelected = -1;
 		static PhyRect *grund;
 
 		static b2World	   *world;
@@ -35,6 +46,8 @@ class NewCreature
 		int id = 0;
 
 		int frame = 0;
+
+		bool taintedNetwork = true;
 
 		NewCreature(int id)
 		{
@@ -62,6 +75,7 @@ class NewCreature
 					unselect();
 					selected		= o;
 					selected->color = agl::Color::Red;
+					indexOfSelected = ((long long)&o - (long long)(&*rect.begin())) / 8;
 				}
 			}
 		}
@@ -72,6 +86,7 @@ class NewCreature
 			{
 				selected->color = selected->realColor;
 				selected		= nullptr;
+				indexOfSelected = -1;
 			}
 		}
 
@@ -81,6 +96,8 @@ class NewCreature
 			{
 				return;
 			}
+
+			taintedNetwork = true;
 
 			for (auto it = joint.begin(); it != joint.end(); it++)
 			{
@@ -115,7 +132,7 @@ class NewCreature
 					it--;
 					rect.erase(std::next(it, 1));
 
-					defs.erase(std::next(defs.begin(), i));
+					rectDefs.erase(std::next(rectDefs.begin(), i));
 
 					break;
 				}
@@ -124,6 +141,8 @@ class NewCreature
 
 		void createPart(agl::Vec<float, 2> size, agl::Vec<float, 2> pos, float rotation, agl::Vec<float, 2> globalStart)
 		{
+			taintedNetwork = true;
+
 			PhyRect &r = env->addEntity<PhyRect>();
 
 			r.setup(size, pos, rotation, *world, b2_dynamicBody, id);
@@ -132,7 +151,7 @@ class NewCreature
 						   (unsigned char)(255 * ((float)rand() / (float)RAND_MAX))};
 			r.color		= r.realColor;
 
-			defs.push_back({size, pos, rotation, r.realColor});
+			rectDefs.push_back({size, pos, rotation, r.realColor});
 
 			rect.emplace_back(&r);
 
@@ -145,6 +164,11 @@ class NewCreature
 
 			joint.emplace_back();
 			joint[joint.size() - 1].setup(*selected, r, lcoal1, {0, size.y / -2}, *world);
+
+			jointDefs.push_back({indexOfSelected,
+								 static_cast<int>((long long)(&rect.back()) - (long long)(&*rect.begin())) / 8,
+								 lcoal1,
+								 {0, size.y / -2}});
 		}
 
 		bool touchingSelected(agl::Vec<float, 2> pos)
@@ -167,7 +191,7 @@ class NewCreature
 		{
 			rect.clear();
 			joint.clear();
-			defs.clear();
+			rectDefs.clear();
 			selected = nullptr;
 		}
 
@@ -176,47 +200,43 @@ class NewCreature
 			auto &a = env->addEntity<PhyRect>();
 			a.setup({30, 30}, {0, 0}, 0, *world, b2_dynamicBody, id);
 
-			defs.push_back({{30, 30}, {0, 0}, 0, agl::Color::White});
+			rectDefs.push_back({{30, 30}, {0, 0}, 0, agl::Color::White});
 			rect.emplace_back(&a);
+
+			taintedNetwork = true;
 		}
 
 		void clone(NewCreature &creature)
 		{
-			for (auto &r : creature.defs)
+			taintedNetwork = true;
+
+			for (auto &r : creature.rectDefs)
 			{
 				auto &o = env->addEntity<PhyRect>();
 				rect.emplace_back(&o);
-				defs.emplace_back(r);
+				rectDefs.emplace_back(r);
 
 				o.setup(r.size, r.pos, r.rot, *world, b2_dynamicBody, id);
 				o.color = r.col;
 			}
 
-			for (auto &j : creature.joint)
+			for (auto &j : creature.jointDefs)
 			{
-				int first;
-				int second;
-
-				for (int i = 0; i < creature.rect.size(); i++)
-				{
-					if (creature.rect[i] == j.start)
-					{
-						first = i;
-					}
-
-					if (creature.rect[i] == j.end)
-					{
-						second = i;
-					}
-				}
-
 				joint.emplace_back();
-				joint[joint.size() - 1].setup(*rect[first], *rect[second], j.local1, j.local2, *world, 25);
+
+				joint[joint.size() - 1].setup(*rect[j.start], *rect[j.end], j.local1, j.local2, *world);
+				jointDefs.push_back(j);
 			}
 		}
 
 		void setupNetwork()
 		{
+			if (!taintedNetwork)
+			{
+				network->setActivation(in::tanh);
+				return;
+			}
+
 			in::NetworkStructure ns((joint.size() * 2) + rect.size() + 2 + 2, {}, joint.size(), true);
 
 			in::NetworkStructure::randomWeights(ns);
@@ -301,6 +321,8 @@ class NewCreature
 
 		void clearNetwork()
 		{
+			taintedNetwork = true;
+
 			if (network != nullptr)
 			{
 				delete network;
@@ -308,8 +330,18 @@ class NewCreature
 			}
 		}
 
+		void setNetwork(in::NetworkStructure &ns)
+		{
+			taintedNetwork = false;
+
+			network = new in::NeuralNetwork(ns);
+			network->setActivation(in::tanh);
+		}
+
 		void cloneMutateNetwork(NewCreature &creature)
 		{
+			taintedNetwork = false;
+
 			in::NetworkStructure ns = creature.network->structure;
 
 			for (int i = 0; i < brainMutations; i++)
@@ -323,6 +355,8 @@ class NewCreature
 
 		void clonePerfectNetwork(NewCreature &creature)
 		{
+			taintedNetwork = false;
+
 			in::NetworkStructure ns = creature.network->structure;
 
 			network = new in::NeuralNetwork(ns);

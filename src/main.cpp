@@ -543,6 +543,7 @@ int main()
 			FieldElement<float>	  *density;
 			FieldElement<float>	  *torque;
 			FieldElement<int>	  *mutations;
+			ButtonElement<Hold>	  *loadTemplate;
 			ButtonElement<Toggle> *haveGround;
 			ButtonElement<Toggle> *simulate;
 			ButtonElement<Toggle> *pause;
@@ -572,12 +573,13 @@ int main()
 				   FieldElement<int>{"Creatures", (5)},										   //
 				   FieldElement<float>{"simCycles", 1.0},									   //
 				   ButtonElement<Toggle>{"Show Lead Creature Only"},						   //
-				   ButtonElement<Toggle>{"Save Lead Creature (at end of every gen in saves)"}, //
+				   ButtonElement<Toggle>{"Save Lead Creature (overwrites creature.vt)"}, //
 				   FieldElement<float>{"gravX", 0.0},										   //
 				   FieldElement<float>{"gravY", 0.3},										   //
 				   FieldElement<float>{"drag", 0.4},										   //
 				   FieldElement<float>{"torque", 100},										   //
 				   FieldElement<int>{"brainMutations", 10},									   //
+				   ButtonElement<Hold>{"Load creature.vt"},									   //
 				   ButtonElement<Toggle>{"HaveGround?"},									   //
 				   ButtonElement<Toggle>{"SIMULATE"},										   //
 				   ButtonElement<Toggle>{"PAUSE"},											   //
@@ -738,6 +740,58 @@ int main()
 
 					if (simulation.frame > TIMEPERGEN)
 					{
+						{
+							leadCreature.x		  = creatures.front().rect[0]->position.x;
+							leadCreature.creature = &creatures.front();
+
+							for (NewCreature &c : creatures)
+							{
+								if (c.rect[0]->position.x > leadCreature.x)
+								{
+									leadCreature.x		  = c.rect[0]->position.x;
+									leadCreature.creature = &c;
+								}
+							}
+						}
+
+						if (buildMenuPointers.saveLeader->state)
+						{
+							std::string buffer;
+
+							{
+								int size = leadCreature.creature->rectDefs.size();
+								buffer.append((char *)&size, 1);
+							}
+
+							for (RectDef &def : leadCreature.creature->rectDefs)
+							{
+								char *p = (char *)(void *)&def;
+								buffer.append(p, sizeof(RectDef));
+							}
+
+							{
+								int size = leadCreature.creature->jointDefs.size();
+								buffer.append((char *)&size, 1);
+							}
+
+							for (JointDef &def : leadCreature.creature->jointDefs)
+							{
+								char *p = (char *)(void *)&def;
+								buffer.append(p, sizeof(JointDef));
+							}
+
+							std::string netStr =
+								((in::NetworkStructure *)(&leadCreature.creature->network->structure))->serialize();
+
+							buffer.append(netStr.c_str(), netStr.size());
+
+							std::fstream fs("creature.vt", std::ios::out);
+
+							fs.write(buffer.c_str(), buffer.length());
+
+							fs.close();
+						}
+
 						NewCreature best(1);
 						best.clone(*leadCreature.creature);
 						best.clonePerfectNetwork(*leadCreature.creature);
@@ -774,9 +828,17 @@ int main()
 							creatures.emplace_back(i + 2);
 							creatures.back().clone(best);
 							creatures.back().cloneMutateNetwork(best);
+							creatures.back().rect[0]->realColor = creatures.back().rect[0]->realColor = {
+								(unsigned char)(255 * ((float)rand() / (float)RAND_MAX)),
+								(unsigned char)(255 * ((float)rand() / (float)RAND_MAX)),
+								(unsigned char)(255 * ((float)rand() / (float)RAND_MAX))};
+							creatures.back().rect[0]->color = creatures.back().rect[0]->realColor;
 						}
 
 						best.clear();
+
+						leadCreature.creature = &creatures.front();
+						leadCreature.x		  = 0;
 					}
 				}
 			}
@@ -917,6 +979,85 @@ int main()
 				creatures.front().deletePart(creatures.front().selected);
 				creatures.front().selected = nullptr;
 			}
+
+			{
+				static bool lastState = false;
+
+				if (buildMenuPointers.loadTemplate->state)
+				{
+					if (!lastState)
+					{
+						lastState = true;
+
+						std::fstream fs("creature.vt", std::ios::in);
+
+						std::string buf;
+
+						char c;
+						fs.get(c);
+
+						for (; !fs.eof(); fs.get(c))
+						{
+							buf.append(&c, 1);
+						}
+
+						NewCreature nc(80085);
+
+						{
+							int index = 0;
+
+							{
+								int size = buf[index];
+								index++;
+
+								nc.rectDefs.resize(size);
+
+								for (int i = 0; i < size; i++)
+								{
+									memcpy(&nc.rectDefs[i], &buf.c_str()[index + (i * sizeof(RectDef))],
+										   sizeof(RectDef));
+								}
+
+								index += size * sizeof(RectDef);
+							}
+
+							{
+								int size = buf[index];
+								index++;
+
+								nc.jointDefs.resize(size);
+
+								for (int i = 0; i < size; i++)
+								{
+									memcpy(&nc.jointDefs[i], &buf.c_str()[index + (i * sizeof(JointDef))],
+										   sizeof(JointDef));
+								}
+
+								index += size * sizeof(JointDef);
+							}
+
+							in::NetworkStructure ns((unsigned char *)&buf.c_str()[index]);
+
+							nc.setNetwork(ns);
+
+							creatures.clear();
+
+							creatures.emplace_back(1);
+
+							creatures.front().clone(nc);
+							creatures.front().clonePerfectNetwork(nc);
+
+							nc.clear();
+						}
+
+						fs.close();
+					}
+				}
+				else
+				{
+					lastState = false;
+				}
+			}
 		}
 
 	skipSimRender:;
@@ -1017,6 +1158,11 @@ int main()
 					creatures.emplace_back(i + 2);
 					creatures.back().clone(creatures.front());
 					creatures.back().setupNetwork();
+					creatures.back().rect[0]->realColor = creatures.back().rect[0]->realColor = {
+						(unsigned char)(255 * ((float)rand() / (float)RAND_MAX)),
+						(unsigned char)(255 * ((float)rand() / (float)RAND_MAX)),
+						(unsigned char)(255 * ((float)rand() / (float)RAND_MAX))};
+					creatures.back().rect[0]->color = creatures.back().rect[0]->realColor;
 				}
 
 				for (NewCreature &c : creatures)
@@ -1025,6 +1171,9 @@ int main()
 				}
 
 				didit = false;
+
+				leadCreature.creature = &creatures.front();
+				leadCreature.x		  = 0;
 			}
 
 			if (!buildMenuPointers.simulate->state)
@@ -1105,7 +1254,7 @@ int main()
 		NewCreature::torque			= buildMenuPointers.torque->value;
 		NewCreature::brainMutations = buildMenuPointers.mutations->value;
 
-		if (buildMenuPointers.simulate->state)
+		if (buildMenuPointers.simulate->state & simulation.frame % 30)
 		{
 			leadCreature.x		  = creatures.front().rect[0]->position.x;
 			leadCreature.creature = &creatures.front();
