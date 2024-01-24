@@ -18,13 +18,13 @@
 
 agl::Circle	   *PhyCircle::circle;
 agl::Rectangle *PhyRect::rect;
-b2World		   *NewCreature::world;
+World		   *NewCreature::world;
 PhyRect		   *NewCreature::grund;
 Environment	   *NewCreature::env;
 float			NewCreature::torque;
 int				NewCreature::brainMutations;
 
-#define TIMEPERGEN 600
+#define TIMEPERGEN 6000000
 
 class Listener
 {
@@ -569,23 +569,23 @@ int main()
 			TextElement			  *t20;
 	} buildMenuPointers;
 
-	Menu buildMenu("buildMenu", 500,														   //
-				   FieldElement<int>{"Creatures", (5)},										   //
-				   FieldElement<float>{"simCycles", 1.0},									   //
-				   ButtonElement<Toggle>{"Show Lead Creature Only"},						   //
+	Menu buildMenu("buildMenu", 500,													 //
+				   FieldElement<int>{"Creatures", (1)},									 //
+				   FieldElement<float>{"simCycles", 1.0},								 //
+				   ButtonElement<Toggle>{"Show Lead Creature Only"},					 //
 				   ButtonElement<Toggle>{"Save Lead Creature (overwrites creature.vt)"}, //
-				   FieldElement<float>{"gravX", 0.0},										   //
-				   FieldElement<float>{"gravY", 0.3},										   //
-				   FieldElement<float>{"drag", 0.4},										   //
-				   FieldElement<float>{"torque", 100},										   //
-				   FieldElement<int>{"brainMutations", 10},									   //
-				   ButtonElement<Hold>{"Load creature.vt"},									   //
-				   ButtonElement<Toggle>{"HaveGround?"},									   //
-				   ButtonElement<Toggle>{"SIMULATE"},										   //
-				   ButtonElement<Toggle>{"PAUSE"},											   //
-				   TextElement("Instructions"),												   //
-				   TextElement("1) Design a creature"),										   //
-				   TextElement("    Click a body part to select it"),						   //
+				   FieldElement<float>{"gravX", 0.0},									 //
+				   FieldElement<float>{"gravY", 0.01},									 //
+				   FieldElement<float>{"drag", 0.4},									 //
+				   FieldElement<float>{"torque", 100},									 //
+				   FieldElement<int>{"brainMutations", 10},								 //
+				   ButtonElement<Hold>{"Load creature.vt"},								 //
+				   ButtonElement<Toggle>{"HaveGround?"},								 //
+				   ButtonElement<Toggle>{"SIMULATE"},									 //
+				   ButtonElement<Toggle>{"PAUSE"},										 //
+				   TextElement("Instructions"),											 //
+				   TextElement("1) Design a creature"),									 //
+				   TextElement("    Click a body part to select it"),					 //
 				   TextElement("    Click and drag as far as you want to make the body part long"),
 				   TextElement("    (use Q and E to change thickness)"),						  //
 				   TextElement("    Click again to finish building body part"),					  //
@@ -1271,12 +1271,15 @@ int main()
 
 	deadSim:;
 
+		simulation.pos =
+			getCursorScenePosition(event.getPointerWindowPosition(), windowSize, sizeMultiplier, cameraPosition);
+
 		// camera movement
 
 		static agl::Vec<float, 2> cameraOffset;
 		static agl::Vec<float, 2> startPos;
 
-		if (!buildMenuPointers.simulate->state || buildMenuPointers.pause->state)
+		if (!buildMenuPointers.simulate->state || buildMenuPointers.pause->state || true)
 		{
 			if (event.isPointerButtonPressed(agl::Button::Middle))
 			{

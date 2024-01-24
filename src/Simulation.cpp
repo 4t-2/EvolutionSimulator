@@ -36,8 +36,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	env.setupGrid(simulationRules.size, simulationRules.gridResolution);
 
-	phyWorld = new b2World(PhysicsObj::scaleGrav(gravity));
-	phyWorld->SetContactFilter(&filter);
+	phyWorld = new World(PhysicsObj::scaleGrav(gravity));
 
 	// {
 	// 	auto &a	   = env.addEntity<PhyCircle>();
@@ -405,7 +404,8 @@ void Simulation::updateSimulation()
 
 	env.clearGrid();
 
-	phyWorld->Step(1, 8, 3);
+	phyWorld->mpos = pos;
+	phyWorld->Step();
 
 	env.selfUpdate<PhyCircle>([gravity = gravity](PhyCircle &o) {});
 	env.selfUpdate<PhyRect>([gravity = gravity, density = density](PhyRect &o) {
@@ -432,7 +432,7 @@ void Simulation::updateSimulation()
 			agl::Vec<float, 2> drag1 = velNor * (-velMag * velMag * density * side1);
 			agl::Vec<float, 2> drag2 = velNor * (-velMag * velMag * density * side2);
 
-			o.phyBody->ApplyForceToCenter(PhysicsObj::scaleForce(drag1 + drag2), true);
+			// o.phyBody->ApplyForceToCenter(PhysicsObj::scaleForce(drag1 + drag2), true);
 		}
 
 		{

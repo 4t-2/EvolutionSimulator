@@ -36,7 +36,7 @@ class Simulation
 		SimulationRules simulationRules;
 		Environment		env;
 
-		b2World *phyWorld;
+		World *phyWorld;
 		PhyRect *grund;
 
 		agl::Vec<float, 2> gravity;
@@ -58,6 +58,8 @@ class Simulation
 		float &leachVol				= simulationRules.leachVol;
 		float &damage				= simulationRules.damage;
 		float &energyCostMultiplier = simulationRules.energyCostMultiplier;
+
+		agl::Vec<float, 2> pos;
 
 		Simulation()
 		{

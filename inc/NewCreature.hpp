@@ -37,7 +37,7 @@ class NewCreature
 		int				indexOfSelected = -1;
 		static PhyRect *grund;
 
-		static b2World	   *world;
+		static World *world;
 		static Environment *env;
 
 		static float torque;
@@ -68,7 +68,7 @@ class NewCreature
 		{
 			for (PhyRect *&o : rect)
 			{
-				bool intersect = o->phyBody->GetFixtureList()[0].TestPoint(PhysicsObj::scalePos(pos));
+				bool intersect = o->phyBody->pointInside(PhysicsObj::scalePos(pos));
 
 				if (intersect)
 				{
@@ -107,7 +107,7 @@ class NewCreature
 				{
 					auto s = j.start;
 
-					world->DestroyJoint(j.joint);
+					// world->DestroyJoint(j.joint);
 
 					it--;
 					joint.erase(std::next(it, 1));
@@ -154,7 +154,7 @@ class NewCreature
 			rectDefs.push_back({size, pos, rotation, r.realColor});
 
 			rect.emplace_back(&r);
-
+return;
 			agl::Vec<float, 2> lcoal1 = globalStart - selected->position;
 
 			agl::Mat4f rot;
@@ -175,7 +175,7 @@ class NewCreature
 		{
 			if (selected != nullptr)
 			{
-				return selected->phyBody->GetFixtureList()[0].TestPoint(PhysicsObj::scalePos(pos));
+				return selected->phyBody->pointInside(PhysicsObj::scalePos(pos));
 			}
 			else
 			{
@@ -269,27 +269,27 @@ class NewCreature
 
 			for (int i = 0; i < rect.size(); i++)
 			{
-				for (b2ContactEdge *ce = rect[i]->phyBody->GetContactList(); ce; ce = ce->next)
-				{
-					b2Contact *c = ce->contact;
-
-					if (grund != nullptr)
-					{
-						if (ce->other == grund->phyBody)
-						{
-							network->setInputNode(node, 1);
-							break;
-						}
-						else
-						{
-							network->setInputNode(node, 0);
-						}
-					}
-					else
-					{
-						network->setInputNode(node, 0);
-					}
-				}
+				// for (b2ContactEdge *ce = rect[i]->phyBody->GetContactList(); ce; ce = ce->next)
+				// {
+				// 	b2Contact *c = ce->contact;
+				//
+				// 	if (grund != nullptr)
+				// 	{
+				// 		if (ce->other == grund->phyBody)
+				// 		{
+				// 			network->setInputNode(node, 1);
+				// 			break;
+				// 		}
+				// 		else
+				// 		{
+				// 			network->setInputNode(node, 0);
+				// 		}
+				// 	}
+				// 	else
+				// 	{
+				// 		network->setInputNode(node, 0);
+				// 	}
+				// }
 
 				node++;
 			}
@@ -310,7 +310,7 @@ class NewCreature
 					float ang = joint[i].joint->GetJointAngle();
 					float net = network->outputNode[i].value * (PI / 2);
 
-					// net = sin(frame / 10.);
+					net = sin(frame / 10.);
 
 					joint[i].joint->SetMotorSpeed((1. / 6) * (net - ang));
 				}
