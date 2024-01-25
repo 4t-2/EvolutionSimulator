@@ -198,9 +198,9 @@ return;
 		void def()
 		{
 			auto &a = env->addEntity<PhyRect>();
-			a.setup({30, 30}, {0, 0}, 0, *world, b2_dynamicBody, id);
+			a.setup({30, 30}, {0, 0}, PI / 3, *world, b2_dynamicBody, id);
 
-			rectDefs.push_back({{30, 30}, {0, 0}, 0, agl::Color::White});
+			rectDefs.push_back({{30, 30}, {0, 0}, PI / 3, agl::Color::White});
 			rect.emplace_back(&a);
 
 			taintedNetwork = true;

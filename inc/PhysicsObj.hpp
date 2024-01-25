@@ -11,19 +11,20 @@
 class NewBox
 {
 	public:
-		bool			   dynamic		   = false;
-		agl::Vec<float, 2> position		   = {0, 0};
-		agl::Vec<float, 2> size			   = {0, 0};
-		agl::Vec<float, 2> posOffset	   = {0, 0};
-		agl::Vec<float, 2> velocity		   = {0, 0};
-		agl::Vec<float, 2> acceleration	   = {0, 0};
-		float			   mass			   = 1;
-		float			   rotation		   = 0;
-		float			   angularVelocity = 0;
-		float			   inertia		   = 1;
-		float			   invMass		   = 1;
-		float			   invInertia	   = 1;
-		float			   angularForce	   = 0;
+		bool			   dynamic			   = false;
+		agl::Vec<float, 2> position			   = {0, 0};
+		agl::Vec<float, 2> size				   = {0, 0};
+		agl::Vec<float, 2> posOffset		   = {0, 0};
+		agl::Vec<float, 2> velocity			   = {0, 0};
+		agl::Vec<float, 2> acceleration		   = {0, 0};
+		float			   mass				   = 1;
+		float			   rotation			   = 0;
+		float			   angularVelocity	   = 0;
+		float			   inertia			   = 1;
+		float			   invMass			   = 1;
+		float			   invInertia		   = 1;
+		float			   angularAcceleration = 0;
+		int				   totalContacts	   = 0;
 
 		agl::Vec<float, 2> GetPosition()
 		{
@@ -78,12 +79,14 @@ class NewBox
 		}
 		void updatePhysics()
 		{
-			velocity		= velocity + acceleration;
-			angularVelocity = angularVelocity + (angularForce * invInertia);
-			acceleration	= {0, 0};
-			angularForce	= 0;
+			velocity			= velocity + acceleration;
+			angularVelocity		= angularVelocity + angularAcceleration;
+			acceleration		= {0, 0};
+			angularAcceleration = 0;
 
 			position = position + velocity;
+			position += posOffset;
+			posOffset = {0, 0};
 
 			rotation += angularVelocity;
 		}
@@ -122,6 +125,19 @@ class World
 		agl::Vec<float, 2> grav;
 
 		agl::Vec<float, 2> mpos;
+
+		struct Collision
+		{
+				NewBox			  *b1;
+				NewBox			  *b2;
+				agl::Vec<float, 2> inter1  = {0, 0};
+				agl::Vec<float, 2> inter2  = {0, 0};
+				agl::Vec<float, 2> normal  = {0, 0};
+				bool			   collide = false;
+				float			   depth   = 0;
+		};
+
+		std::list<Collision> collisionList;
 
 		World(b2Vec2 grav)
 		{
@@ -174,20 +190,21 @@ class World
 		{
 			stuff.emplace_back();
 
+			stuff.back().position.x = def->position.x;
+			stuff.back().position.y = def->position.y;
+			stuff.back().size.x		= size.x;
+			stuff.back().size.y		= size.y;
+
 			if (def->type == b2_dynamicBody)
 			{
 				stuff.back().dynamic = true;
+				stuff.back().setMass(1);
 			}
 			else
 			{
 				stuff.back().dynamic = false;
 				stuff.back().setMass(0);
 			}
-
-			stuff.back().position.x = def->position.x;
-			stuff.back().position.y = def->position.y;
-			stuff.back().size.x		= size.x;
-			stuff.back().size.y		= size.y;
 
 			return &stuff.back();
 		}
@@ -241,14 +258,6 @@ class World
 			return normal;
 		}
 
-		struct Collision
-		{
-				agl::Vec<float, 2> inter1  = {0, 0};
-				agl::Vec<float, 2> inter2  = {0, 0};
-				agl::Vec<float, 2> normal  = {0, 0};
-				bool			   collide = false;
-		};
-
 		struct PolyShape
 		{
 				std::vector<agl::Vec<float, 2>> points;
@@ -257,27 +266,27 @@ class World
 
 		void boxToPoly(NewBox &b1, PolyShape &shape)
 		{
+			agl::Mat4f rot;
+			rot.rotateZ(b1.radToDeg());
+
 			shape.points.resize(4);
-			shape.points[0] = b1.position + agl::Vec<float, 2>{-b1.size.x, -b1.size.y} / 2;
-			shape.points[1] = b1.position + agl::Vec<float, 2>{b1.size.x, -b1.size.y} / 2;
-			shape.points[2] = b1.position + agl::Vec<float, 2>{b1.size.x, b1.size.y} / 2;
-			shape.points[3] = b1.position + agl::Vec<float, 2>{-b1.size.x, b1.size.y} / 2;
+			shape.points[0] = b1.position + rot * agl::Vec<float, 2>{-b1.size.x, -b1.size.y} / 2;
+			shape.points[1] = b1.position + rot * agl::Vec<float, 2>{b1.size.x, -b1.size.y} / 2;
+			shape.points[2] = b1.position + rot * agl::Vec<float, 2>{b1.size.x, b1.size.y} / 2;
+			shape.points[3] = b1.position + rot * agl::Vec<float, 2>{-b1.size.x, b1.size.y} / 2;
 
 			shape.normals.resize(4);
-			shape.normals[0] = {0, -1};
-			shape.normals[1] = {1, 0};
-			shape.normals[2] = {0, 1};
-			shape.normals[3] = {-1, 0};
-		}
-
-		void checkCollision(NewBox &b1, NewBox &b2)
-		{
+			shape.normals[0] = rot * agl::Vec<float, 2>{0, -1};
+			shape.normals[1] = rot * agl::Vec<float, 2>{1, 0};
+			shape.normals[2] = rot * agl::Vec<float, 2>{0, 1};
+			shape.normals[3] = rot * agl::Vec<float, 2>{-1, 0};
 		}
 
 		struct BareData
 		{
 				agl::Vec<float, 2> normal;
 				agl::Vec<float, 2> online;
+				float			   depth = 0;
 		};
 
 		bool pointInBox(PolyShape &shape, agl::Vec<float, 2> point, BareData &bare)
@@ -310,6 +319,7 @@ class World
 				{
 					bare.online = online;
 					bare.normal = shape.normals[index];
+					bare.depth	= depth;
 					return true;
 				}
 			}
@@ -317,15 +327,51 @@ class World
 			return false;
 		}
 
-		void resolve(NewBox &b1, NewBox &b2, Collision &collision)
+		agl::Vec<float, 2> perp(agl::Vec<float, 2> vec)
 		{
-			float restitution = 1;
-			auto  top		  = (b1.velocity - (b2.velocity) * -(1 + restitution)).dot(collision.normal);
-			auto  bottom	  = collision.normal.dot(collision.normal * (b1.invMass + b2.invMass));
-			float impulse	  = top / bottom;
+			return {-vec.y, vec.x};
+		}
 
-			b1.acceleration += collision.normal * (impulse * b1.invMass);
-			b2.acceleration -= collision.normal * (impulse * b2.invMass);
+		void resolve(NewBox &b1, NewBox &b2, Collision &collision, int divider)
+		{
+			agl::Vec<float, 2> rp1 = perp(b1.position - collision.inter1);
+			agl::Vec<float, 2> rp2 = perp(b2.position - collision.inter2);
+			agl::Vec<float, 2> relVel =
+				(b1.velocity + (rp1 * b1.angularVelocity)) - (b2.velocity + (rp2 * b2.angularVelocity));
+
+			float restitution = 1;
+			auto  top		  = (relVel * -(1 + restitution)).dot(collision.normal);
+
+			float botl1 = std::pow(rp1.dot(collision.normal), 2) * b1.invInertia;
+			float botl2 = std::pow(rp2.dot(collision.normal), 2) * b2.invInertia;
+
+			auto  bottom  = collision.normal.dot(collision.normal * (b1.invMass + b2.invMass)) + botl1 + botl2;
+			float impulse = top / bottom;
+
+			impulse /= divider;
+
+			agl::Vec<float, 2> acc1 = collision.normal * (impulse * b1.invMass);
+			agl::Vec<float, 2> acc2 = collision.normal * (impulse * -b2.invMass);
+			b1.acceleration += acc1;
+			b2.acceleration += acc2;
+
+			b1.angularAcceleration += rp1.dot(collision.normal * impulse) * b1.invInertia;
+			b2.angularAcceleration += rp2.dot(collision.normal * -impulse) * b2.invInertia;
+
+			if (b1.dynamic && b2.dynamic)
+			{
+				float total = b1.dynamic + b2.dynamic;
+				b1.posOffset -= collision.normal * collision.depth * (b2.dynamic / total);
+				b2.posOffset += collision.normal * collision.depth * (b1.dynamic / total);
+			}
+			else if (b1.dynamic)
+			{
+				b1.posOffset -= collision.normal * collision.depth;
+			}
+			else
+			{
+				b2.posOffset += collision.normal * collision.depth;
+			}
 		}
 
 		void collide(NewBox &b1, NewBox &b2)
@@ -341,18 +387,26 @@ class World
 				pointInBox(s2, mpos / SIMSCALE, b);
 			}
 
+			std::vector<Collision> collision;
+
 			for (agl::Vec<float, 2> &point : s2.points)
 			{
 				BareData bare;
 				if (pointInBox(s1, point, bare))
 				{
-					Collision c;
-					c.normal = bare.normal;
-					c.inter1 = point;
-					c.inter2 = bare.online;
-					resolve(b1, b2, c);
-                    return;
+					collision.emplace_back();
+					collision.back().b1		= &b1;
+					collision.back().b2		= &b2;
+					collision.back().normal = bare.normal;
+					collision.back().inter1 = bare.online;
+					collision.back().inter2 = point;
+					collision.back().depth	= bare.depth;
 				}
+			}
+
+			for (Collision &c : collision)
+			{
+				resolve(b1, b2, c, collision.size());
 			}
 		}
 
@@ -516,7 +570,8 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 			fixtureDef.filter.groupIndex = groupIndex;
 
 			// Now we have a body for our Box object
-			phyBody = world.CreateBody(&bodyDef, size / SIMSCALE);
+			phyBody			  = world.CreateBody(&bodyDef, size / SIMSCALE);
+			phyBody->rotation = rotation;
 
 			this->size = size;
 

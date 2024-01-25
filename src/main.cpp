@@ -1231,7 +1231,7 @@ int main()
 
 					float forceScalar = leftMenuPointers.forceMultiplier->value / distance * distance;
 
-					agl::Vec<float, 2> force = offset.normalized() * forceScalar * 50;
+					agl::Vec<float, 2> force = offset.normalized() * forceScalar * 5;
 
 					obj.phyBody->ApplyForceToCenter(PhysicsObj::scaleForce(force), true);
 				},
