@@ -11,6 +11,7 @@
 class NewBox
 {
 	public:
+		bool			   forcable			   = false;
 		bool			   dynamic			   = false;
 		agl::Vec<float, 2> position			   = {0, 0};
 		agl::Vec<float, 2> size				   = {0, 0};
@@ -267,7 +268,7 @@ class World
 		void boxToPoly(NewBox &b1, PolyShape &shape)
 		{
 			agl::Mat4f rot;
-			rot.rotateZ(b1.radToDeg());
+			rot.rotateZ(-b1.radToDeg());
 
 			shape.points.resize(4);
 			shape.points[0] = b1.position + rot * agl::Vec<float, 2>{-b1.size.x, -b1.size.y} / 2;
@@ -289,7 +290,8 @@ class World
 				float			   depth = 0;
 		};
 
-		bool pointInBox(PolyShape &shape, agl::Vec<float, 2> point, BareData &bare)
+		template <bool useBare = true>
+		bool pointInBox(PolyShape &shape, agl::Vec<float, 2> point, BareData &bare = *(BareData *)nullptr)
 		{
 			float			   depth = MAXFLOAT;
 			int				   index = 0;
@@ -309,17 +311,28 @@ class World
 
 				float d = (c - point).length();
 
-				if (d < depth)
+				if constexpr (useBare)
 				{
-					index  = i;
-					online = c;
-					depth  = d;
+					if (d < depth)
+					{
+						index  = i;
+						online = c;
+						depth  = d;
+					}
 				}
 				if (i == shape.points.size() - 1)
 				{
-					bare.online = online;
-					bare.normal = shape.normals[index];
-					bare.depth	= depth;
+					if constexpr (useBare)
+					{
+						std::cout << "\nPOINT FOUND IN" << '\n';
+						std::cout << "online " << online << '\n';
+						std::cout << "normal " << shape.normals[index] << '\n';
+						std::cout << "depth " << depth << '\n';
+						std::cout << "point " << point << '\n';
+						bare.online = online;
+						bare.normal = shape.normals[index];
+						bare.depth	= depth;
+					}
 					return true;
 				}
 			}
@@ -332,45 +345,45 @@ class World
 			return {-vec.y, vec.x};
 		}
 
-		void resolve(NewBox &b1, NewBox &b2, Collision &collision, int divider)
+		void resolve(Collision &collision, int divider)
 		{
-			agl::Vec<float, 2> rp1 = perp(b1.position - collision.inter1);
-			agl::Vec<float, 2> rp2 = perp(b2.position - collision.inter2);
+			agl::Vec<float, 2> rp1 = perp(collision.b1->position - collision.inter1);
+			agl::Vec<float, 2> rp2 = perp(collision.b2->position - collision.inter2);
 			agl::Vec<float, 2> relVel =
-				(b1.velocity + (rp1 * b1.angularVelocity)) - (b2.velocity + (rp2 * b2.angularVelocity));
+				(collision.b1->velocity + (rp1 * -collision.b1->angularVelocity)) - (collision.b2->velocity + (rp2 * -collision.b2->angularVelocity));
 
-			float restitution = 1;
+			float restitution = .1;
 			auto  top		  = (relVel * -(1 + restitution)).dot(collision.normal);
 
-			float botl1 = std::pow(rp1.dot(collision.normal), 2) * b1.invInertia;
-			float botl2 = std::pow(rp2.dot(collision.normal), 2) * b2.invInertia;
+			float botl1 = std::pow(rp1.dot(collision.normal), 2) * collision.b1->invInertia;
+			float botl2 = std::pow(rp2.dot(collision.normal), 2) * collision.b2->invInertia;
 
-			auto  bottom  = collision.normal.dot(collision.normal * (b1.invMass + b2.invMass)) + botl1 + botl2;
+			auto  bottom  = collision.normal.dot(collision.normal * (collision.b1->invMass + collision.b2->invMass)) + botl1 + botl2;
 			float impulse = top / bottom;
 
 			impulse /= divider;
 
-			agl::Vec<float, 2> acc1 = collision.normal * (impulse * b1.invMass);
-			agl::Vec<float, 2> acc2 = collision.normal * (impulse * -b2.invMass);
-			b1.acceleration += acc1;
-			b2.acceleration += acc2;
+			agl::Vec<float, 2> acc1 = collision.normal * (impulse * collision.b1->invMass);
+			agl::Vec<float, 2> acc2 = collision.normal * (impulse * -collision.b2->invMass);
+			collision.b1->acceleration += acc1;
+			collision.b2->acceleration += acc2;
 
-			b1.angularAcceleration += rp1.dot(collision.normal * impulse) * b1.invInertia;
-			b2.angularAcceleration += rp2.dot(collision.normal * -impulse) * b2.invInertia;
+			collision.b1->angularAcceleration -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
+			collision.b2->angularAcceleration += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
 
-			if (b1.dynamic && b2.dynamic)
+			if (collision.b1->dynamic && collision.b2->dynamic)
 			{
-				float total = b1.dynamic + b2.dynamic;
-				b1.posOffset -= collision.normal * collision.depth * (b2.dynamic / total);
-				b2.posOffset += collision.normal * collision.depth * (b1.dynamic / total);
+				float total = collision.b1->mass + collision.b2->mass;
+				collision.b1->posOffset -= collision.normal * collision.depth * (collision.b2->mass / total);
+				collision.b2->posOffset += collision.normal * collision.depth * (collision.b1->mass / total);
 			}
-			else if (b1.dynamic)
+			else if (collision.b1->dynamic)
 			{
-				b1.posOffset -= collision.normal * collision.depth;
+				collision.b1->posOffset -= collision.normal * collision.depth;
 			}
 			else
 			{
-				b2.posOffset += collision.normal * collision.depth;
+				collision.b2->posOffset += collision.normal * collision.depth;
 			}
 		}
 
@@ -382,31 +395,36 @@ class World
 			boxToPoly(b1, s1);
 			boxToPoly(b2, s2);
 
-			{
-				BareData b;
-				pointInBox(s2, mpos / SIMSCALE, b);
-			}
-
 			std::vector<Collision> collision;
 
-			for (agl::Vec<float, 2> &point : s2.points)
-			{
-				BareData bare;
-				if (pointInBox(s1, point, bare))
+			auto compCol = [&](NewBox &a, NewBox &b, PolyShape &sa, PolyShape &sb) {
+				for (agl::Vec<float, 2> &point : sb.points)
 				{
-					collision.emplace_back();
-					collision.back().b1		= &b1;
-					collision.back().b2		= &b2;
-					collision.back().normal = bare.normal;
-					collision.back().inter1 = bare.online;
-					collision.back().inter2 = point;
-					collision.back().depth	= bare.depth;
+					BareData bare;
+					if (pointInBox(sa, point, bare))
+					{
+						collision.emplace_back();
+						collision.back().b1		= &a;
+						collision.back().b2		= &b;
+						collision.back().normal = bare.normal;
+						collision.back().inter1 = bare.online;
+						collision.back().inter2 = point;
+						collision.back().depth	= bare.depth;
+					}
+
+					if (pointInBox(sa, mpos / SIMSCALE, bare))
+					{
+						std::cout << bare.normal << '\n';
+					}
 				}
-			}
+			};
+
+			compCol(b1, b2, s1, s2);
+			compCol(b2, b1, s2, s1);
 
 			for (Collision &c : collision)
 			{
-				resolve(b1, b2, c, collision.size());
+				resolve(c, collision.size());
 			}
 		}
 

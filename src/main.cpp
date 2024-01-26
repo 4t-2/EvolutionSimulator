@@ -1226,6 +1226,10 @@ int main()
 
 			simulation.env.getArea<PhyRect>(
 				[&](PhyRect &obj) {
+					if (!obj.phyBody->forcable)
+					{
+						return;
+					}
 					agl::Vec<float, 2> offset	= obj.position - cursorRelPos;
 					float			   distance = offset.length();
 

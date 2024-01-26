@@ -68,7 +68,9 @@ class NewCreature
 		{
 			for (PhyRect *&o : rect)
 			{
-				bool intersect = o->phyBody->pointInside(PhysicsObj::scalePos(pos));
+                World::PolyShape s;
+                world->boxToPoly(*o->phyBody, s);
+				bool intersect = world->pointInBox<false>(s, pos/ SIMSCALE);
 
 				if (intersect)
 				{
@@ -150,6 +152,7 @@ class NewCreature
 						   (unsigned char)(255 * ((float)rand() / (float)RAND_MAX)),
 						   (unsigned char)(255 * ((float)rand() / (float)RAND_MAX))};
 			r.color		= r.realColor;
+            r.phyBody->forcable = true;
 
 			rectDefs.push_back({size, pos, rotation, r.realColor});
 
@@ -175,7 +178,10 @@ return;
 		{
 			if (selected != nullptr)
 			{
-				return selected->phyBody->pointInside(PhysicsObj::scalePos(pos));
+                World::PolyShape s;
+                world->boxToPoly(*selected->phyBody, s);
+				bool intersect = world->pointInBox<false>(s, pos/ SIMSCALE);
+				return intersect;
 			}
 			else
 			{
