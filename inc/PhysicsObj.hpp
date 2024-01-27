@@ -26,7 +26,7 @@ class NewBox
 		float			   invInertia		   = 1;
 		float			   angularAcceleration = 0;
 		int				   totalContacts	   = 0;
-        float rotOffset = 0;
+		float			   rotOffset		   = 0;
 
 		NewBox			  *rootConnect = nullptr;
 		agl::Vec<float, 2> local1;
@@ -95,8 +95,8 @@ class NewBox
 			posOffset = {0, 0};
 
 			rotation += angularVelocity;
-            rotation += rotOffset;
-            rotOffset = 0;
+			rotation += rotOffset;
+			rotOffset = 0;
 		}
 
 		void SetTransform(agl::Vec<float, 2> pos, float rot)
@@ -303,8 +303,8 @@ class World
 				agl::Vec<float, 2> normal;
 				agl::Vec<float, 2> online;
 				float			   depth = 0;
-                agl::Vec<float, 2> inter1;
-                agl::Vec<float, 2> inter2;
+				agl::Vec<float, 2> inter1;
+				agl::Vec<float, 2> inter2;
 		};
 
 		float cross2D(agl::Vec<float, 2> a, agl::Vec<float, 2> b)
@@ -316,6 +316,20 @@ class World
 		{
 			b.acceleration += force * b.invMass;
 			b.angularAcceleration += cross2D(point - b.position, force) * b.invInertia;
+		}
+
+		void motor(NewBox &b1)
+		{
+			float m_motorSpeed = .01;
+			float wB		   = b1.rootConnect->angularVelocity;
+			float wA		   = b1.angularVelocity;
+			float m_axialMass  = b1.invInertia + b1.rootConnect->invInertia;
+
+			float Cdot	  = wB - wA - m_motorSpeed;
+			float impulse = -m_axialMass * Cdot;
+
+			b1.angularAcceleration -= impulse * b1.invMass;
+			b1.rootConnect->angularAcceleration += impulse * b1.rootConnect->invInertia;
 		}
 
 		void processJoint(NewBox &b1, BareData &bare)
@@ -333,8 +347,10 @@ class World
 
 			bare.normal = normal;
 			bare.depth	= dist;
-            bare.inter1 = local1;
-            bare.inter2 = local2;
+			bare.inter1 = local1;
+			bare.inter2 = local2;
+
+			motor(b1);
 		}
 
 		template <bool useBare = true>
@@ -409,9 +425,9 @@ class World
 			agl::Vec<float, 2> acc2 = collision.normal * (impulse * -collision.b2->invMass);
 			collision.b1->posOffset += acc1;
 			collision.b2->posOffset += acc2;
-            std::cout << offset << '\n';
-            std::cout << acc1 << '\n';
-            std::cout << acc2 << '\n';
+			std::cout << offset << '\n';
+			std::cout << acc1 << '\n';
+			std::cout << acc2 << '\n';
 			collision.b1->rotOffset -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
 			collision.b2->rotOffset += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
 		}
@@ -443,15 +459,17 @@ class World
 			collision.b1->angularAcceleration -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
 			collision.b2->angularAcceleration += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
 
-            testRes(collision, divider);
+			testRes(collision, divider);
 			// if (collision.offset)
 			// {
 			//
 			// 	if (collision.b1->dynamic && collision.b2->dynamic)
 			// 	{
 			// 		float total = collision.b1->mass + collision.b2->mass;
-			// 		collision.b1->posOffset -= collision.normal * collision.depth * (collision.b2->mass / total);
-			// 		collision.b2->posOffset += collision.normal * collision.depth * (collision.b1->mass / total);
+			// 		collision.b1->posOffset -= collision.normal * collision.depth *
+			// (collision.b2->mass / total); 		collision.b2->posOffset +=
+			// collision.normal
+			// * collision.depth * (collision.b1->mass / total);
 			// 	}
 			// 	else if (collision.b1->dynamic)
 			// 	{
