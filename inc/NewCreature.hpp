@@ -157,8 +157,8 @@ class NewCreature
 			rectDefs.push_back({size, pos, rotation, r.realColor});
 
 			rect.emplace_back(&r);
-return;
-			agl::Vec<float, 2> lcoal1 = globalStart - selected->position;
+			
+            agl::Vec<float, 2> lcoal1 = globalStart - selected->position;
 
 			agl::Mat4f rot;
 			rot.rotateZ(agl::radianToDegree(-selected->rotation));
@@ -267,9 +267,9 @@ return;
 
 			for (int i = 0; i < joint.size(); i++)
 			{
-				network->setInputNode(node, joint[i].joint->GetJointAngle() / (PI / 2));
+				// network->setInputNode(node, joint[i].joint->GetJointAngle() / (PI / 2));
 				node++;
-				network->setInputNode(node, joint[i].joint->GetMotorSpeed() / (PI / 2));
+				// network->setInputNode(node, joint[i].joint->GetMotorSpeed() / (PI / 2));
 				node++;
 			}
 
@@ -313,12 +313,12 @@ return;
 				// }
 
 				{
-					float ang = joint[i].joint->GetJointAngle();
-					float net = network->outputNode[i].value * (PI / 2);
+					// float ang = joint[i].joint->GetJointAngle();
+					// float net = network->outputNode[i].value * (PI / 2);
 
-					net = sin(frame / 10.);
+					// net = sin(frame / 10.);
 
-					joint[i].joint->SetMotorSpeed((1. / 6) * (net - ang));
+					// joint[i].joint->SetMotorSpeed((1. / 6) * (net - ang));
 				}
 			}
 

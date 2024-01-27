@@ -432,7 +432,7 @@ void Simulation::updateSimulation()
 			agl::Vec<float, 2> drag1 = velNor * (-velMag * velMag * density * side1);
 			agl::Vec<float, 2> drag2 = velNor * (-velMag * velMag * density * side2);
 
-			// o.phyBody->ApplyForceToCenter(PhysicsObj::scaleForce(drag1 + drag2), true);
+			o.phyBody->ApplyForceToCenter(PhysicsObj::scaleForce(drag1 + drag2), true);
 		}
 
 		{
