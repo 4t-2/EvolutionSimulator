@@ -24,7 +24,7 @@ Environment	   *NewCreature::env;
 float			NewCreature::torque;
 int				NewCreature::brainMutations;
 
-#define TIMEPERGEN 6000000
+#define TIMEPERGEN 600
 
 class Listener
 {

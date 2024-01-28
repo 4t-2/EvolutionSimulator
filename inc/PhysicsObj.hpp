@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Environment.hpp"
+#include "other.hpp"
 #include <AGL/agl.hpp>
 #include <box2d/box2d.h>
 #include <chrono>
@@ -11,6 +12,7 @@
 class NewBox
 {
 	public:
+		int				   id				   = 0;
 		bool			   forcable			   = false;
 		bool			   dynamic			   = false;
 		agl::Vec<float, 2> position			   = {0, 0};
@@ -27,6 +29,8 @@ class NewBox
 		float			   angularAcceleration = 0;
 		int				   totalContacts	   = 0;
 		float			   rotOffset		   = 0;
+		float			   refRot			   = 0;
+		float			   motor			   = 0;
 
 		NewBox			  *rootConnect = nullptr;
 		agl::Vec<float, 2> local1;
@@ -97,6 +101,8 @@ class NewBox
 			rotation += angularVelocity;
 			rotation += rotOffset;
 			rotOffset = 0;
+
+			// rotation = loop(-PI, PI, rotation);
 		}
 
 		void SetTransform(agl::Vec<float, 2> pos, float rot)
@@ -139,14 +145,17 @@ class World
 			b1.rootConnect = &b2;
 			b1.local1	   = local1;
 			b1.local2	   = local2;
+			b1.refRot	   = b1.rotation - b2.rotation;
 		}
 
 		struct Collision
 		{
 				NewBox			  *b1;
 				NewBox			  *b2;
-				agl::Vec<float, 2> inter1  = {0, 0};
-				agl::Vec<float, 2> inter2  = {0, 0};
+				agl::Vec<float, 2> inter1 = {0, 0};
+				agl::Vec<float, 2> inter2 = {0, 0};
+				agl::Vec<float, 2> r1;
+				agl::Vec<float, 2> r2;
 				agl::Vec<float, 2> normal  = {0, 0};
 				bool			   collide = false;
 				float			   depth   = 0;
@@ -214,7 +223,7 @@ class World
 			if (def->type == b2_dynamicBody)
 			{
 				stuff.back().dynamic = true;
-				stuff.back().setMass(1);
+				stuff.back().setMass((size.x * size.y) * 10);
 			}
 			else
 			{
@@ -320,13 +329,10 @@ class World
 
 		void motor(NewBox &b1)
 		{
-			float m_motorSpeed = .01;
-			float wB		   = b1.rootConnect->angularVelocity;
-			float wA		   = b1.angularVelocity;
-			float m_axialMass  = b1.invInertia + b1.rootConnect->invInertia;
+			float vel = b1.rootConnect->angularVelocity - b1.angularVelocity;
+            float impulse = b1.motor - vel;
 
-			float Cdot	  = wB - wA - m_motorSpeed;
-			float impulse = -m_axialMass * Cdot;
+			// impulse = b1.motor;
 
 			b1.angularAcceleration -= impulse * b1.invMass;
 			b1.rootConnect->angularAcceleration += impulse * b1.rootConnect->invInertia;
@@ -405,8 +411,8 @@ class World
 
 		void testRes(Collision &collision, int divider)
 		{
-			agl::Vec<float, 2> rp1	  = perp(collision.b1->position - collision.inter1);
-			agl::Vec<float, 2> rp2	  = perp(collision.b2->position - collision.inter2);
+			agl::Vec<float, 2> rp1	  = perp(collision.r1);
+			agl::Vec<float, 2> rp2	  = perp(collision.r2);
 			agl::Vec<float, 2> offset = (collision.inter1 - collision.inter2);
 
 			float restitution = 0;
@@ -423,19 +429,17 @@ class World
 
 			agl::Vec<float, 2> acc1 = collision.normal * (impulse * collision.b1->invMass);
 			agl::Vec<float, 2> acc2 = collision.normal * (impulse * -collision.b2->invMass);
-			collision.b1->posOffset += acc1;
-			collision.b2->posOffset += acc2;
-			std::cout << offset << '\n';
-			std::cout << acc1 << '\n';
-			std::cout << acc2 << '\n';
-			collision.b1->rotOffset -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
-			collision.b2->rotOffset += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
+			collision.b1->position += acc1;
+			collision.b2->position += acc2;
+
+			collision.b1->rotation -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
+			collision.b2->rotation += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
 		}
 
 		void resolve(Collision &collision, int divider)
 		{
-			agl::Vec<float, 2> rp1	  = perp(collision.b1->position - collision.inter1);
-			agl::Vec<float, 2> rp2	  = perp(collision.b2->position - collision.inter2);
+			agl::Vec<float, 2> rp1	  = perp(collision.r1);
+			agl::Vec<float, 2> rp2	  = perp(collision.r2);
 			agl::Vec<float, 2> relVel = (collision.b1->velocity + (rp1 * -collision.b1->angularVelocity)) -
 										(collision.b2->velocity + (rp2 * -collision.b2->angularVelocity));
 
@@ -453,11 +457,11 @@ class World
 
 			agl::Vec<float, 2> acc1 = collision.normal * (impulse * collision.b1->invMass);
 			agl::Vec<float, 2> acc2 = collision.normal * (impulse * -collision.b2->invMass);
-			collision.b1->acceleration += acc1;
-			collision.b2->acceleration += acc2;
+			collision.b1->velocity += acc1;
+			collision.b2->velocity += acc2;
 
-			collision.b1->angularAcceleration -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
-			collision.b2->angularAcceleration += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
+			collision.b1->angularVelocity -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
+			collision.b2->angularVelocity += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
 
 			testRes(collision, divider);
 			// if (collision.offset)
@@ -505,6 +509,8 @@ class World
 						collision.back().inter1 = bare.online;
 						collision.back().inter2 = point;
 						collision.back().depth	= bare.depth;
+						collision.back().r1		= collision.back().b1->position - collision.back().inter1;
+						collision.back().r2		= collision.back().b2->position - collision.back().inter2;
 					}
 				}
 			};
@@ -523,10 +529,25 @@ class World
 					collision.back().inter1 = bare.inter1;
 					collision.back().inter2 = bare.inter2;
 					collision.back().depth	= bare.depth;
+					collision.back().r1		= collision.back().b1->position - collision.back().inter1;
+					collision.back().r2		= collision.back().b2->position - collision.back().inter2;
 				}
 			}
 			else if (b2.rootConnect == &b1)
 			{
+				BareData bare;
+				processJoint(b2, bare);
+
+				if (bare.depth != 0)
+				{
+					collision.emplace_back();
+					collision.back().b1		= &b2;
+					collision.back().b2		= &b1;
+					collision.back().normal = bare.normal;
+					collision.back().inter1 = bare.inter1;
+					collision.back().inter2 = bare.inter2;
+					collision.back().depth	= bare.depth;
+				}
 			}
 			else
 			{
@@ -536,20 +557,28 @@ class World
 
 			for (Collision &c : collision)
 			{
-				std::cout << "\nRESOLVE\n";
-				std::cout << "depth " << c.depth << '\n';
-				std::cout << "norm " << c.normal << '\n';
 				resolve(c, collision.size());
 			}
 		}
 
 		void Step()
 		{
+            for(auto &b: stuff)
+            {
+                if(b.rootConnect != nullptr)
+                {
+                    // motor(b);
+                }
+            }
+
 			for (auto x = stuff.begin(); x != stuff.end(); x++)
 			{
 				for (auto y = std::next(x, 1); y != stuff.end(); y++)
 				{
-					collide(*x, *y);
+					if (x->id == y->id)
+					{
+						collide(*x, *y);
+					}
 				}
 			}
 
@@ -704,6 +733,7 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 
 			// Now we have a body for our Box object
 			phyBody			  = world.CreateBody(&bodyDef, size / SIMSCALE);
+			phyBody->id		  = groupIndex;
 			phyBody->rotation = rotation;
 
 			this->size = size;
@@ -729,12 +759,13 @@ class PhyRect : public Entity<PhysicsObj, CanBeDrawn>
 class PhyJoint
 {
 	public:
-		b2RevoluteJoint *joint;
-		PhyRect			*start;
-		PhyRect			*end;
+		PhyRect *start;
+		PhyRect *end;
 
 		agl::Vec<float, 2> local1;
 		agl::Vec<float, 2> local2;
+
+		NewBox *b;
 
 		PhyJoint()
 		{
@@ -744,6 +775,7 @@ class PhyJoint
 				   float speed = PI / 50)
 		{
 			world.addJoint(*(rect1.phyBody), local1 / SIMSCALE, *(rect2.phyBody), local2 / SIMSCALE);
+			b = rect1.phyBody;
 
 			return;
 			start		 = &rect1;
@@ -773,6 +805,21 @@ class PhyJoint
 			revoluteJointDef.referenceAngle = rect1.rotation - rect2.rotation;
 
 			// joint = (b2RevoluteJoint *)world.CreateJoint(&revoluteJointDef);
+		}
+
+		float getAngle()
+		{
+			return loop(-PI, PI, (b->rotation - b->rootConnect->rotation) - b->refRot);
+		}
+
+		float getMotor()
+		{
+			return b->motor;
+		}
+
+		void setMotor(float m)
+		{
+			b->motor = m;
 		}
 };
 

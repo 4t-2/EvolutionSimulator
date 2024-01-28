@@ -166,6 +166,7 @@ class NewCreature
 			lcoal1 = rot * lcoal1;
 
 			joint.emplace_back();
+
 			joint[joint.size() - 1].setup(*selected, r, lcoal1, {0, size.y / -2}, *world);
 
 			jointDefs.push_back({indexOfSelected,
@@ -204,9 +205,9 @@ class NewCreature
 		void def()
 		{
 			auto &a = env->addEntity<PhyRect>();
-			a.setup({30, 30}, {0, 0}, PI / 3, *world, b2_dynamicBody, id);
+			a.setup({30, 30}, {0, 0}, 0, *world, b2_dynamicBody, id);
 
-			rectDefs.push_back({{30, 30}, {0, 0}, PI / 3, agl::Color::White});
+			rectDefs.push_back({{30, 30}, {0, 0}, 0, agl::Color::White});
 			rect.emplace_back(&a);
 
 			taintedNetwork = true;
@@ -267,9 +268,9 @@ class NewCreature
 
 			for (int i = 0; i < joint.size(); i++)
 			{
-				// network->setInputNode(node, joint[i].joint->GetJointAngle() / (PI / 2));
+				network->setInputNode(node, joint[i].getAngle() / (PI / 2));
 				node++;
-				// network->setInputNode(node, joint[i].joint->GetMotorSpeed() / (PI / 2));
+				network->setInputNode(node, joint[i].getMotor() / (PI / 2));
 				node++;
 			}
 
@@ -308,17 +309,22 @@ class NewCreature
 
 			for (int i = 0; i < network->structure.totalOutputNodes; i++)
 			{
-				// {
-				// 	joint[i].joint->SetMotorSpeed(network->outputNode[i].value / 6);
-				// }
+				{
+					// joint[i].setMotor(network->outputNode[i].value / 60);
+				}
 
 				{
-					// float ang = joint[i].joint->GetJointAngle();
-					// float net = network->outputNode[i].value * (PI / 2);
+					float ang = joint[i].getAngle();
+					float net = network->outputNode[i].value * (PI / 2);
 
-					// net = sin(frame / 10.);
+					// float net = sin(frame / 20.);
+                    // std::cout << ang << '\n';
+                    
+                    float diff = ang - net;
+                    // std::cout << diff << '\n';
 
-					// joint[i].joint->SetMotorSpeed((1. / 6) * (net - ang));
+					joint[i].setMotor((1. / 20) * diff);
+                    // std::cout << agl::radianToDegree(joint[i].getAngle()) << '\n';
 				}
 			}
 
