@@ -12,7 +12,8 @@ class Meat : public Entity<PhysicsObj>
 		Meat() : Entity<PhysicsObj>(exists, position)
 		{
 			mass   = 2;
-			radius = 5;
+			// radius = 5;
+            size = {5, 5};
 		}
 
 		float lifetime	= 0;

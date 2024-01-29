@@ -57,7 +57,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->biomass		= 0;
 	this->energyDensity = 0.0;
 
-	this->radius = 12.5 * size;
+	// this->radius = 12.5 * size;
 
 	this->eggHealthCost = (this->maxHealth / 2);
 	this->eggEnergyCost = (this->maxEnergy / 10);
@@ -99,7 +99,7 @@ void Creature::clear()
 	velocity  = {0, 0};
 	force	  = {0, 0};
 	rotation  = 0;
-	radius	  = 0;
+	// radius	  = 0;
 	network	  = nullptr;
 	eating	  = false;
 	layingEgg = false;

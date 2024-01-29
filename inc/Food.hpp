@@ -9,13 +9,12 @@
 class Food : public Entity<PhysicsObj>
 {
 	public:
-        agl::Vec<float, 2> position;
-        bool exists;
+		agl::Vec<float, 2> position;
+		bool			   exists;
 
 		Food() : Entity<PhysicsObj>(exists, position)
 		{
-			mass   = 1;
-			radius = 5;
+            setup({0, 0}, {5, 5}, 1);
 		}
 
 		int	  id;
