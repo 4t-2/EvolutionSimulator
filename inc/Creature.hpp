@@ -30,7 +30,6 @@ class Creature : public Entity<PhysicsObj>
 	public:
         bool exists;
         agl::Vec<float, 2> position;
-		float rotation = 0;
 
 		RelPos creatureRelPos;
 		RelPos foodRelPos;
@@ -45,7 +44,7 @@ class Creature : public Entity<PhysicsObj>
 		
 		float sight = 0;
 		float speed = 0;
-		float size	= 0;
+		float sizeData	= 0;
 
 		// sight + (speed^2)(size^3)
 		float energy	= 0;

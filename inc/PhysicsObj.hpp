@@ -1,7 +1,14 @@
 #pragma once
 
 #include "Environment.hpp"
+#include "other.hpp"
 #include <AGL/agl.hpp>
+
+struct PolyShape
+{
+		std::vector<agl::Vec<float, 2>> points;
+		std::vector<agl::Vec<float, 2>> normals;
+};
 
 class PhysicsObj : public BaseEntity
 {
@@ -24,22 +31,24 @@ class PhysicsObj : public BaseEntity
 		float			   rotOffset		   = 0;
 		float			   refRot			   = 0;
 		float			   motor			   = 0;
-        agl::Vec<float, 2> force;
+		agl::Vec<float, 2> force;
 
 		PhysicsObj		  *rootConnect = nullptr;
 		agl::Vec<float, 2> local1;
 		agl::Vec<float, 2> local2;
 
+		PolyShape *shape;
+
 		PhysicsObj(bool &exists, agl::Vec<float, 2> &position) : BaseEntity(exists, position)
 		{
 		}
 
-        void setup(agl::Vec<float, 2> position, agl::Vec<float, 2> size, float mass)
-        {
-            this->position = position;
-            this->size = size;
-            setMass(mass);
-        }
+		void setup(agl::Vec<float, 2> position, agl::Vec<float, 2> size, float mass)
+		{
+			this->position = position;
+			this->size	   = size;
+			setMass(mass);
+		}
 
 		agl::Vec<float, 2> GetPosition()
 		{
@@ -92,6 +101,16 @@ class PhysicsObj : public BaseEntity
 		{
 			return agl::radianToDegree(rotation);
 		}
+
+		void syncOffsets()
+		{
+			position += posOffset;
+			rotation += rotOffset;
+
+			posOffset = {0, 0};
+			rotOffset = 0;
+		}
+
 		void updatePhysics()
 		{
 			velocity			= velocity + acceleration;
@@ -99,13 +118,10 @@ class PhysicsObj : public BaseEntity
 			acceleration		= {0, 0};
 			angularAcceleration = 0;
 
-			position = position + velocity;
-			position += posOffset;
-			posOffset = {0, 0};
-
+			position += velocity;
 			rotation += angularVelocity;
-			rotation += rotOffset;
-			rotOffset = 0;
+
+			syncOffsets();
 
 			// rotation = loop(-PI, PI, rotation);
 		}
@@ -120,25 +136,13 @@ class PhysicsObj : public BaseEntity
 		{
 			acceleration += force * invMass;
 		}
-};
 
-struct Collision
-{
-		PhysicsObj		  *b1;
-		PhysicsObj		  *b2;
-		agl::Vec<float, 2> inter1 = {0, 0};
-		agl::Vec<float, 2> inter2 = {0, 0};
-		agl::Vec<float, 2> r1;
-		agl::Vec<float, 2> r2;
-		agl::Vec<float, 2> normal  = {0, 0};
-		bool			   collide = false;
-		float			   depth   = 0;
-		bool			   offset  = true;
-};
+		void applyForce(PhysicsObj &b, agl::Vec<float, 2> force, agl::Vec<float, 2> point)
+		{
+			b.acceleration += force * b.invMass;
+			b.angularAcceleration += cross2D(point - b.position, force) * b.invInertia;
+		}
 
-class World
-{
-	public:
 		static void addJoint(PhysicsObj &b1, agl::Vec<float, 2> local1, PhysicsObj &b2, agl::Vec<float, 2> local2)
 		{
 			b1.rootConnect = &b2;
@@ -147,29 +151,55 @@ class World
 			b1.refRot	   = b1.rotation - b2.rotation;
 		}
 
-		static agl::Vec<float, 2> closestPointToLine(agl::Vec<float, 2> a, agl::Vec<float, 2> b, agl::Vec<float, 2> p)
+		void boxToPoly(PolyShape &shape)
 		{
-			auto ab = b - a;
-			auto ap = p - a;
+			agl::Mat4f rot;
+			rot.rotateZ(-radToDeg());
 
-			float proj	  = ap.dot(ab);
-			float abLenSq = ab.dot(ab);
-			float d		  = proj / abLenSq;
+			shape.points.resize(4);
+			shape.points[0] = position + rot * agl::Vec<float, 2>{-size.x, -size.y} / 2;
+			shape.points[1] = position + rot * agl::Vec<float, 2>{size.x, -size.y} / 2;
+			shape.points[2] = position + rot * agl::Vec<float, 2>{size.x, size.y} / 2;
+			shape.points[3] = position + rot * agl::Vec<float, 2>{-size.x, size.y} / 2;
 
-			if (d <= 0)
-			{
-				return a;
-			}
-			else if (d >= 1)
-			{
-				return b;
-			}
-			else
-			{
-				return a + ab * d;
-			}
+			shape.normals.resize(4);
+			shape.normals[0] = rot * agl::Vec<float, 2>{0, -1};
+			shape.normals[1] = rot * agl::Vec<float, 2>{1, 0};
+			shape.normals[2] = rot * agl::Vec<float, 2>{0, 1};
+			shape.normals[3] = rot * agl::Vec<float, 2>{-1, 0};
+
+			this->shape = &shape;
+		}
+};
+
+struct ConstraintFailure
+{
+		PhysicsObj		  *b1;
+		PhysicsObj		  *b2;
+		agl::Vec<float, 2> inter1 = {0, 0};
+		agl::Vec<float, 2> inter2 = {0, 0};
+		agl::Vec<float, 2> r1;
+		agl::Vec<float, 2> r2;
+		agl::Vec<float, 2> normal  = {0, 0};
+		float			   depth   = 0;
+		bool			   occured = false;
+};
+
+class CollisionConstraint
+{
+	public:
+		static ConstraintFailure probe(PhysicsObj &, PhysicsObj &)
+		{
 		}
 
+		static void solve()
+		{
+		}
+};
+
+class World
+{
+	public:
 		static agl::Vec<float, 2> AABBnormal(PhysicsObj &box1, PhysicsObj &box2)
 		{
 			// Calculate the half-sizes of the boxes
@@ -219,50 +249,6 @@ class World
 			return normal;
 		}
 
-		struct PolyShape
-		{
-				std::vector<agl::Vec<float, 2>> points;
-				std::vector<agl::Vec<float, 2>> normals;
-		};
-
-		static void boxToPoly(PhysicsObj &b1, PolyShape &shape)
-		{
-			agl::Mat4f rot;
-			rot.rotateZ(-b1.radToDeg());
-
-			shape.points.resize(4);
-			shape.points[0] = b1.position + rot * agl::Vec<float, 2>{-b1.size.x, -b1.size.y} / 2;
-			shape.points[1] = b1.position + rot * agl::Vec<float, 2>{b1.size.x, -b1.size.y} / 2;
-			shape.points[2] = b1.position + rot * agl::Vec<float, 2>{b1.size.x, b1.size.y} / 2;
-			shape.points[3] = b1.position + rot * agl::Vec<float, 2>{-b1.size.x, b1.size.y} / 2;
-
-			shape.normals.resize(4);
-			shape.normals[0] = rot * agl::Vec<float, 2>{0, -1};
-			shape.normals[1] = rot * agl::Vec<float, 2>{1, 0};
-			shape.normals[2] = rot * agl::Vec<float, 2>{0, 1};
-			shape.normals[3] = rot * agl::Vec<float, 2>{-1, 0};
-		}
-
-		struct BareData
-		{
-				agl::Vec<float, 2> normal;
-				agl::Vec<float, 2> online;
-				float			   depth = 0;
-				agl::Vec<float, 2> inter1;
-				agl::Vec<float, 2> inter2;
-		};
-
-		static float cross2D(agl::Vec<float, 2> a, agl::Vec<float, 2> b)
-		{
-			return a.x * b.y - a.y * b.x;
-		}
-
-		static void applyForce(PhysicsObj &b, agl::Vec<float, 2> force, agl::Vec<float, 2> point)
-		{
-			b.acceleration += force * b.invMass;
-			b.angularAcceleration += cross2D(point - b.position, force) * b.invInertia;
-		}
-
 		static void motor(PhysicsObj &b1)
 		{
 			float vel	  = b1.rootConnect->angularVelocity - b1.angularVelocity;
@@ -274,7 +260,7 @@ class World
 			b1.rootConnect->angularAcceleration += impulse * b1.rootConnect->invInertia;
 		}
 
-		static void processJoint(PhysicsObj &b1, BareData &bare)
+		static void processJoint(PhysicsObj &b1, ConstraintFailure &bare)
 		{
 			agl::Mat4f rot;
 			rot.rotateZ(-b1.radToDeg());
@@ -292,11 +278,12 @@ class World
 			bare.inter1 = local1;
 			bare.inter2 = local2;
 
-			motor(b1);
+			// motor(b1);
 		}
 
 		template <bool useBare = true>
-		static bool pointInBox(PolyShape &shape, agl::Vec<float, 2> point, BareData &bare = *(BareData *)nullptr)
+		static bool pointInBox(PolyShape &shape, agl::Vec<float, 2> point,
+							   ConstraintFailure &bare = *(ConstraintFailure *)nullptr)
 		{
 			float			   depth = MAXFLOAT;
 			int				   index = 0;
@@ -329,7 +316,8 @@ class World
 				{
 					if constexpr (useBare)
 					{
-						bare.online = online;
+						bare.inter1 = online;
+						bare.inter2 = point;
 						bare.normal = shape.normals[index];
 						bare.depth	= depth;
 					}
@@ -340,12 +328,7 @@ class World
 			return false;
 		}
 
-		static agl::Vec<float, 2> perp(agl::Vec<float, 2> vec)
-		{
-			return {-vec.y, vec.x};
-		}
-
-		static void testRes(Collision &collision, int divider)
+		static void testRes(ConstraintFailure &collision, int divider)
 		{
 			agl::Vec<float, 2> rp1	  = perp(collision.r1);
 			agl::Vec<float, 2> rp2	  = perp(collision.r2);
@@ -365,14 +348,15 @@ class World
 
 			agl::Vec<float, 2> acc1 = collision.normal * (impulse * collision.b1->invMass);
 			agl::Vec<float, 2> acc2 = collision.normal * (impulse * -collision.b2->invMass);
-			collision.b1->position += acc1;
-			collision.b2->position += acc2;
 
-			collision.b1->rotation -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
-			collision.b2->rotation += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
+			collision.b1->posOffset += acc1;
+			collision.b2->posOffset += acc2;
+
+			collision.b1->rotOffset -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
+			collision.b2->rotOffset += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
 		}
 
-		static void resolve(Collision &collision, int divider)
+		static void resolve(ConstraintFailure &collision, int divider)
 		{
 			agl::Vec<float, 2> rp1	  = perp(collision.r1);
 			agl::Vec<float, 2> rp2	  = perp(collision.r2);
@@ -393,67 +377,46 @@ class World
 
 			agl::Vec<float, 2> acc1 = collision.normal * (impulse * collision.b1->invMass);
 			agl::Vec<float, 2> acc2 = collision.normal * (impulse * -collision.b2->invMass);
-			collision.b1->velocity += acc1;
-			collision.b2->velocity += acc2;
 
-			collision.b1->angularVelocity -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
-			collision.b2->angularVelocity += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
+			collision.b1->acceleration += acc1;
+			collision.b2->acceleration += acc2;
+
+			collision.b1->angularAcceleration -= rp1.dot(collision.normal * impulse) * collision.b1->invInertia;
+			collision.b2->angularAcceleration += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
 
 			testRes(collision, divider);
-			// if (collision.offset)
-			// {
-			//
-			// 	if (collision.b1->dynamic && collision.b2->dynamic)
-			// 	{
-			// 		float total = collision.b1->mass + collision.b2->mass;
-			// 		collision.b1->posOffset -= collision.normal * collision.depth *
-			// (collision.b2->mass / total); 		collision.b2->posOffset +=
-			// collision.normal
-			// * collision.depth * (collision.b1->mass / total);
-			// 	}
-			// 	else if (collision.b1->dynamic)
-			// 	{
-			// 		collision.b1->posOffset -= collision.normal * collision.depth;
-			// 	}
-			// 	else
-			// 	{
-			// 		collision.b2->posOffset += collision.normal * collision.depth;
-			// 	}
-			// }
 		}
 
 		static void collide(PhysicsObj &b1, PhysicsObj &b2)
 		{
+			std::cout << "begin" << '\n';
 			PolyShape s1;
 			PolyShape s2;
 			// CHECK COLLISION
-			boxToPoly(b1, s1);
-			boxToPoly(b2, s2);
+			b1.boxToPoly(s1);
+			b2.boxToPoly(s2);
 
-			std::vector<Collision> collision;
+			std::vector<ConstraintFailure> collision;
 
 			auto compCol = [&](PhysicsObj &a, PhysicsObj &b, PolyShape &sa, PolyShape &sb) {
 				for (agl::Vec<float, 2> &point : sb.points)
 				{
-					BareData bare;
+					ConstraintFailure bare;
 					if (pointInBox(sa, point, bare))
 					{
-						collision.emplace_back();
-						collision.back().b1		= &a;
-						collision.back().b2		= &b;
-						collision.back().normal = bare.normal;
-						collision.back().inter1 = bare.online;
-						collision.back().inter2 = point;
-						collision.back().depth	= bare.depth;
-						collision.back().r1		= collision.back().b1->position - collision.back().inter1;
-						collision.back().r2		= collision.back().b2->position - collision.back().inter2;
+						collision.emplace_back(bare);
+						collision.back().b1 = &a;
+						collision.back().b2 = &b;
+						collision.back().r1 = collision.back().b1->position - collision.back().inter1;
+						collision.back().r2 = collision.back().b2->position - collision.back().inter2;
+						std::cout << "collide " << s1.points[0].x << '\n';
 					}
 				}
 			};
 
 			if (b1.rootConnect == &b2)
 			{
-				BareData bare;
+				ConstraintFailure bare;
 				processJoint(b1, bare);
 
 				if (bare.depth != 0)
@@ -471,7 +434,7 @@ class World
 			}
 			else if (b2.rootConnect == &b1)
 			{
-				BareData bare;
+				ConstraintFailure bare;
 				processJoint(b2, bare);
 
 				if (bare.depth != 0)
@@ -483,17 +446,33 @@ class World
 					collision.back().inter1 = bare.inter1;
 					collision.back().inter2 = bare.inter2;
 					collision.back().depth	= bare.depth;
+					collision.back().r1		= collision.back().b1->position - collision.back().inter1;
+					collision.back().r2		= collision.back().b2->position - collision.back().inter2;
 				}
 			}
 			else
 			{
-				compCol(b1, b2, s1, s2);
-				compCol(b2, b1, s2, s1);
+				// compCol(b1, b2, s1, s2);
+				// compCol(b2, b1, s2, s1);
 			}
 
-			for (Collision &c : collision)
+			std::cout << "a" << '\n';
+			for (ConstraintFailure &c : collision)
 			{
+				std::cout << c.b1 << " " << c.b2 << '\n';
 				resolve(c, collision.size());
 			}
+		}
+};
+
+class TestObj : public Entity<PhysicsObj>
+{
+	public:
+		bool			   exists = true;
+		agl::Vec<float, 2> position;
+
+		TestObj() : Entity<PhysicsObj>(exists, position)
+		{
+			return;
 		}
 };

@@ -81,3 +81,36 @@ int roundUp(float input, int period)
 
 	return (int)amount * period;
 }
+
+float cross2D(agl::Vec<float, 2> a, agl::Vec<float, 2> b)
+{
+	return a.x * b.y - a.y * b.x;
+}
+
+agl::Vec<float, 2> perp(agl::Vec<float, 2> vec)
+{
+	return {-vec.y, vec.x};
+}
+
+agl::Vec<float, 2> closestPointToLine(agl::Vec<float, 2> a, agl::Vec<float, 2> b, agl::Vec<float, 2> p)
+{
+	auto ab = b - a;
+	auto ap = p - a;
+
+	float proj	  = ap.dot(ab);
+	float abLenSq = ab.dot(ab);
+	float d		  = proj / abLenSq;
+
+	if (d <= 0)
+	{
+		return a;
+	}
+	else if (d >= 1)
+	{
+		return b;
+	}
+	else
+	{
+		return a + ab * d;
+	}
+}

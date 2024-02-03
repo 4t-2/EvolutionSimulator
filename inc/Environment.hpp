@@ -229,15 +229,37 @@ class Environment
 		void view(std::function<void(T &, std::list<BaseEntity *>::iterator &)> func, agl::Vec<int, 2> start,
 				  agl::Vec<int, 2> end)
 		{
-			for (int x = start.x; x <= end.x; x++)
+			for (auto hashT : traits[typeid(T).hash_code()])
 			{
-				for (int y = start.y; y <= end.y; y++)
-				{
-					auto &list = getListInGrid({x, y}, typeid(T).hash_code());
 
-					for (auto it = list.begin(); it != list.end(); it++)
+				long long offsetT = 0;
+
+				if constexpr (!std::is_base_of_v<DoNotUse, T>)
+				{
+					offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
+				}
+
+				for (int x = start.x; x <= end.x; x++)
+				{
+					for (int y = start.y; y <= end.y; y++)
 					{
-						func(*(T *)(DoNotUse *)(*it), it);
+						auto &list = getListInGrid({x, y}, hashT);
+
+						for (auto it = list.begin(); it != list.end(); it++)
+						{
+							T *addressT;
+
+							if constexpr (std::is_base_of_v<DoNotUse, T>)
+							{
+								addressT = (T *)(DoNotUse *)(*it);
+							}
+							else
+							{
+								addressT = (T *)((long long)*it + (long long)offsetT);
+							}
+
+							func(*addressT, it);
+						}
 					}
 				}
 			}
@@ -341,34 +363,37 @@ class Environment
 			return grid.at(pos.x).at(pos.y)[hash].list;
 		}
 
-		// template <typename T, typename U, bool oneWay = false, bool mirror = false>
-		// void gridUpdate(std::function<void(T &, U &, std::size_t, std::size_t)>
-		// func, agl::Vec<int, 2> gridPosition,
-		// agl::Vec<int, 2> gridOffset, std::size_t hashT, std::size_t hashU)
+		// template <typename T, typename U, bool oneWay = false, bool mirror =
+		// false> void gridUpdate(std::function<void(T &, U &, std::size_t,
+		// std::size_t)> func, agl::Vec<int, 2> gridPosition, agl::Vec<int, 2>
+		// gridOffset, std::size_t hashT, std::size_t hashU)
 		// {
 		// 	long long offsetT;
 		//
 		// 	if constexpr (!std::is_base_of_v<DoNotUse, T>)
 		// 	{
-		// 		offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
+		// 		offsetT = traitMap[std::pair(hashT,
+		// typeid(T).hash_code())];
 		// 	}
 		//
 		// 	long long offsetU;
 		//
 		// 	if constexpr (!std::is_base_of_v<DoNotUse, U>)
 		// 	{
-		// 		offsetT = traitMap[std::pair(hashU, typeid(T).hash_code())];
+		// 		offsetT = traitMap[std::pair(hashU,
+		// typeid(T).hash_code())];
 		// 	}
 		//
 		// 	auto &list1 = getListInGrid(gridPosition, hashT);
-		// 	auto &list2 = getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y
+		// 	auto &list2 = getListInGrid({gridOffset.x + gridPosition.x,
+		// gridOffset.y
 		// + gridPosition.y}, hashU);
 		//
 		// 	auto it1		= list1.begin();
 		// 	auto list2Begin = list2.begin();
 		//
-		// 	std::list<BaseEntity *>::iterator &it2Start = &list1 == &list2 ? it1 :
-		// list2Begin;
+		// 	std::list<BaseEntity *>::iterator &it2Start = &list1 == &list2 ?
+		// it1 : list2Begin;
 		//
 		// 	for (; it1 != list1.end(); it1++)
 		// 	{
@@ -407,7 +432,8 @@ class Environment
 		//
 		// 			if constexpr (mirror)
 		// 			{
-		// 				func(*addressU, *addressT, hashU, hashT);
+		// 				func(*addressU, *addressT, hashU,
+		// hashT);
 		// 			}
 		// 		}
 		// 	}
@@ -464,19 +490,33 @@ class Environment
 		{
 			auto threadedQueue = [&](int start, int end) {
 				pool.queue([&, func = func, start = start, end = end, distFunc = distFunc]() {
+									std::cout << "fcesdkjfvhnref" << '\n';
 					for (int i = start; i <= end; i++)
 					{
 						agl::Vec<int, 2> &gridPosition = randomPosition[i];
-						for (auto hashT : traits[typeid(T).hash_code()])
+						for (auto itT = traits[typeid(T).hash_code()].begin();
+							 itT != traits[typeid(T).hash_code()].end(); itT++)
 						{
+							auto hashT = *itT;
+
 							long long offsetT;
 
 							if constexpr (!std::is_base_of_v<DoNotUse, T>)
 							{
 								offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
 							}
-							for (auto hashU : traits[typeid(U).hash_code()])
+
+							auto startPoint = std::is_same_v<T, U> ? itT : traits[typeid(U).hash_code()].begin();
+									std::cout << "aaaaaaa" << '\n';
+
+							for (auto itU = startPoint; itU != traits[typeid(U).hash_code()].end(); itU++)
 							{
+									std::cout << "ran" << '\n';
+								if (!std::is_same_v<T, U>)
+								{
+									std::cout << "ran" << '\n';
+								}
+								auto hashU = *itU;
 								auto listT = grid[gridPosition.x][gridPosition.y][hashT].list;
 
 								for (auto it = listT.begin(); it != listT.end(); it++)
@@ -599,14 +639,22 @@ class Environment
 			int chunkSize = gridSize / pool.size;
 			int i		  = 0;
 
-			for (; i < pool.size - 1; i++)
-			{
-				threadedQueue(i * chunkSize, (i * chunkSize) + chunkSize - 1);
-			}
+			int total = 0;
 
-			if (i * chunkSize < gridSize)
+			int alloked = 0;
+
+			while (alloked < gridSize)
 			{
-				threadedQueue(i * chunkSize, gridSize - 1);
+				if (alloked + chunkSize > gridSize)
+				{
+					threadedQueue(alloked, gridSize);
+					break;
+				}
+				else
+				{
+					threadedQueue(alloked, alloked + chunkSize);
+					alloked += chunkSize + 1;
+				}
 			}
 		}
 
@@ -685,8 +733,8 @@ class Environment
 		// 	}
 		// }
 
-		// template <typename T, typename U> void twinUpdate(std::function<void(T
-		// *interactor, U *interactee)> func)
+		// template <typename T, typename U> void
+		// twinUpdate(std::function<void(T *interactor, U *interactee)> func)
 		// {
 		// 	std::list<EntityPointer> &interactor =
 		// entityTraits[typeid(T).hash_code()]; 	std::list<EntityPointer>
@@ -696,15 +744,17 @@ class Environment
 		// 	{
 		// 		for (EntityPointer &interactee : interactee)
 		// 		{
-		// 			func((T *)interactor.data, (U *)interactee.data);
+		// 			func((T *)interactor.data, (U
+		// *)interactee.data);
 		// 		}
 		// 	}
 		// }
 
-		// template <typename T> void selfUpdate(std::function<void(T *interactor, T
-		// *interactee)> func)
+		// template <typename T> void selfUpdate(std::function<void(T
+		// *interactor, T *interactee)> func)
 		// {
-		// 	std::list<EntityPointer> &list = entityTraits[typeid(T).hash_code()];
+		// 	std::list<EntityPointer> &list =
+		// entityTraits[typeid(T).hash_code()];
 		//
 		// 	for (auto it1 = list.begin(); it1 != list.end(); it1++)
 		// 	{
@@ -732,8 +782,8 @@ class Environment
 		//
 		// 	for (auto &pair : entityList)
 		// 	{
-		// 		for (auto it = pair.second.begin(); it != pair.second.end();
-		// it++)
+		// 		for (auto it = pair.second.begin(); it !=
+		// pair.second.end(); it++)
 		// 		{
 		// 			BaseEntity &entity = *it->data;
 		// 			entity.update();

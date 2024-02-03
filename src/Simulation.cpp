@@ -115,7 +115,30 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 	Creature &newCreature = env.addEntity<Creature>();
 	newCreature.setup(creatureData, &simulationRules);
 	newCreature.position = position;
-	newCreature.rotation = ((float)rand() / (float)RAND_MAX) * PI * 2;
+	// newCreature.rotation = ((float)rand() / (float)RAND_MAX) * PI * 2;
+
+	auto &r0 = env.addEntity<TestObj>();
+	{
+		r0.setup({position.x, position.y + newCreature.size.y}, {10, newCreature.size.y}, 1);
+
+		PhysicsObj::addJoint(r0, {0, -r0.size.y / 2}, newCreature, {0, newCreature.size.y / 2});
+	}
+	// 	auto &r1 = env.addEntity<TestObj>();
+	// {
+	// 	r1.setup({position.x, position.y + r0.size.y}, {10, r0.size.y}, 1);
+	//
+	// 	PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, r0, {0, r0.size.y / 2});
+	// }
+	// {
+	// 	auto &r2 = env.addEntity<TestObj>();
+	// 	r2.setup({position.x, position.y + r1.size.y}, {10, r1.size.y}, 1);
+	//
+	// 	PhysicsObj::addJoint(r2, {0, -r2.size.y / 2}, r1, {0, r1.size.y / 2});
+	// }
+
+	newCreature.position.x += newCreature.size.x / 2;
+	newCreature.position.y += newCreature.size.y / 2;
+	newCreature.rotation = PI / 2;
 }
 
 void Simulation::removeCreature(std::list<BaseEntity *>::iterator creature)
@@ -177,8 +200,8 @@ void Simulation::addMeat(agl::Vec<float, 2> position, float energy)
 	newMeat.position  = position;
 	newMeat.energyVol = (float)energy / meatEnergyDensity;
 	// newMeat.radius	  = (energy / 50.) * 5;
-	newMeat.rotation  = ((float)rand() / (float)RAND_MAX) * 360;
-	newMeat.lifetime  = newMeat.energyVol * 288;
+	newMeat.rotation = ((float)rand() / (float)RAND_MAX) * 360;
+	newMeat.lifetime = newMeat.energyVol * 288;
 }
 
 void Simulation::addMeat(agl::Vec<float, 2> position)
@@ -487,7 +510,7 @@ void Simulation::updateSimulation()
 	env.clearGrid();
 
 	env.selfUpdate<Creature>([this](Creature &creature) {
-		creature.updateNetwork();
+		// creature.updateNetwork();
 		creature.updateActions();
 
 		// egg laying
@@ -534,12 +557,12 @@ void Simulation::updateSimulation()
 		}
 
 		// killing creature
-		if (creature.health <= 0)
-		{
-			this->addMeat(creature.position, creature.maxHealth / 4);
-			creature.exists = false;
-			return;
-		}
+		// if (creature.health <= 0)
+		// {
+		// 	this->addMeat(creature.position, creature.maxHealth / 4);
+		// 	creature.exists = false;
+		// 	return;
+		// }
 
 		if (creature.energy > creature.maxEnergy)
 		{
@@ -657,9 +680,16 @@ void Simulation::updateSimulation()
 		}
 	});
 
-	env.update<PhysicsObj, PhysicsObj, true>([](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT,
-												std::size_t hashU) { World::collide(circle, otherCircle); },
-											 [](PhysicsObj &circle) { return 50; });
+	env.selfUpdate<TestObj>([](auto &o) { o.updatePhysics(); });
+
+	std::cout << "start" << '\n';
+
+	env.update<PhysicsObj, PhysicsObj, false, false>(
+		[](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT, std::size_t hashU) {
+		std::cout << "TEST ========== " << &circle << " " << &otherCircle << '\n';
+			World::collide(circle, otherCircle);
+		},
+		[](PhysicsObj &circle) { return 50; });
 
 	env.update<Creature, Creature>(
 		[env = &env](Creature &seeingCreature, Creature &creature, auto, auto) {

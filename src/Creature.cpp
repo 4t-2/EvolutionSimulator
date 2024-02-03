@@ -4,7 +4,6 @@
 
 Creature::Creature() : Entity<PhysicsObj>(exists, position)
 {
-	mass = 1;
 	return;
 }
 
@@ -31,9 +30,11 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 
 	this->creatureData = creatureData;
 
-	sight = creatureData.sight;
-	speed = creatureData.speed;
-	size  = creatureData.size;
+	sight	 = creatureData.sight;
+	speed	 = creatureData.speed;
+	sizeData = creatureData.size;
+
+	PhysicsObj::setup({0, 0}, {sizeData * 25, sizeData * 25}, 1);
 
 	hue = creatureData.hue;
 
@@ -46,14 +47,14 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->maxForce	  = 1.5 * speed;
 	this->maxRotation = 0.05 * speed;
 
-	this->health = 100 * size * size * size;
-	this->life	 = 60 * 60 * size * size * size;
+	this->health = 100 * sizeData * sizeData * sizeData;
+	this->life	 = 60 * 60 * sizeData * sizeData * sizeData;
 
-	this->maxEnergy = 100 * size * size * size;
-	this->maxHealth = 100 * size * size * size;
-	this->maxLife	= 60 * 60 * size * size * size;
+	this->maxEnergy = 100 * sizeData * sizeData * sizeData;
+	this->maxHealth = 100 * sizeData * sizeData * sizeData;
+	this->maxLife	= 60 * 60 * sizeData * sizeData * sizeData;
 
-	this->maxBiomass	= 100 * size * size * size;
+	this->maxBiomass	= 100 * sizeData * sizeData * sizeData;
 	this->biomass		= 0;
 	this->energyDensity = 0.0;
 
@@ -95,17 +96,17 @@ void Creature::clear()
 	network->destroy();
 	delete network;
 
-	position  = {0, 0};
-	velocity  = {0, 0};
-	force	  = {0, 0};
-	rotation  = 0;
+	position = {0, 0};
+	velocity = {0, 0};
+	force	 = {0, 0};
+	rotation = 0;
 	// radius	  = 0;
 	network	  = nullptr;
 	eating	  = false;
 	layingEgg = false;
 	sight	  = 0;
 	speed	  = 0;
-	size	  = 0;
+	sizeData  = 0;
 	energy	  = 0;
 	health	  = 0;
 
@@ -242,6 +243,8 @@ void Creature::updateActions()
 
 	float moveForce = 0;
 
+	moveForce += 1 * maxForce;
+	
 	if (network->getNode(FOWARD_OUTPUT).value > 0)
 	{
 		moveForce += network->getNode(FOWARD_OUTPUT).value * maxForce;
@@ -249,12 +252,12 @@ void Creature::updateActions()
 
 	if (network->getNode(RIGHT_OUTPUT).value > 0)
 	{
-		rotation += maxRotation * network->getNode(RIGHT_OUTPUT).value;
+		angularAcceleration += maxRotation * network->getNode(RIGHT_OUTPUT).value;
 	}
 
 	if (network->getNode(LEFT_OUTPUT).value > 0)
 	{
-		rotation -= maxRotation * network->getNode(LEFT_OUTPUT).value;
+		angularAcceleration -= maxRotation * network->getNode(LEFT_OUTPUT).value;
 	}
 
 	if (network->getNode(EAT_OUTPUT).value > 0)
@@ -275,8 +278,6 @@ void Creature::updateActions()
 		layingEgg = false;
 	}
 
-	rotation = loop(-PI, PI, rotation);
-
 	if (biomass > 0)
 	{
 		biomass -= metabolism;
@@ -289,12 +290,13 @@ void Creature::updateActions()
 	}
 
 	// energy loss
-	energy -= (sight + (moveForce * moveForce * size * size * size)) * simulationRules->energyCostMultiplier;
+	energy -=
+		(sight + (moveForce * moveForce * sizeData * sizeData * sizeData)) * simulationRules->energyCostMultiplier;
 
 	life--;
 
-	force.x += cos(rotation - (PI / 2)) * moveForce;
-	force.y += sin(rotation - (PI / 2)) * moveForce;
+	acceleration.x += cos(rotation - (PI / 2)) * moveForce * invMass;
+	acceleration.y += sin(rotation - (PI / 2)) * moveForce * invMass;
 
 	// add air resistance
 
@@ -320,7 +322,7 @@ void Creature::updateActions()
 
 	agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 1);
 
-	force = force - drag;
+	this->ApplyForceToCenter(drag * -1);
 
 	return;
 }
