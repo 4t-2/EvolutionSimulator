@@ -219,9 +219,31 @@ class Environment
 
 		template <typename T> void view(std::function<void(T &, std::list<BaseEntity *>::iterator &)> func)
 		{
-			for (auto it = getList<T>().begin(); it != getList<T>().end(); it++)
+			for (auto hashT : traits[typeid(T).hash_code()])
 			{
-				func(*(T *)(DoNotUse *)(*it), it);
+
+				long long offsetT = 0;
+
+				if constexpr (!std::is_base_of_v<DoNotUse, T>)
+				{
+					offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
+				}
+
+				for (auto it = entityList[hashT].begin(); it != entityList[hashT].end(); it++)
+				{
+					T *addressT;
+
+					if constexpr (std::is_base_of_v<DoNotUse, T>)
+					{
+						addressT = (T *)(DoNotUse *)(*it);
+					}
+					else
+					{
+						addressT = (T *)((long long)*it + (long long)offsetT);
+					}
+
+					func(*addressT, it);
+				}
 			}
 		}
 
@@ -490,7 +512,6 @@ class Environment
 		{
 			auto threadedQueue = [&](int start, int end) {
 				pool.queue([&, func = func, start = start, end = end, distFunc = distFunc]() {
-									std::cout << "fcesdkjfvhnref" << '\n';
 					for (int i = start; i <= end; i++)
 					{
 						agl::Vec<int, 2> &gridPosition = randomPosition[i];
@@ -507,15 +528,9 @@ class Environment
 							}
 
 							auto startPoint = std::is_same_v<T, U> ? itT : traits[typeid(U).hash_code()].begin();
-									std::cout << "aaaaaaa" << '\n';
 
 							for (auto itU = startPoint; itU != traits[typeid(U).hash_code()].end(); itU++)
 							{
-									std::cout << "ran" << '\n';
-								if (!std::is_same_v<T, U>)
-								{
-									std::cout << "ran" << '\n';
-								}
 								auto hashU = *itU;
 								auto listT = grid[gridPosition.x][gridPosition.y][hashT].list;
 
@@ -639,22 +654,14 @@ class Environment
 			int chunkSize = gridSize / pool.size;
 			int i		  = 0;
 
-			int total = 0;
-
-			int alloked = 0;
-
-			while (alloked < gridSize)
+			for (; i < pool.size - 1; i++)
 			{
-				if (alloked + chunkSize > gridSize)
-				{
-					threadedQueue(alloked, gridSize);
-					break;
-				}
-				else
-				{
-					threadedQueue(alloked, alloked + chunkSize);
-					alloked += chunkSize + 1;
-				}
+				threadedQueue(i * chunkSize, (i * chunkSize) + chunkSize - 1);
+			}
+
+			if (i * chunkSize < gridSize)
+			{
+				threadedQueue(i * chunkSize, gridSize - 1);
 			}
 		}
 

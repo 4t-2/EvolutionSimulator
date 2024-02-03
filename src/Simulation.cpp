@@ -119,9 +119,10 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 
 	auto &r0 = env.addEntity<TestObj>();
 	{
-		r0.setup({position.x, position.y + newCreature.size.y}, {10, newCreature.size.y}, 1);
+		r0.setup({position.x, position.y + newCreature.size.y}, {4, newCreature.size.y}, 1);
 
 		PhysicsObj::addJoint(r0, {0, -r0.size.y / 2}, newCreature, {0, newCreature.size.y / 2});
+		r0.motor = .1;
 	}
 	// 	auto &r1 = env.addEntity<TestObj>();
 	// {
@@ -136,9 +137,9 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 	// 	PhysicsObj::addJoint(r2, {0, -r2.size.y / 2}, r1, {0, r1.size.y / 2});
 	// }
 
-	newCreature.position.x += newCreature.size.x / 2;
-	newCreature.position.y += newCreature.size.y / 2;
-	newCreature.rotation = PI / 2;
+	// newCreature.position.x += newCreature.size.x / 2;
+	// newCreature.position.y += newCreature.size.y / 2;
+	// newCreature.rotation = PI / 2;
 }
 
 void Simulation::removeCreature(std::list<BaseEntity *>::iterator creature)
@@ -572,33 +573,10 @@ void Simulation::updateSimulation()
 		{
 			creature.biomass = creature.maxBiomass;
 		}
-
-		creature.updatePhysics();
 	});
 
 	env.selfUpdate<Food>([&](Food &food) {
 		PhysicsObj &circle = food;
-
-#ifdef FOODDRAG
-		float dragCoeficient = FOODDRAG;
-
-		float velMag = circle.velocity.length();
-
-		agl::Vec<float, 2> velNor;
-
-		if (velMag == 0)
-		{
-			velNor = {1, 0};
-		}
-		else
-		{
-			velNor = circle.velocity.normalized();
-		}
-
-		agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 1);
-
-		circle.force -= drag;
-#endif
 
 #ifdef ACTIVEFOOD
 		if ((food->nextPos - food->position).length() < 50)
@@ -628,8 +606,6 @@ void Simulation::updateSimulation()
 			food.force.y -= 1;
 		}
 #endif
-
-		food.updatePhysics();
 	});
 
 	env.selfUpdate<Meat>([](Meat &meat) {
@@ -640,29 +616,6 @@ void Simulation::updateSimulation()
 			meat.exists = false;
 			return;
 		}
-
-		PhysicsObj &circle = meat;
-
-		float dragCoeficient = .1;
-
-		float velMag = circle.velocity.length();
-
-		agl::Vec<float, 2> velNor;
-
-		if (velMag == 0)
-		{
-			velNor = {1, 0};
-		}
-		else
-		{
-			velNor = circle.velocity.normalized();
-		}
-
-		agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 1);
-
-		circle.force -= drag;
-
-		meat.updatePhysics();
 	});
 
 	env.selfUpdate<Egg>([&](Egg &egg) {
@@ -680,16 +633,37 @@ void Simulation::updateSimulation()
 		}
 	});
 
-	env.selfUpdate<TestObj>([](auto &o) { o.updatePhysics(); });
+	env.selfUpdate<TestObj>([](auto &o) {});
 
-	std::cout << "start" << '\n';
+	env.update<PhysicsObj, PhysicsObj, true>([](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT,
+												std::size_t hashU) { World::collide(circle, otherCircle); },
+											 [](PhysicsObj &circle) { return 50; });
 
-	env.update<PhysicsObj, PhysicsObj, false, false>(
-		[](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT, std::size_t hashU) {
-		std::cout << "TEST ========== " << &circle << " " << &otherCircle << '\n';
-			World::collide(circle, otherCircle);
-		},
-		[](PhysicsObj &circle) { return 50; });
+	env.view<PhysicsObj>([](PhysicsObj &o, auto it) {
+		o.updatePhysics();
+
+		float velAng = o.velocity.angle();
+
+		if (std::isnan(velAng))
+		{
+			return;
+		}
+
+		float			   velMag = o.velocity.length();
+		agl::Vec<float, 2> velNor = o.velocity.normalized();
+
+		float relAng = velAng - o.GetAngle();
+
+		float side1 = abs(o.size.x * cos(relAng));
+		float side2 = abs(o.size.y * sin(relAng));
+
+		constexpr float density = .04;
+
+		agl::Vec<float, 2> drag1 = velNor * -(velMag * velMag * density * side1);
+		agl::Vec<float, 2> drag2 = velNor * -(velMag * velMag * density * side2);
+
+		o.ApplyForceToCenter(drag1 + drag2);
+	});
 
 	env.update<Creature, Creature>(
 		[env = &env](Creature &seeingCreature, Creature &creature, auto, auto) {

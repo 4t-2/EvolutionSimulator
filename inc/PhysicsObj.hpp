@@ -170,6 +170,11 @@ class PhysicsObj : public BaseEntity
 
 			this->shape = &shape;
 		}
+
+		float getJointAngle()
+		{
+			return loop(-PI, PI, (rotation - rootConnect->rotation) - refRot);
+		}
 };
 
 struct ConstraintFailure
@@ -251,10 +256,19 @@ class World
 
 		static void motor(PhysicsObj &b1)
 		{
+			if (b1.getJointAngle() > (PI / 3))
+			{
+				b1.motor = .1;
+			}
+			if (b1.getJointAngle() < -(PI / 3))
+			{
+				b1.motor = -.1;
+			}
+
 			float vel	  = b1.rootConnect->angularVelocity - b1.angularVelocity;
 			float impulse = b1.motor - vel;
 
-			// impulse = b1.motor;
+			// float impulse = b1.motor;
 
 			b1.angularAcceleration -= impulse * b1.invMass;
 			b1.rootConnect->angularAcceleration += impulse * b1.rootConnect->invInertia;
@@ -278,7 +292,7 @@ class World
 			bare.inter1 = local1;
 			bare.inter2 = local2;
 
-			// motor(b1);
+			motor(b1);
 		}
 
 		template <bool useBare = true>
@@ -389,7 +403,6 @@ class World
 
 		static void collide(PhysicsObj &b1, PhysicsObj &b2)
 		{
-			std::cout << "begin" << '\n';
 			PolyShape s1;
 			PolyShape s2;
 			// CHECK COLLISION
@@ -409,7 +422,6 @@ class World
 						collision.back().b2 = &b;
 						collision.back().r1 = collision.back().b1->position - collision.back().inter1;
 						collision.back().r2 = collision.back().b2->position - collision.back().inter2;
-						std::cout << "collide " << s1.points[0].x << '\n';
 					}
 				}
 			};
@@ -452,14 +464,12 @@ class World
 			}
 			else
 			{
-				// compCol(b1, b2, s1, s2);
-				// compCol(b2, b1, s2, s1);
+				compCol(b1, b2, s1, s2);
+				compCol(b2, b1, s2, s1);
 			}
 
-			std::cout << "a" << '\n';
 			for (ConstraintFailure &c : collision)
 			{
-				std::cout << c.b1 << " " << c.b2 << '\n';
 				resolve(c, collision.size());
 			}
 		}

@@ -34,7 +34,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	speed	 = creatureData.speed;
 	sizeData = creatureData.size;
 
-	PhysicsObj::setup({0, 0}, {sizeData * 25, sizeData * 25}, 1);
+	PhysicsObj::setup({0, 0}, {sizeData * 25, sizeData * 25}, 4);
 
 	hue = creatureData.hue;
 
@@ -243,7 +243,7 @@ void Creature::updateActions()
 
 	float moveForce = 0;
 
-	moveForce += 1 * maxForce;
+	// moveForce += 1 * maxForce;
 	
 	if (network->getNode(FOWARD_OUTPUT).value > 0)
 	{
@@ -297,32 +297,6 @@ void Creature::updateActions()
 
 	acceleration.x += cos(rotation - (PI / 2)) * moveForce * invMass;
 	acceleration.y += sin(rotation - (PI / 2)) * moveForce * invMass;
-
-	// add air resistance
-
-	float dragCoeficient = .1;
-
-	float velMag = velocity.length();
-
-	agl::Vec<float, 2> velNor;
-
-	if (std::isinf(velMag))
-	{
-		velMag = 0;
-	}
-
-	if (velMag == 0)
-	{
-		velNor = {0, 0};
-	}
-	else
-	{
-		velNor = velocity.normalized();
-	}
-
-	agl::Vec<float, 2> drag = (velNor * (velMag * velMag * dragCoeficient)) * (1. / 1);
-
-	this->ApplyForceToCenter(drag * -1);
 
 	return;
 }
