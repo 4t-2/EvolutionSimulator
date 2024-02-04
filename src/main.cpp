@@ -741,7 +741,8 @@ int main()
 
 		// simulation.env.view<TestObj>([&](auto &obj, auto){std::cout << &obj << "
 		// " << obj.position.x << '\n';});
-		// std::cout << simulation.env.getListInGrid({0, 0}, typeid(TestObj).hash_code()).size() << '\n';
+		// std::cout << simulation.env.getListInGrid({0, 0},
+		// typeid(TestObj).hash_code()).size() << '\n';
 
 		// draw rays
 		if (contains(simulation.env.getList<Creature>(), focusCreature))
@@ -1029,18 +1030,20 @@ int main()
 				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
 																	   sizeMultiplier, cameraPosition);
 
-				simulation.env.getArea<Food>(
-					[&](Food &food) {
-						agl::Vec<float, 2> offset	= food.position - cursorRelPos;
-						float			   distance = offset.length();
+				topLeftGrid				 = simulation.env.toGridPosition(cursorRelPos - agl::Vec<float, 2>{1000, 1000});
 
-						float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
+				bottomRightGrid = simulation.env.toGridPosition(cursorRelPos + agl::Vec<float, 2>{1000, 1000});
 
-						agl::Vec<float, 2> force = offset.normalized() * forceScalar;
+				simulation.env.view<Food>([&](Food &food, auto) {
+					agl::Vec<float, 2> offset	= food.position - cursorRelPos;
+					float			   distance = offset.length();
 
-						food.ApplyForceToCenter(force);
-					},
-					simulation.env.toGridPosition(cursorRelPos));
+					float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
+
+					agl::Vec<float, 2> force = offset.normalized() * forceScalar;
+
+					food.ApplyForceToCenter(force);
+				}, topLeftGrid, bottomRightGrid);
 				{
 				}
 			}

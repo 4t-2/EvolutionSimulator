@@ -256,22 +256,24 @@ class World
 
 		static void motor(PhysicsObj &b1)
 		{
-			if (b1.getJointAngle() > (PI / 3))
+			if (b1.getJointAngle() > (PI / 4))
 			{
 				b1.motor = .1;
 			}
-			if (b1.getJointAngle() < -(PI / 3))
+			if (b1.getJointAngle() < -(PI / 4))
 			{
 				b1.motor = -.1;
 			}
 
+            float maxImpulse = .015;
+
 			float vel	  = b1.rootConnect->angularVelocity - b1.angularVelocity;
 			float impulse = b1.motor - vel;
 
-			// float impulse = b1.motor;
+            // float impulse = b1.motor;
 
-			b1.angularAcceleration -= impulse * b1.invMass;
-			b1.rootConnect->angularAcceleration += impulse * b1.rootConnect->invInertia;
+			b1.angularVelocity -= impulse * b1.invMass;
+			b1.rootConnect->angularVelocity += impulse * b1.rootConnect->invInertia;
 		}
 
 		static void processJoint(PhysicsObj &b1, ConstraintFailure &bare)

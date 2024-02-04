@@ -635,10 +635,6 @@ void Simulation::updateSimulation()
 
 	env.selfUpdate<TestObj>([](auto &o) {});
 
-	env.update<PhysicsObj, PhysicsObj, true>([](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT,
-												std::size_t hashU) { World::collide(circle, otherCircle); },
-											 [](PhysicsObj &circle) { return 50; });
-
 	env.view<PhysicsObj>([](PhysicsObj &o, auto it) {
 		o.updatePhysics();
 
@@ -664,6 +660,15 @@ void Simulation::updateSimulation()
 
 		o.ApplyForceToCenter(drag1 + drag2);
 	});
+
+	while(env.pool.active())
+	{
+
+	}
+
+	env.update<PhysicsObj, PhysicsObj, true>([](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT,
+												std::size_t hashU) { World::collide(circle, otherCircle); },
+											 [](PhysicsObj &circle) { return 100; });
 
 	env.update<Creature, Creature>(
 		[env = &env](Creature &seeingCreature, Creature &creature, auto, auto) {
