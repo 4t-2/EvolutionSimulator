@@ -244,7 +244,7 @@ void Creature::updateActions()
 	float moveForce = 0;
 
 	// moveForce += 1 * maxForce;
-	
+
 	if (network->getNode(FOWARD_OUTPUT).value > 0)
 	{
 		moveForce += network->getNode(FOWARD_OUTPUT).value * maxForce;
@@ -297,6 +297,25 @@ void Creature::updateActions()
 
 	acceleration.x += cos(rotation - (PI / 2)) * moveForce * invMass;
 	acceleration.y += sin(rotation - (PI / 2)) * moveForce * invMass;
+
+	for (auto seg : segments)
+	{
+		if(seg->rootConnect == nullptr)
+		{
+			continue;
+		}
+		float ang = seg->getJointAngle();
+		// float net = network->outputNode[i].value * (PI / 2);
+
+		float net = sin(life / 20.);
+		// std::cout << ang << '\n';
+
+		float diff = ang - net;
+		// std::cout << diff << '\n';
+
+		seg->motor = ((1. / 20) * diff);
+		// std::cout << agl::radianToDegree(joint[i].getAngle()) << '\n';
+	}
 
 	return;
 }

@@ -190,18 +190,6 @@ struct ConstraintFailure
 		bool			   occured = false;
 };
 
-class CollisionConstraint
-{
-	public:
-		static ConstraintFailure probe(PhysicsObj &, PhysicsObj &)
-		{
-		}
-
-		static void solve()
-		{
-		}
-};
-
 class World
 {
 	public:
@@ -265,12 +253,12 @@ class World
 				b1.motor = -.1;
 			}
 
-            float maxImpulse = .015;
+			float maxImpulse = .015;
 
 			float vel	  = b1.rootConnect->angularVelocity - b1.angularVelocity;
 			float impulse = b1.motor - vel;
 
-            // float impulse = b1.motor;
+			// float impulse = b1.motor;
 
 			b1.angularVelocity -= impulse * b1.invMass;
 			b1.rootConnect->angularVelocity += impulse * b1.rootConnect->invInertia;
@@ -289,12 +277,21 @@ class World
 			agl::Vec<float, 2> normal = offset.normalized();
 			float			   dist	  = offset.length();
 
+			if (dist == 0)
+			{
+				return;
+			}
+
+			bare.b1		= &b1;
+			bare.b2		= b1.rootConnect;
 			bare.normal = normal;
 			bare.depth	= dist;
 			bare.inter1 = local1;
 			bare.inter2 = local2;
+			bare.r1		= b1.position - bare.inter1;
+			bare.r2		= b1.rootConnect->position - bare.inter2;
 
-			motor(b1);
+			// motor(b1);
 		}
 
 		template <bool useBare = true>
@@ -486,5 +483,70 @@ class TestObj : public Entity<PhysicsObj>
 		TestObj() : Entity<PhysicsObj>(exists, position)
 		{
 			return;
+		}
+};
+
+class CollisionConstraint
+{
+	public:
+		static void probe(PhysicsObj &b1, PhysicsObj &b2, std::vector<ConstraintFailure> &failure)
+		{
+			PolyShape s1;
+			PolyShape s2;
+			// CHECK COLLISION
+			b1.boxToPoly(s1);
+			b2.boxToPoly(s2);
+
+			auto compCol = [&](PhysicsObj &a, PhysicsObj &b, PolyShape &sa, PolyShape &sb) {
+				for (agl::Vec<float, 2> &point : sb.points)
+				{
+					ConstraintFailure bare;
+					if (World::pointInBox(sa, point, bare))
+					{
+						failure.emplace_back(bare);
+						failure.back().b1 = &a;
+						failure.back().b2 = &b;
+						failure.back().r1 = failure.back().b1->position - failure.back().inter1;
+						failure.back().r2 = failure.back().b2->position - failure.back().inter2;
+					}
+				}
+			};
+
+			compCol(b1, b2, s1, s2);
+			compCol(b2, b1, s2, s1);
+		}
+};
+
+class JointConstraint
+{
+	public:
+		static void probe(PhysicsObj &b1, PhysicsObj &b2, std::vector<ConstraintFailure> &failure)
+		{
+			agl::Mat4f rot;
+			rot.rotateZ(-b1.radToDeg());
+
+			agl::Vec<float, 2> local1 = b1.position + (rot * b1.local1);
+			rot.rotateZ(-b1.rootConnect->radToDeg());
+			agl::Vec<float, 2> local2 = b1.rootConnect->position + (rot * b1.local2);
+
+			agl::Vec<float, 2> offset = local1 - local2;
+			agl::Vec<float, 2> normal = offset.normalized();
+			float			   dist	  = offset.length();
+
+			if (dist == 0)
+			{
+				return;
+			}
+
+			failure.emplace_back();
+
+			failure.back().b1		= &b1;
+			failure.back().b2		= b1.rootConnect;
+			failure.back().normal = normal;
+			failure.back().depth	= dist;
+			failure.back().inter1 = local1;
+			failure.back().inter2 = local2;
+			failure.back().r1		= b1.position - failure.back().inter1;
+			failure.back().r2		= b1.rootConnect->position - failure.back().inter2;
 		}
 };

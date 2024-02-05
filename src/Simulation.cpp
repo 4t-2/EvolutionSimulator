@@ -117,25 +117,33 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 	newCreature.position = position;
 	// newCreature.rotation = ((float)rand() / (float)RAND_MAX) * PI * 2;
 
+	newCreature.segments.emplace_back(&newCreature);
+
 	auto &r0 = env.addEntity<TestObj>();
 	{
 		r0.setup({position.x, position.y + newCreature.size.y}, {4, newCreature.size.y}, 1);
 
 		PhysicsObj::addJoint(r0, {0, -r0.size.y / 2}, newCreature, {0, newCreature.size.y / 2});
 		r0.motor = .1;
+
+		newCreature.segments.emplace_back(&r0);
 	}
-	// 	auto &r1 = env.addEntity<TestObj>();
-	// {
-	// 	r1.setup({position.x, position.y + r0.size.y}, {10, r0.size.y}, 1);
-	//
-	// 	PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, r0, {0, r0.size.y / 2});
-	// }
-	// {
-	// 	auto &r2 = env.addEntity<TestObj>();
-	// 	r2.setup({position.x, position.y + r1.size.y}, {10, r1.size.y}, 1);
-	//
-	// 	PhysicsObj::addJoint(r2, {0, -r2.size.y / 2}, r1, {0, r1.size.y / 2});
-	// }
+		auto &r1 = env.addEntity<TestObj>();
+	{
+		r1.setup({position.x, position.y + r0.size.y}, {4, r0.size.y}, 1);
+
+		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, r0, {0, r0.size.y / 2});
+
+		newCreature.segments.emplace_back(&r1);
+	}
+	{
+		auto &r2 = env.addEntity<TestObj>();
+		r2.setup({position.x, position.y + r1.size.y}, {4, r1.size.y}, 1);
+
+		PhysicsObj::addJoint(r2, {0, -r2.size.y / 2}, r1, {0, r1.size.y / 2});
+
+		newCreature.segments.emplace_back(&r2);
+	}
 
 	// newCreature.position.x += newCreature.size.x / 2;
 	// newCreature.position.y += newCreature.size.y / 2;
@@ -508,6 +516,31 @@ void Simulation::updateSimulation()
 		this->addFood(position);
 	}
 
+	env.view<PhysicsObj>([](PhysicsObj &o, auto it) {
+		o.updatePhysics();
+
+		float velAng = o.velocity.angle();
+
+		if (std::isnan(velAng))
+		{
+			return;
+		}
+
+		float			   velMag = o.velocity.length();
+		agl::Vec<float, 2> velNor = o.velocity.normalized();
+
+		float relAng = velAng - o.GetAngle();
+
+		float side1 = abs(o.size.x * cos(relAng));
+		float side2 = abs(o.size.y * sin(relAng));
+
+		constexpr float density = .04;
+
+		agl::Vec<float, 2> drag1 = velNor * -(velMag * velMag * density * side1);
+		agl::Vec<float, 2> drag2 = velNor * -(velMag * velMag * density * side2);
+
+		o.ApplyForceToCenter(drag1 + drag2);
+	});
 	env.clearGrid();
 
 	env.selfUpdate<Creature>([this](Creature &creature) {
@@ -573,7 +606,33 @@ void Simulation::updateSimulation()
 		{
 			creature.biomass = creature.maxBiomass;
 		}
+
+		for (auto itx = creature.segments.begin(); itx != creature.segments.end(); itx++)
+		{
+			for (auto ity = std::next(itx, 1); ity != creature.segments.end(); ity++)
+			{
+				PhysicsObj &b1 = **itx;
+				PhysicsObj &b2 = **ity;
+
+				if (b1.rootConnect == &b2)
+				{
+					World::motor(b1);
+				}
+				else if (b2.rootConnect == &b1)
+				{
+					World::motor(b2);
+				}
+			}
+		}
 	});
+
+	// env.view<PhysicsObj>([](auto &o, auto it)
+	// {
+	// 		o.velocity += o.acceleration;
+	// 		o.acceleration = {0, 0};
+	// 		circle.angularVelocity += circle.angularAcceleration;
+	// 		circle.angularAcceleration = 0;
+	// });
 
 	env.selfUpdate<Food>([&](Food &food) {
 		PhysicsObj &circle = food;
@@ -635,40 +694,33 @@ void Simulation::updateSimulation()
 
 	env.selfUpdate<TestObj>([](auto &o) {});
 
-	env.view<PhysicsObj>([](PhysicsObj &o, auto it) {
-		o.updatePhysics();
-
-		float velAng = o.velocity.angle();
-
-		if (std::isnan(velAng))
-		{
-			return;
-		}
-
-		float			   velMag = o.velocity.length();
-		agl::Vec<float, 2> velNor = o.velocity.normalized();
-
-		float relAng = velAng - o.GetAngle();
-
-		float side1 = abs(o.size.x * cos(relAng));
-		float side2 = abs(o.size.y * sin(relAng));
-
-		constexpr float density = .04;
-
-		agl::Vec<float, 2> drag1 = velNor * -(velMag * velMag * density * side1);
-		agl::Vec<float, 2> drag2 = velNor * -(velMag * velMag * density * side2);
-
-		o.ApplyForceToCenter(drag1 + drag2);
-	});
-
-	while(env.pool.active())
+	while (env.pool.active())
 	{
-
 	}
 
-	env.update<PhysicsObj, PhysicsObj, true>([](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT,
-												std::size_t hashU) { World::collide(circle, otherCircle); },
-											 [](PhysicsObj &circle) { return 100; });
+	env.update<PhysicsObj, PhysicsObj, true>(
+		[](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT, std::size_t hashU) {
+			std::vector<ConstraintFailure> failure;
+
+			if (circle.rootConnect == &otherCircle)
+			{
+				JointConstraint::probe(circle, otherCircle, failure);
+			}
+			else if (otherCircle.rootConnect == &circle)
+			{
+				JointConstraint::probe(otherCircle, circle, failure);
+			}
+			else
+			{
+				CollisionConstraint::probe(circle, otherCircle, failure);
+			}
+
+			for (ConstraintFailure &f : failure)
+			{
+				World::resolve(f, failure.size());
+			}
+		},
+		[](PhysicsObj &circle) { return 100; });
 
 	env.update<Creature, Creature>(
 		[env = &env](Creature &seeingCreature, Creature &creature, auto, auto) {

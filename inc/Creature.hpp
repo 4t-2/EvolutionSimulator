@@ -87,6 +87,8 @@ class Creature : public Entity<PhysicsObj>
 		float reward = 0;
 		float shift[TOTAL_OUTPUT];
 
+		std::vector<PhysicsObj*> segments;
+
 		Creature();
 		~Creature();
 
