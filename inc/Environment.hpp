@@ -675,7 +675,7 @@ class Environment
 
 				func(*(T *)(DoNotUse *)(*it));
 
-				if (!entity.exists)
+				if (!entity.exists || std::isnan(entity.position.x))
 				{
 					it--;
 					list.erase(std::next(it, 1));

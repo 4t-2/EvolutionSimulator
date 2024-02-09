@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iterator>
 #include <random>
+#include <string>
 #include <thread>
 #include <type_traits>
 
@@ -36,7 +37,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	env.setupGrid(simulationRules.size, simulationRules.gridResolution);
 
-	in::NetworkStructure basicStructure(TOTAL_INPUT, {}, TOTAL_OUTPUT, false);
+	in::NetworkStructure basicStructure(24, 8, 0, 3, {{1, 8, 1}, {1, 9, 1}, {1, 10, 1}});
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
@@ -54,7 +55,6 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 		creatureData.useNEAT = true;
 		creatureData.usePG	 = false;
 
-		in::NetworkStructure::randomWeights(basicStructure);
 		creatureData.setNetwork(basicStructure);
 
 		creatureData.preference = 1;
@@ -128,7 +128,7 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 
 		newCreature.segments.emplace_back(&r0);
 	}
-		auto &r1 = env.addEntity<TestObj>();
+	auto &r1 = env.addEntity<TestObj>();
 	{
 		r1.setup({position.x, position.y + r0.size.y}, {4, r0.size.y}, 1);
 
@@ -253,27 +253,26 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	// creatureData->sight		 = mutShift(creatureData->sight, .5, 4);
 	// creatureData->speed		 = mutShift(creatureData->speed, .5, 4);
 	// creatureData->size		 = mutShift(creatureData->size, .5, 4);
-	// creatureData->hue		 = mutShift(creatureData->hue / 60., 0, 359. /
-	// 60)
-	// * 60; creatureData->preference = mutShift(creatureData->preference, 0, 1);
+	creatureData->hue = mutShift(creatureData->hue / 60., 0, 359. / 60) * 60;
+	// creatureData->preference = mutShift(creatureData->preference, 0, 1);
 	// creatureData->metabolism = mutShift(creatureData->metabolism, 0, 2);
 
-	Buffer buf(EXTRA_BYTES);
-	buf.data[0] = 255 * (creatureData->sight / 2);
-	buf.data[1] = 255 * (creatureData->speed / 2);
-	buf.data[2] = 255 * (creatureData->size / 2);
-	buf.data[3] = 255 * (creatureData->hue / 359.);
-	buf.data[4] = 255 * (creatureData->preference / 1);
-	buf.data[5] = 255 * (creatureData->metabolism / 2);
-
-	buf.mutate(bodyMutation);
-
-	creatureData->sight		 = (buf.data[0] * 2) / 255.;
-	creatureData->speed		 = (buf.data[1] * 2) / 255.;
-	creatureData->size		 = (buf.data[2] * 2) / 255.;
-	creatureData->hue		 = (buf.data[3] * 359.) / 255.;
-	creatureData->preference = (buf.data[4] / 255.);
-	creatureData->metabolism = ((buf.data[5] * 2.) / 255.);
+	// Buffer buf(EXTRA_BYTES);
+	// buf.data[0] = 255 * (creatureData->sight / 2);
+	// buf.data[1] = 255 * (creatureData->speed / 2);
+	// buf.data[2] = 255 * (creatureData->size / 2);
+	// buf.data[3] = 255 * (creatureData->hue / 359.);
+	// buf.data[4] = 255 * (creatureData->preference / 1);
+	// buf.data[5] = 255 * (creatureData->metabolism / 2);
+	//
+	// buf.mutate(bodyMutation);
+	//
+	// creatureData->sight		 = (buf.data[0] * 2) / 255.;
+	// creatureData->speed		 = (buf.data[1] * 2) / 255.;
+	// creatureData->size		 = (buf.data[2] * 2) / 255.;
+	// creatureData->hue		 = (buf.data[3] * 359.) / 255.;
+	// creatureData->preference = (buf.data[4] / 255.);
+	// creatureData->metabolism = ((buf.data[5] * 2.) / 255.);
 
 	if (!creatureData->useNEAT)
 	{
@@ -517,34 +516,36 @@ void Simulation::updateSimulation()
 	}
 
 	env.view<PhysicsObj>([](PhysicsObj &o, auto it) {
-		o.updatePhysics();
-
 		float velAng = o.velocity.angle();
 
-		if (std::isnan(velAng))
+		if (!std::isnan(velAng))
 		{
-			return;
+			float			   velMag = o.velocity.length();
+			agl::Vec<float, 2> velNor = o.velocity.normalized();
+
+			float relAng = velAng - o.GetAngle();
+			if (std::isnan(relAng))
+			{
+				Debug::log.emplace_back("nan ang " + std::to_string(o.velocity.x) + " " + std::to_string(o.velocity.y));
+			}
+
+			float side1 = abs(o.size.x * cos(relAng));
+			float side2 = abs(o.size.y * sin(relAng));
+
+			constexpr float density = .04;
+
+			agl::Vec<float, 2> drag1 = velNor * -(velMag * velMag * density * side1);
+			agl::Vec<float, 2> drag2 = velNor * -(velMag * velMag * density * side2);
+
+			// o.ApplyForceToCenter(drag1 + drag2);
 		}
 
-		float			   velMag = o.velocity.length();
-		agl::Vec<float, 2> velNor = o.velocity.normalized();
-
-		float relAng = velAng - o.GetAngle();
-
-		float side1 = abs(o.size.x * cos(relAng));
-		float side2 = abs(o.size.y * sin(relAng));
-
-		constexpr float density = .04;
-
-		agl::Vec<float, 2> drag1 = velNor * -(velMag * velMag * density * side1);
-		agl::Vec<float, 2> drag2 = velNor * -(velMag * velMag * density * side2);
-
-		o.ApplyForceToCenter(drag1 + drag2);
+		o.updatePhysics();
 	});
 	env.clearGrid();
 
 	env.selfUpdate<Creature>([this](Creature &creature) {
-		// creature.updateNetwork();
+		creature.updateNetwork();
 		creature.updateActions();
 
 		// egg laying
@@ -557,25 +558,26 @@ void Simulation::updateSimulation()
 			}
 		}
 
-		if (creature.incubating)
+		int iBio = (int)creature.biomass;
+		for (int i = 0; i < iBio; i++)
 		{
-			creature.energy -= PREGNANCY_COST;
-			creature.eggDesposit += PREGNANCY_COST;
+			CreatureData creatureData = creature.creatureData;
 
-			if (creature.eggDesposit >= creature.eggTotalCost)
-			{
-				CreatureData creatureData = creature.creatureData;
+			mutate(&creatureData, simulationRules.bodyMutation, simulationRules.brainMutation);
 
-				mutate(&creatureData, simulationRules.bodyMutation, simulationRules.brainMutation);
+			creatureData.startEnergy = creature.eggEnergyCost;
 
-				creatureData.startEnergy = creature.eggEnergyCost;
+			agl::Vec<float, 2> pos;
+			pos.x = simulationRules.size.x * ((float)rand() / (float)RAND_MAX);
+			pos.y = simulationRules.size.y * ((float)rand() / (float)RAND_MAX);
 
-				this->addEgg(creatureData, creature.position);
+			this->addEgg(creatureData, pos);
 
-				creature.incubating	 = false;
-				creature.eggDesposit = 0;
-			}
+			creature.incubating	 = false;
+			creature.eggDesposit = 0;
 		}
+
+		creature.biomass = 0;
 
 		// tired creature damage
 		if (creature.energy <= 0)
@@ -591,20 +593,16 @@ void Simulation::updateSimulation()
 		}
 
 		// killing creature
-		// if (creature.health <= 0)
-		// {
-		// 	this->addMeat(creature.position, creature.maxHealth / 4);
-		// 	creature.exists = false;
-		// 	return;
-		// }
+		if (creature.health <= 0)
+		{
+			// this->addMeat(creature.position, creature.maxHealth / 4);
+			creature.exists = false;
+			return;
+		}
 
 		if (creature.energy > creature.maxEnergy)
 		{
 			creature.energy = creature.maxEnergy;
-		}
-		if (creature.biomass > creature.maxBiomass)
-		{
-			creature.biomass = creature.maxBiomass;
 		}
 
 		for (auto itx = creature.segments.begin(); itx != creature.segments.end(); itx++)
@@ -717,72 +715,39 @@ void Simulation::updateSimulation()
 
 			for (ConstraintFailure &f : failure)
 			{
-				World::resolve(f, failure.size());
+				World::resolve(f, 1);
 			}
 		},
 		[](PhysicsObj &circle) { return 100; });
 
-	env.update<Creature, Creature>(
-		[env = &env](Creature &seeingCreature, Creature &creature, auto, auto) {
-			agl::Vec<float, 2> offset	= seeingCreature.position - creature.position;
-			float			   distance = offset.length();
+	while (env.pool.active())
+	{
+	}
 
-			if (distance > seeingCreature.creatureRelPos.distance)
-			{
-				return;
-			}
+	env.view<PhysicsObj>([](PhysicsObj &o, auto) {
+		if (o.collideCount)
+		{
+			o.acceleration /= o.collideCount;
+			o.angularAcceleration /= o.collideCount;
+			o.posOffset /= o.collideCount;
+			o.rotOffset /= o.collideCount;
 
-			if (std::isnan(distance))
-			{
-				return;
-			}
-
-			seeingCreature.creatureRelPos.rotation = vectorAngle(offset) + seeingCreature.rotation;
-			seeingCreature.creatureRelPos.distance = distance;
-
-			seeingCreature.network->setInputNode(CREATURE_PREFERENCE, creature.preference);
-		},
-		[](Creature &creature) { return creature.creatureRelPos.distance; });
+			o.collideCount = 0;
+		}
+	});
 
 	env.update<Creature, Food>(
 		[](Creature &creature, Food &food, auto, auto) {
-			agl::Vec<float, 2> offset	= creature.position - food.position;
-			float			   distance = offset.length();
-
-			if (distance > creature.foodRelPos.distance)
+			for (auto &seg : creature.segments)
 			{
-				return;
+				if ((seg->position - food.position).length() < 20)
+				{
+					creature.biomass += 1;
+					food.exists = false;
+				}
 			}
-
-			if (std::isnan(distance))
-			{
-				return;
-			}
-
-			creature.foodRelPos.rotation = vectorAngle(offset) + creature.rotation;
-			creature.foodRelPos.distance = distance;
 		},
 		[](Creature &creature) { return creature.foodRelPos.distance; });
-
-	env.update<Creature, Meat>(
-		[&](Creature &creature, Meat &meat, auto, auto) {
-			agl::Vec<float, 2> offset	= creature.position - meat.position;
-			float			   distance = offset.length();
-
-			if (distance > creature.meatRelPos.distance)
-			{
-				return;
-			}
-
-			if (std::isnan(distance))
-			{
-				return;
-			}
-
-			creature.meatRelPos.rotation = vectorAngle(offset) + creature.rotation;
-			creature.meatRelPos.distance = distance;
-		},
-		[](Creature &creature) { return creature.meatRelPos.distance; });
 
 	// creature eating
 	// env.update<Creature, Food>(

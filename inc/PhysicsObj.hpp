@@ -13,6 +13,7 @@ struct PolyShape
 class PhysicsObj : public BaseEntity
 {
 	public:
+		int				   collideCount		   = 0;
 		int				   id				   = 0;
 		bool			   forcable			   = false;
 		bool			   dynamic			   = false;
@@ -244,17 +245,6 @@ class World
 
 		static void motor(PhysicsObj &b1)
 		{
-			if (b1.getJointAngle() > (PI / 4))
-			{
-				b1.motor = .1;
-			}
-			if (b1.getJointAngle() < -(PI / 4))
-			{
-				b1.motor = -.1;
-			}
-
-			float maxImpulse = .015;
-
 			float vel	  = b1.rootConnect->angularVelocity - b1.angularVelocity;
 			float impulse = b1.motor - vel;
 
@@ -262,36 +252,6 @@ class World
 
 			b1.angularVelocity -= impulse * b1.invMass;
 			b1.rootConnect->angularVelocity += impulse * b1.rootConnect->invInertia;
-		}
-
-		static void processJoint(PhysicsObj &b1, ConstraintFailure &bare)
-		{
-			agl::Mat4f rot;
-			rot.rotateZ(-b1.radToDeg());
-
-			agl::Vec<float, 2> local1 = b1.position + (rot * b1.local1);
-			rot.rotateZ(-b1.rootConnect->radToDeg());
-			agl::Vec<float, 2> local2 = b1.rootConnect->position + (rot * b1.local2);
-
-			agl::Vec<float, 2> offset = local1 - local2;
-			agl::Vec<float, 2> normal = offset.normalized();
-			float			   dist	  = offset.length();
-
-			if (dist == 0)
-			{
-				return;
-			}
-
-			bare.b1		= &b1;
-			bare.b2		= b1.rootConnect;
-			bare.normal = normal;
-			bare.depth	= dist;
-			bare.inter1 = local1;
-			bare.inter2 = local2;
-			bare.r1		= b1.position - bare.inter1;
-			bare.r2		= b1.rootConnect->position - bare.inter2;
-
-			// motor(b1);
 		}
 
 		template <bool useBare = true>
@@ -399,79 +359,6 @@ class World
 
 			testRes(collision, divider);
 		}
-
-		static void collide(PhysicsObj &b1, PhysicsObj &b2)
-		{
-			PolyShape s1;
-			PolyShape s2;
-			// CHECK COLLISION
-			b1.boxToPoly(s1);
-			b2.boxToPoly(s2);
-
-			std::vector<ConstraintFailure> collision;
-
-			auto compCol = [&](PhysicsObj &a, PhysicsObj &b, PolyShape &sa, PolyShape &sb) {
-				for (agl::Vec<float, 2> &point : sb.points)
-				{
-					ConstraintFailure bare;
-					if (pointInBox(sa, point, bare))
-					{
-						collision.emplace_back(bare);
-						collision.back().b1 = &a;
-						collision.back().b2 = &b;
-						collision.back().r1 = collision.back().b1->position - collision.back().inter1;
-						collision.back().r2 = collision.back().b2->position - collision.back().inter2;
-					}
-				}
-			};
-
-			if (b1.rootConnect == &b2)
-			{
-				ConstraintFailure bare;
-				processJoint(b1, bare);
-
-				if (bare.depth != 0)
-				{
-					collision.emplace_back();
-					collision.back().b1		= &b1;
-					collision.back().b2		= &b2;
-					collision.back().normal = bare.normal;
-					collision.back().inter1 = bare.inter1;
-					collision.back().inter2 = bare.inter2;
-					collision.back().depth	= bare.depth;
-					collision.back().r1		= collision.back().b1->position - collision.back().inter1;
-					collision.back().r2		= collision.back().b2->position - collision.back().inter2;
-				}
-			}
-			else if (b2.rootConnect == &b1)
-			{
-				ConstraintFailure bare;
-				processJoint(b2, bare);
-
-				if (bare.depth != 0)
-				{
-					collision.emplace_back();
-					collision.back().b1		= &b2;
-					collision.back().b2		= &b1;
-					collision.back().normal = bare.normal;
-					collision.back().inter1 = bare.inter1;
-					collision.back().inter2 = bare.inter2;
-					collision.back().depth	= bare.depth;
-					collision.back().r1		= collision.back().b1->position - collision.back().inter1;
-					collision.back().r2		= collision.back().b2->position - collision.back().inter2;
-				}
-			}
-			else
-			{
-				compCol(b1, b2, s1, s2);
-				compCol(b2, b1, s2, s1);
-			}
-
-			for (ConstraintFailure &c : collision)
-			{
-				resolve(c, collision.size());
-			}
-		}
 };
 
 class TestObj : public Entity<PhysicsObj>
@@ -508,6 +395,9 @@ class CollisionConstraint
 						failure.back().b2 = &b;
 						failure.back().r1 = failure.back().b1->position - failure.back().inter1;
 						failure.back().r2 = failure.back().b2->position - failure.back().inter2;
+
+						failure.back().b1->collideCount++;
+						failure.back().b2->collideCount++;
 					}
 				}
 			};
@@ -540,13 +430,16 @@ class JointConstraint
 
 			failure.emplace_back();
 
-			failure.back().b1		= &b1;
-			failure.back().b2		= b1.rootConnect;
+			failure.back().b1	  = &b1;
+			failure.back().b2	  = b1.rootConnect;
 			failure.back().normal = normal;
-			failure.back().depth	= dist;
+			failure.back().depth  = dist;
 			failure.back().inter1 = local1;
 			failure.back().inter2 = local2;
-			failure.back().r1		= b1.position - failure.back().inter1;
-			failure.back().r2		= b1.rootConnect->position - failure.back().inter2;
+			failure.back().r1	  = b1.position - failure.back().inter1;
+			failure.back().r2	  = b1.rootConnect->position - failure.back().inter2;
+
+			failure.back().b1->collideCount++;
+			failure.back().b2->collideCount++;
 		}
 };

@@ -209,32 +209,24 @@ int main()
 	agl::Rectangle blankRect;
 	blankRect.setTexture(&blank);
 
-	std::string nodeNames[TOTAL_NODES];
-	nodeNames[CONSTANT_INPUT]	 = "Constant";
-	nodeNames[X_INPUT]			 = "X Position";
-	nodeNames[Y_INPUT]			 = "Y Position";
-	nodeNames[ROTATION_INPUT]	 = "Rotation";
-	nodeNames[SPEED_INPUT]		 = "Speed";
-	nodeNames[FOOD_DISTANCE]	 = "Distance To Food";
-	nodeNames[FOOD_ROTATION]	 = "Rotation To Food";
-	nodeNames[CREATURE_DISTANCE] = "Distance To Creature";
-	nodeNames[CREATURE_ROTATION] = "Rotation To Creature";
-	nodeNames[ENERGY_INPUT]		 = "Energy";
-	nodeNames[HEALTH_INPUT]		 = "Health";
-	nodeNames[LIFE_INPUT]		 = "Life Left";
+	std::string nodeNames[11];
+	nodeNames[0] = "Constant";
+	nodeNames[1] = "sin";
+	nodeNames[2] = "angle 1";
+	nodeNames[3] = "motor 1";
+	nodeNames[4] = "angle 2";
+	nodeNames[5] = "motor 2";
+	nodeNames[6] = "angle 3";
+	nodeNames[7] = "motor 3";
 
 	for (int i = TOTAL_INPUT; i < TOTAL_INPUT + TOTAL_HIDDEN; i++)
 	{
 		nodeNames[i] = "Hidden";
 	}
 
-	nodeNames[FOWARD_OUTPUT] = "Move Foward";
-	nodeNames[RIGHT_OUTPUT]	 = "Turn Right";
-	nodeNames[LEFT_OUTPUT]	 = "Turn Left";
-	nodeNames[EAT_OUTPUT]	 = "Eat";
-	nodeNames[LAYEGG_OUTPUT] = "Lay Egg";
-	nodeNames[MEAT_ROTATION] = "Rotation To Meat";
-	nodeNames[MEAT_DISTANCE] = "Distance To Meat";
+	nodeNames[8]  = "move 1";
+	nodeNames[9]  = "move 2";
+	nodeNames[10] = "move 3";
 
 	printf("loading simulation rules from sim.conf\n");
 
@@ -690,16 +682,16 @@ int main()
 		}
 
 		// Draw food
-		// simulation.env.view<Food>(
-		// 	[&](auto &food, auto) {
-		// 		agl::Vec<float, 2> position = food.position;
-		// 		foodShape.setPosition(position);
-		// 		foodShape.setOffset(food.size / -2);
-		// 		foodShape.setSize(food.size);
-		// 		foodShape.setRotation({0, 0, -food.radToDeg()});
-		// 		window.drawShape(foodShape);
-		// 	},
-		// 	topLeftGrid, bottomRightGrid);
+		simulation.env.view<Food>(
+			[&](auto &food, auto) {
+				agl::Vec<float, 2> position = food.position;
+				foodShape.setPosition(position);
+				foodShape.setOffset(food.size / -2);
+				foodShape.setSize(food.size);
+				foodShape.setRotation({0, 0, -food.radToDeg()});
+				window.drawShape(foodShape);
+			},
+			topLeftGrid, bottomRightGrid);
 
 		// simulation.env.view<Meat>(
 		// 	[&](auto &meat, auto) {
@@ -712,30 +704,30 @@ int main()
 		// 	topLeftGrid, bottomRightGrid);
 
 		// draw eggs
-		// simulation.env.view<Egg>(
-		// 	[&](auto &egg, auto) {
-		// 		eggShape.setPosition(egg.position);
-		// 		window.drawShape(eggShape);
-		// 	},
-		// 	topLeftGrid, bottomRightGrid);
+		simulation.env.view<Egg>(
+			[&](Egg &egg, auto) {
+				eggShape.setPosition(egg.position);
+				window.drawShape(eggShape);
+			},
+			topLeftGrid, bottomRightGrid);
 
 		// draw debug obj
-		simulation.env.view<PhysicsObj>(
-			[&](auto &obj, auto) {
-				blankRect.setPosition(obj.position);
-				blankRect.setOffset(obj.size * -.5);
-				blankRect.setRotation({0, 0, -obj.radToDeg()});
-				blankRect.setSize(obj.size);
+		simulation.env.view<Creature>(
+			[&](Creature &obj, auto) {
+				for (auto seg : obj.segments)
+				{
+					blankRect.setPosition(seg->position);
+					blankRect.setOffset(seg->size * -.5);
+					blankRect.setRotation({0, 0, -seg->radToDeg()});
+					blankRect.setSize(seg->size);
 
-				agl::Color c;
+					agl::Color c =
+						&obj == focusCreature ? hueToRGB(obj.creatureData.hue + 20) : hueToRGB(obj.creatureData.hue);
 
-				int addr = ((long long)&obj);
+					blankRect.setColor(c);
 
-				c = hueToRGB(addr);
-
-				blankRect.setColor(c);
-
-				window.drawShape(blankRect);
+					window.drawShape(blankRect);
+				}
 			},
 			topLeftGrid, bottomRightGrid);
 
@@ -745,51 +737,65 @@ int main()
 		// typeid(TestObj).hash_code()).size() << '\n';
 
 		// draw rays
-		if (contains(simulation.env.getList<Creature>(), focusCreature))
-		{
-			rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH * focusCreature->sight});
-			rayShape.setPosition(focusCreature->position);
-
-			{
-				float angleOffset = focusCreature->network->getNode(CREATURE_ROTATION).value * 180;
-				angleOffset += 180;
-
-				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->rotation);
-
-				float weight = focusCreature->network->getNode(CREATURE_DISTANCE).value;
-
-				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-
-				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
-				window.drawShape(rayShape);
-			}
-			{
-				float angleOffset = focusCreature->network->getNode(FOOD_ROTATION).value * 180;
-				angleOffset += 180;
-
-				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->rotation);
-
-				float weight = focusCreature->network->getNode(FOOD_DISTANCE).value;
-
-				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-
-				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
-				window.drawShape(rayShape);
-			}
-			{
-				float angleOffset = focusCreature->network->getNode(MEAT_ROTATION).value * 180;
-				angleOffset += 180;
-
-				float rayAngle = angleOffset - agl::radianToDegree(focusCreature->rotation);
-
-				float weight = focusCreature->network->getNode(MEAT_DISTANCE).value;
-
-				rayShape.setColor({0, (unsigned char)(weight * 255), BASE_B_VALUE});
-
-				rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
-				window.drawShape(rayShape);
-			}
-		}
+		// if (contains(simulation.env.getList<Creature>(), focusCreature))
+		// {
+		// 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH *
+		// focusCreature->sight}); 	rayShape.setPosition(focusCreature->position);
+		//
+		// 	{
+		// 		float angleOffset =
+		// focusCreature->network->getNode(CREATURE_ROTATION).value * 180;
+		// 		angleOffset += 180;
+		//
+		// 		float rayAngle = angleOffset -
+		// agl::radianToDegree(focusCreature->rotation);
+		//
+		// 		float weight =
+		// focusCreature->network->getNode(CREATURE_DISTANCE).value;
+		//
+		// 		rayShape.setColor({0, (unsigned char)(weight * 255),
+		// BASE_B_VALUE});
+		//
+		// 		rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
+		// 		window.drawShape(rayShape);
+		// 	}
+		// 	{
+		// 		float angleOffset =
+		// focusCreature->network->getNode(FOOD_ROTATION).value * 180;
+		// angleOffset
+		// += 180;
+		//
+		// 		float rayAngle = angleOffset -
+		// agl::radianToDegree(focusCreature->rotation);
+		//
+		// 		float weight =
+		// focusCreature->network->getNode(FOOD_DISTANCE).value;
+		//
+		// 		rayShape.setColor({0, (unsigned char)(weight * 255),
+		// BASE_B_VALUE});
+		//
+		// 		rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
+		// 		window.drawShape(rayShape);
+		// 	}
+		// 	{
+		// 		float angleOffset =
+		// focusCreature->network->getNode(MEAT_ROTATION).value * 180;
+		// angleOffset
+		// += 180;
+		//
+		// 		float rayAngle = angleOffset -
+		// agl::radianToDegree(focusCreature->rotation);
+		//
+		// 		float weight =
+		// focusCreature->network->getNode(MEAT_DISTANCE).value;
+		//
+		// 		rayShape.setColor({0, (unsigned char)(weight * 255),
+		// BASE_B_VALUE});
+		//
+		// 		rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
+		// 		window.drawShape(rayShape);
+		// 	}
+		// }
 
 		// draw creature
 		// simulation.env.view<Creature>(
@@ -952,6 +958,9 @@ int main()
 			focusCreature = nullptr;
 		}
 
+		{
+		}
+
 		if (event.isPointerButtonPressed(agl::Button::Left))
 		{
 			if (menuBar.exists)
@@ -979,26 +988,23 @@ int main()
 			}
 			if (leftMenuPointers.select->state) // select creature
 			{
-				// simulation.env.view<Creature>([&](auto &creature, auto
-				// it) { 	agl::Vec<float, 2> mouse; 	mouse.x =
-				// ((event.getPointerWindowPosition().x - (windowSize.x *
-				// .5)) * sizeMultiplier) + 			  cameraPosition.x;
-				// mouse.y
-				// =
-				// ((event.getPointerWindowPosition().y - (windowSize.y *
-				// .5)) * sizeMultiplier) +
-				// cameraPosition.y;
-				//
-				// 	float distance = (mouse - creature.position).length();
-				//
-				// 	if (distance < creature.radius)
-				// 	{
-				// 		focusCreature			= &creature;
-				// 		simulation.env.selected = focusCreature;
-				//
-				// 		return;
-				// 	}
-				// });
+				simulation.env.view<Creature>([&](auto &creature, auto it) {
+					agl::Vec<float, 2> mouse;
+					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
+							  cameraPosition.x;
+					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
+							  cameraPosition.y;
+
+					float distance = (mouse - creature.position).length();
+
+					if (distance < creature.size.x)
+					{
+						focusCreature			= &creature;
+						simulation.env.selected = focusCreature;
+
+						return;
+					}
+				});
 			}
 			if (leftMenuPointers.kill->state) // kill creature
 			{
@@ -1030,20 +1036,22 @@ int main()
 				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
 																	   sizeMultiplier, cameraPosition);
 
-				topLeftGrid				 = simulation.env.toGridPosition(cursorRelPos - agl::Vec<float, 2>{1000, 1000});
+				topLeftGrid = simulation.env.toGridPosition(cursorRelPos - agl::Vec<float, 2>{1000, 1000});
 
 				bottomRightGrid = simulation.env.toGridPosition(cursorRelPos + agl::Vec<float, 2>{1000, 1000});
 
-				simulation.env.view<Food>([&](Food &food, auto) {
-					agl::Vec<float, 2> offset	= food.position - cursorRelPos;
-					float			   distance = offset.length();
+				simulation.env.view<Food>(
+					[&](Food &food, auto) {
+						agl::Vec<float, 2> offset	= food.position - cursorRelPos;
+						float			   distance = offset.length();
 
-					float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
+						float forceScalar = leftMenuPointers.forceMultiplier->value / distance;
 
-					agl::Vec<float, 2> force = offset.normalized() * forceScalar;
+						agl::Vec<float, 2> force = offset.normalized() * forceScalar;
 
-					food.ApplyForceToCenter(force);
-				}, topLeftGrid, bottomRightGrid);
+						food.ApplyForceToCenter(force);
+					},
+					topLeftGrid, bottomRightGrid);
 				{
 				}
 			}

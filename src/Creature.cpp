@@ -48,7 +48,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->maxRotation = 0.05 * speed;
 
 	this->health = 100 * sizeData * sizeData * sizeData;
-	this->life	 = 60 * 60 * sizeData * sizeData * sizeData;
+	this->life	 = 60 * 60 * 10 * sizeData * sizeData * sizeData;
 
 	this->maxEnergy = 100 * sizeData * sizeData * sizeData;
 	this->maxHealth = 100 * sizeData * sizeData * sizeData;
@@ -82,8 +82,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	std::vector<in::Connection> connection(creatureData.connection,
 										   creatureData.connection + creatureData.totalConnections);
 
-	in::NetworkStructure structure(this->creatureData.totalConnections, TOTAL_INPUT, TOTAL_HIDDEN, TOTAL_OUTPUT,
-								   connection);
+	in::NetworkStructure structure(this->creatureData.totalConnections, 8, 0, 3, connection);
 
 	network = new in::NeuralNetwork(structure);
 
@@ -135,24 +134,35 @@ void Creature::updateNetwork()
 
 		if (memSlot == 0)
 		{
-			for (int i = 0; i < TOTAL_OUTPUT; i++)
+			for (int i = 0; i < network->structure.totalOutputNodes; i++)
 			{
 				shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * simulationRules->exploration;
 			}
 		}
 
-		for (int i = 0; i < TOTAL_INPUT; i++)
+		for (int i = 0; i < network->structure.totalInputNodes; i++)
 		{
 			memory[memSlot].state[i] = network->inputNode[i]->value;
+			if (std::isnan(memory[memSlot].state[i]))
+			{
+				std::cout << life << " nan " << i << '\n';
+			}
 		}
 
-		for (int i = 0; i < TOTAL_OUTPUT; i++)
+		if (std::isnan(reward))
 		{
+			std::cout << "reward" << '\n';
+		}
+		memory[memSlot].reward = reward;
+		reward				   = 0;
 
-			network->outputNode[i].value += shift[i];
-			network->outputNode[i].value = std::clamp<float>(network->outputNode[i].value, -1, 1);
-
+		for (int i = 0; i < network->structure.totalOutputNodes; i++)
+		{
 			memory[memSlot].action[i] = network->outputNode[i].value;
+			if (std::isnan(memory[memSlot].action[i]))
+			{
+				std::cout << life << " nan  action " << i << '\n';
+			}
 		}
 	}
 
@@ -184,16 +194,16 @@ void Creature::updateNetwork()
 
 		for (int i = 0; i < simulationRules->memory; i++)
 		{
-			for (int x = 0; x < TOTAL_INPUT; x++)
+			for (int x = 0; x < network->structure.totalInputNodes; x++)
 			{
 				network->setInputNode(x, memory[i].state[x]);
 			}
 
 			network->update();
 
-			std::vector<float> target(TOTAL_OUTPUT);
+			std::vector<float> target(network->structure.totalOutputNodes);
 
-			for (int x = 0; x < TOTAL_OUTPUT; x++)
+			for (int x = 0; x < network->structure.totalOutputNodes; x++)
 			{
 				target[x] = memory[i].action[x];
 			}
@@ -205,117 +215,56 @@ void Creature::updateNetwork()
 		network->applyGradients(gradients, loss, simulationRules->memory);
 	}
 
-	network->setInputNode(CONSTANT_INPUT, 1);
+	int node = 2;
 
-	network->setInputNode(X_INPUT, ((position.x / simulationRules->size.x) * 2) - 1);
-	network->setInputNode(Y_INPUT, ((position.y / simulationRules->size.y) * 2) - 1);
+	network->setInputNode(0, 1);
+	network->setInputNode(1, sin((maxLife - life) / 20.));
 
-	network->setInputNode(ROTATION_INPUT, rotation / PI);
-
-	network->setInputNode(SPEED_INPUT, velocity.length());
-
-	network->setInputNode(CREATURE_PREFERENCE, 0);
-
-	network->setInputNode(CREATURE_DISTANCE, 1 - (creatureRelPos.distance / rayLength));
-	network->setInputNode(CREATURE_ROTATION, loop(-PI, PI, creatureRelPos.rotation) / PI);
-
-	network->setInputNode(FOOD_DISTANCE, 1 - (foodRelPos.distance / rayLength));
-	network->setInputNode(FOOD_ROTATION, loop(-PI, PI, foodRelPos.rotation) / PI);
-
-	network->setInputNode(MEAT_DISTANCE, 1 - (meatRelPos.distance / rayLength));
-	network->setInputNode(MEAT_ROTATION, loop(-PI, PI, meatRelPos.rotation) / PI);
-
-	creatureRelPos = {0, rayLength};
-	foodRelPos	   = {0, rayLength};
-	meatRelPos	   = {0, rayLength};
-
-	network->setInputNode(ENERGY_INPUT, energy / maxEnergy);
-	network->setInputNode(HEALTH_INPUT, health / maxHealth);
-	network->setInputNode(LIFE_INPUT, (float)life / maxLife);
+	for (int i = 0; i < segments.size(); i++)
+	{
+		if (segments[i]->rootConnect != nullptr)
+		{
+			network->setInputNode(node, segments[i]->getJointAngle() / (PI / 2));
+			node++;
+			network->setInputNode(node, segments[i]->motor / (PI / 2));
+			node++;
+		}
+	}
 
 	network->update();
 
-	return;
+	for (int i = 0; i < network->structure.totalOutputNodes; i++)
+	{
+		network->outputNode[i].value += shift[i];
+		network->outputNode[i].value = std::clamp<float>(network->outputNode[i].value, -1, 1);
+	}
 }
 
 void Creature::updateActions()
 {
+	int node = 0;
 
-	float moveForce = 0;
-
-	// moveForce += 1 * maxForce;
-
-	if (network->getNode(FOWARD_OUTPUT).value > 0)
+	for (auto &seg : segments)
 	{
-		moveForce += network->getNode(FOWARD_OUTPUT).value * maxForce;
-	}
-
-	if (network->getNode(RIGHT_OUTPUT).value > 0)
-	{
-		angularAcceleration += maxRotation * network->getNode(RIGHT_OUTPUT).value;
-	}
-
-	if (network->getNode(LEFT_OUTPUT).value > 0)
-	{
-		angularAcceleration -= maxRotation * network->getNode(LEFT_OUTPUT).value;
-	}
-
-	if (network->getNode(EAT_OUTPUT).value > 0)
-	{
-		eating = true;
-	}
-	else
-	{
-		eating = false;
-	}
-
-	if (network->getNode(LAYEGG_OUTPUT).value > 0)
-	{
-		layingEgg = true;
-	}
-	else
-	{
-		layingEgg = false;
-	}
-
-	if (biomass > 0)
-	{
-		biomass -= metabolism;
-		energy += energyDensity * metabolism;
-
-		if (biomass < 0)
+		if (seg->rootConnect != nullptr)
 		{
-			biomass = 0;
+			float ang = seg->getJointAngle();
+			float net = network->outputNode[node].value * (PI / 2);
+
+			// float net = sin(frame / 20.);
+			// std::cout << ang << '\n';
+
+			float diff = ang - net;
+			// std::cout << diff << '\n';
+
+			seg->motor = ((1. / 20) * diff);
+			// std::cout << agl::radianToDegree(joint[i].getAngle()) << '\n';
+
+			node++;
 		}
 	}
-
-	// energy loss
-	energy -=
-		(sight + (moveForce * moveForce * sizeData * sizeData * sizeData)) * simulationRules->energyCostMultiplier;
 
 	life--;
-
-	acceleration.x += cos(rotation - (PI / 2)) * moveForce * invMass;
-	acceleration.y += sin(rotation - (PI / 2)) * moveForce * invMass;
-
-	for (auto seg : segments)
-	{
-		if(seg->rootConnect == nullptr)
-		{
-			continue;
-		}
-		float ang = seg->getJointAngle();
-		// float net = network->outputNode[i].value * (PI / 2);
-
-		float net = sin(life / 20.);
-		// std::cout << ang << '\n';
-
-		float diff = ang - net;
-		// std::cout << diff << '\n';
-
-		seg->motor = ((1. / 20) * diff);
-		// std::cout << agl::radianToDegree(joint[i].getAngle()) << '\n';
-	}
 
 	return;
 }
