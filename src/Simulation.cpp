@@ -128,22 +128,22 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 
 		newCreature.segments.emplace_back(&r0);
 	}
-	// auto &r1 = env.addEntity<TestObj>();
-	// {
-	// 	r1.setup({position.x, position.y + r0.size.y}, {4, r0.size.y}, 1);
-	//
-	// 	PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, r0, {0, r0.size.y / 2});
-	//
-	// 	newCreature.segments.emplace_back(&r1);
-	// }
-	// {
-	// 	auto &r2 = env.addEntity<TestObj>();
-	// 	r2.setup({position.x, position.y + r1.size.y}, {4, r1.size.y}, 1);
-	//
-	// 	PhysicsObj::addJoint(r2, {0, -r2.size.y / 2}, r1, {0, r1.size.y / 2});
-	//
-	// 	newCreature.segments.emplace_back(&r2);
-	// }
+	auto &r1 = env.addEntity<TestObj>();
+	{
+		r1.setup(r0.position + agl::Vec<float, 2>{0, r0.size.y}, {4, r0.size.y}, 1);
+
+		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, r0, {0, r0.size.y / 2});
+
+		newCreature.segments.emplace_back(&r1);
+	}
+	{
+		auto &r2 = env.addEntity<TestObj>();
+		r2.setup(r1.position + agl::Vec<float, 2>{0, r1.size.y}, {4, r1.size.y}, 1);
+
+		PhysicsObj::addJoint(r2, {0, -r2.size.y / 2}, r1, {0, r1.size.y / 2});
+
+		newCreature.segments.emplace_back(&r2);
+	}
 
 	// newCreature.position.x += newCreature.size.x / 2;
 	// newCreature.position.y += newCreature.size.y / 2;

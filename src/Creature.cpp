@@ -257,7 +257,7 @@ void Creature::updateActions()
 			float diff = ang - net;
 			// std::cout << diff << '\n';
 
-			seg->motor = ((1. / 20) * diff);
+			seg->motor = (1/6. * diff);
 			// std::cout << agl::radianToDegree(joint[i].getAngle()) << '\n';
 
 			node++;

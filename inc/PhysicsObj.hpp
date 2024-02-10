@@ -4,6 +4,7 @@
 #include "Environment.hpp"
 #include "other.hpp"
 #include <AGL/agl.hpp>
+#include <algorithm>
 
 struct PolyShape
 {
@@ -23,7 +24,7 @@ class PhysicsObj : public BaseEntity
 		agl::Vec<float, 2> velocity			   = {0, 0};
 		agl::Vec<float, 2> acceleration		   = {0, 0};
 		float			   mass				   = 1;
-		float			   rotation			   = PI / 4;
+		float			   rotation			   = 0;
 		float			   angularVelocity	   = 0;
 		float			   inertia			   = 1;
 		float			   invMass			   = 1;
@@ -34,6 +35,7 @@ class PhysicsObj : public BaseEntity
 		float			   refRot			   = 0;
 		float			   motor			   = 0;
 		agl::Vec<float, 2> force;
+		float			   oldImpulse = 0;
 
 		PhysicsObj		  *rootConnect = nullptr;
 		agl::Vec<float, 2> local1;
@@ -247,12 +249,36 @@ class World
 		static void motor(PhysicsObj &b1)
 		{
 			float vel	  = b1.rootConnect->angularVelocity - b1.angularVelocity;
-			float impulse = b1.motor - vel;
+			float impulse = (b1.motor - vel) ;//* (1 / (b1.inertia + b1.rootConnect->inertia));
 
-			// float impulse = b1.motor;
+			// float torque= 1;
+			// impulse = std::clamp(impulse, -torque, torque);
 
-			b1.angularAcceleration -= impulse * b1.invMass;
+            float oldImp = b1.oldImpulse;
+            b1.oldImpulse = oldImp;
+			impulse = impulse - oldImp;
+
+            // float impulse = b1.motor;
+
+            std::cout << impulse << '\n';
+
+			b1.angularAcceleration -= impulse * b1.invInertia;
 			b1.rootConnect->angularAcceleration += impulse * b1.rootConnect->invInertia;
+
+			// float torque = 100000000;
+			//
+			// float Cdot		   = b1.angularVelocity - b1.rootConnect->angularVelocity
+			// - b1.motor; float impulse	   = (1 / (b1.rootConnect->inertia +
+			// b1.inertia)
+			// * Cdot); float motorImpulse = std::clamp(b1.oldImpulse + impulse,
+			// -torque, torque);
+			//          std::cout << motorImpulse << '\n';
+			// impulse			   = motorImpulse;
+			//          b1.oldImpulse = motorImpulse;
+			//
+			// b1.angularAcceleration -= impulse * b1.invInertia;
+			// b1.rootConnect->angularAcceleration += impulse *
+			// b1.rootConnect->invInertia;
 		}
 
 		template <bool useBare = true>
