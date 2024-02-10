@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AGL/include/ShaderBuilder.hpp"
 #include "Environment.hpp"
 #include "other.hpp"
 #include <AGL/agl.hpp>
@@ -22,7 +23,7 @@ class PhysicsObj : public BaseEntity
 		agl::Vec<float, 2> velocity			   = {0, 0};
 		agl::Vec<float, 2> acceleration		   = {0, 0};
 		float			   mass				   = 1;
-		float			   rotation			   = 0;
+		float			   rotation			   = PI / 4;
 		float			   angularVelocity	   = 0;
 		float			   inertia			   = 1;
 		float			   invMass			   = 1;
@@ -250,8 +251,8 @@ class World
 
 			// float impulse = b1.motor;
 
-			b1.angularVelocity -= impulse * b1.invMass;
-			b1.rootConnect->angularVelocity += impulse * b1.rootConnect->invInertia;
+			b1.angularAcceleration -= impulse * b1.invMass;
+			b1.rootConnect->angularAcceleration += impulse * b1.rootConnect->invInertia;
 		}
 
 		template <bool useBare = true>
@@ -358,6 +359,37 @@ class World
 			collision.b2->angularAcceleration += rp2.dot(collision.normal * impulse) * collision.b2->invInertia;
 
 			testRes(collision, divider);
+		}
+
+		static void resolve(agl::Vec<float, 2> input1, agl::Vec<float, 2> input2, float rot1, float rot2,
+							float invInertia1, float invInertia2, float invMass1, float invMass2,
+							agl::Vec<float, 2> normal, agl::Vec<float, 2> r1, agl::Vec<float, 2> r2,
+							agl::Vec<float, 2> &out1, agl ::Vec<float, 2> &out2, float &rotOut1, float &rotOut2,
+							int divider)
+		{
+			agl::Vec<float, 2> rp1	  = perp(r1);
+			agl::Vec<float, 2> rp2	  = perp(r2);
+			agl::Vec<float, 2> relVel = (input1 + (rp1 * -rot1)) - (input2 + (rp2 * -rot2));
+
+			float restitution = 1;
+			auto  top		  = (relVel * -(1 + restitution)).dot(normal);
+
+			float botl1 = std::pow(rp1.dot(normal), 2) * invInertia1;
+			float botl2 = std::pow(rp2.dot(normal), 2) * invInertia2;
+
+			auto  bottom  = normal.dot(normal * (invMass1 + invMass2)) + botl1 + botl2;
+			float impulse = top / bottom;
+
+			impulse /= divider;
+
+			agl::Vec<float, 2> acc1 = normal * (impulse * invMass1);
+			agl::Vec<float, 2> acc2 = normal * (impulse * -invMass2);
+
+			out1 += acc1;
+			out2 += acc2;
+
+			rotOut1 -= rp1.dot(normal * impulse) * invInertia1;
+			rotOut2 += rp2.dot(normal * impulse) * invInertia2;
 		}
 };
 

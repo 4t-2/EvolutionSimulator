@@ -128,22 +128,22 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 
 		newCreature.segments.emplace_back(&r0);
 	}
-	auto &r1 = env.addEntity<TestObj>();
-	{
-		r1.setup({position.x, position.y + r0.size.y}, {4, r0.size.y}, 1);
-
-		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, r0, {0, r0.size.y / 2});
-
-		newCreature.segments.emplace_back(&r1);
-	}
-	{
-		auto &r2 = env.addEntity<TestObj>();
-		r2.setup({position.x, position.y + r1.size.y}, {4, r1.size.y}, 1);
-
-		PhysicsObj::addJoint(r2, {0, -r2.size.y / 2}, r1, {0, r1.size.y / 2});
-
-		newCreature.segments.emplace_back(&r2);
-	}
+	// auto &r1 = env.addEntity<TestObj>();
+	// {
+	// 	r1.setup({position.x, position.y + r0.size.y}, {4, r0.size.y}, 1);
+	//
+	// 	PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, r0, {0, r0.size.y / 2});
+	//
+	// 	newCreature.segments.emplace_back(&r1);
+	// }
+	// {
+	// 	auto &r2 = env.addEntity<TestObj>();
+	// 	r2.setup({position.x, position.y + r1.size.y}, {4, r1.size.y}, 1);
+	//
+	// 	PhysicsObj::addJoint(r2, {0, -r2.size.y / 2}, r1, {0, r1.size.y / 2});
+	//
+	// 	newCreature.segments.emplace_back(&r2);
+	// }
 
 	// newCreature.position.x += newCreature.size.x / 2;
 	// newCreature.position.y += newCreature.size.y / 2;
@@ -502,6 +502,82 @@ agl::Vec<int, 2> indexToPosition(int i, agl::Vec<int, 2> size)
 	return {i % size.x, i / size.x};
 }
 
+void oldAirRes(PhysicsObj &o)
+{
+	float velAng = o.velocity.angle();
+
+	if (!std::isnan(velAng))
+	{
+		float			   velMag = o.velocity.length();
+		agl::Vec<float, 2> velNor = o.velocity.normalized();
+
+		float relAng = velAng - o.GetAngle();
+
+		float side1 = abs(o.size.x * cos(relAng));
+		float side2 = abs(o.size.y * sin(relAng));
+
+		// agl::Vec<float, 2> norm = {-cos(relAng), -sin(relAng)};
+
+		constexpr float density = .04;
+
+		agl::Vec<float, 2> drag1 = velNor * -(velMag * velMag * density * side1);
+		// drag1					 = {drag1.x * norm.x, drag1.y *
+		// norm.y}; norm					 = perp(norm);
+		agl::Vec<float, 2> drag2 = velNor * -(velMag * velMag * density * side2);
+		// drag2					 = {drag2.x * norm.x, drag2.y *
+		// norm.y};
+
+		o.ApplyForceToCenter(drag1 + drag2);
+	}
+}
+
+void calcAirResForSide(PhysicsObj &o, agl::Vec<float, 2> norm, std::function<float(float)> trigFunc, float relAng,
+					   float side1, float side2, float velMag)
+{
+	constexpr float density = .04;
+
+	agl::Vec<float, 2> size	   = {abs(side1 * trigFunc(relAng)), velMag * velMag};
+	float			   mass	   = size.x * size.y * density;
+	float			   inertia = (1 / 12.) * mass * (size.x * size.x + size.y * size.y);
+
+	agl::Vec<float, 2> airAccLin;
+	float			   airAccRot;
+
+	agl::Vec<float, 2> r1 = norm * side2 / 2;
+
+	World::resolve(o.velocity, {0, 0}, o.angularVelocity, 0, o.invInertia, 1 / inertia, o.invMass, 1 / mass, norm, r1,
+				   norm * velMag / -2, o.acceleration, airAccLin, o.angularAcceleration, airAccRot, 1);
+}
+
+void newAirRes(PhysicsObj &o)
+{
+	float velAng = o.velocity.angle();
+
+	agl::Mat4f rot;
+	rot.rotateZ(-o.radToDeg());
+
+	agl::Vec<float, 2> norms[4];
+	norms[0] = rot * agl::Vec<float, 2>{0, -1};
+	norms[1] = rot * agl::Vec<float, 2>{1, 0};
+	norms[2] = rot * agl::Vec<float, 2>{0, 1};
+	norms[3] = rot * agl::Vec<float, 2>{-1, 0};
+
+	float			   velMag = o.velocity.length();
+	agl::Vec<float, 2> velNor = o.velocity.normalized();
+
+	float relAng = velAng - o.GetAngle();
+
+	for (int i = 0; i < 4; i++)
+	{
+		auto norm = norms[i];
+		if (norm.dot(o.velocity) > 0)
+		{
+			calcAirResForSide(o, norm, i % 2 ? sinf : cosf, relAng, i % 2 ? o.size.y : o.size.x,
+							  i % 2 ? o.size.x : o.size.y, velMag);
+		}
+	}
+}
+
 void Simulation::updateSimulation()
 {
 	// adding more food
@@ -516,29 +592,7 @@ void Simulation::updateSimulation()
 	}
 
 	env.view<PhysicsObj>([](PhysicsObj &o, auto it) {
-		float velAng = o.velocity.angle();
-
-		if (!std::isnan(velAng))
-		{
-			float			   velMag = o.velocity.length();
-			agl::Vec<float, 2> velNor = o.velocity.normalized();
-
-			float relAng = velAng - o.GetAngle();
-			if (std::isnan(relAng))
-			{
-				Debug::log.emplace_back("nan ang " + std::to_string(o.velocity.x) + " " + std::to_string(o.velocity.y));
-			}
-
-			float side1 = abs(o.size.x * cos(relAng));
-			float side2 = abs(o.size.y * sin(relAng));
-
-			constexpr float density = .04;
-
-			agl::Vec<float, 2> drag1 = velNor * -(velMag * velMag * density * side1);
-			agl::Vec<float, 2> drag2 = velNor * -(velMag * velMag * density * side2);
-
-			// o.ApplyForceToCenter(drag1 + drag2);
-		}
+		newAirRes(o);
 
 		o.updatePhysics();
 	});

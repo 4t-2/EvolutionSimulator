@@ -1049,7 +1049,7 @@ int main()
 
 						agl::Vec<float, 2> force = offset.normalized() * forceScalar;
 
-						food.ApplyForceToCenter(force);
+						food.ApplyForceToCenter({0.02, 0});
 					},
 					topLeftGrid, bottomRightGrid);
 				{
