@@ -34,7 +34,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	speed	 = creatureData.speed;
 	sizeData = creatureData.size;
 
-	PhysicsObj::setup({0, 0}, {sizeData * 25, sizeData * 25}, 4);
+	PhysicsObj::setup({0, 0}, {sizeData * 24, sizeData * 24}, 4);
 
 	hue = creatureData.hue;
 

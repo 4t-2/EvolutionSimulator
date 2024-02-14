@@ -138,6 +138,9 @@ int main()
 	agl::Shader gridShader;
 	gridShader.loadFromFile("./shader/gridvert.glsl", "./shader/grid.glsl");
 
+	agl::Shader viteShader;
+	viteShader.loadFromFile("./shader/viteVert.glsl", "./shader/vite.glsl");
+
 	agl::Camera camera;
 	camera.setOrthographicProjection(0, WIDTH, HEIGHT, 0, 0.1, 100);
 	agl::Vec<float, 2> cameraPosition = {0, 0};
@@ -711,11 +714,19 @@ int main()
 			},
 			topLeftGrid, bottomRightGrid);
 
-		// draw debug obj
+		window.getShaderUniforms(viteShader);
+		viteShader.use();
+
+		window.updateMvp(camera);
+
+		// draw creature
 		simulation.env.view<Creature>(
 			[&](Creature &obj, auto) {
 				for (auto seg : obj.segments)
 				{
+					glUniform1f(viteShader.getUniformLocation("scaleX"), seg->size.x);
+					glUniform1f(viteShader.getUniformLocation("scaleY"), seg->size.y);
+
 					blankRect.setPosition(seg->position);
 					blankRect.setOffset(seg->size * -.5);
 					blankRect.setRotation({0, 0, -seg->radToDeg()});
@@ -867,6 +878,10 @@ int main()
 		// 	topLeftGrid, bottomRightGrid);
 
 	skipSimRender:;
+
+		window.getShaderUniforms(simpleShader);
+		simpleShader.use();
+		window.updateMvp(camera);
 
 		// gui rendering
 
@@ -1049,7 +1064,7 @@ int main()
 
 						agl::Vec<float, 2> force = offset.normalized() * forceScalar;
 
-						food.ApplyForceToCenter({0.02, 0});
+						food.ApplyForceToCenter(force);
 					},
 					topLeftGrid, bottomRightGrid);
 				{

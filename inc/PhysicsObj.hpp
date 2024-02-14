@@ -260,8 +260,6 @@ class World
 
             // float impulse = b1.motor;
 
-            std::cout << impulse << '\n';
-
 			b1.angularAcceleration -= impulse * b1.invInertia;
 			b1.rootConnect->angularAcceleration += impulse * b1.rootConnect->invInertia;
 
