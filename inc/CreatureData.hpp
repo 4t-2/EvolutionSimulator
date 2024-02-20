@@ -3,11 +3,18 @@
 #include <AGL/agl.hpp>
 #include <IN/intnet.hpp>
 
+class SegmentData
+{
+	public:
+		agl::Vec<float, 2>		 size;
+		std::vector<SegmentData> branch;
+};
+
 class CreatureData
 {
 	public:
 		in::Connection *connection = nullptr; // NOTE maybe store as List<Connection>,
-										  // would make mutation easier
+											  // would make mutation easier
 		int	  totalConnections;
 		float sight; // 0 - 2
 		float speed; // 0 - 2
@@ -20,6 +27,12 @@ class CreatureData
 
 		bool useNEAT;
 		bool usePG;
+
+		std::vector<SegmentData> sd = {
+			{{24, 24}, {}},
+			{{8, 24}, {}},
+			{{4, 24}, {}},
+		};
 
 		CreatureData();
 		CreatureData(float sight, float speed, float size, int hue, int totalConnections);

@@ -113,41 +113,47 @@ void Simulation::destroy()
 void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> position)
 {
 	Creature &newCreature = env.addEntity<Creature>();
-	newCreature.setup(creatureData, &simulationRules);
-	newCreature.position = position;
-	// newCreature.rotation = ((float)rand() / (float)RAND_MAX) * PI * 2;
-
-	newCreature.segments.emplace_back(&newCreature);
-
-	auto &r0 = env.addEntity<TestObj>();
-	{
-		r0.setup({position.x, position.y + newCreature.size.y}, {4, newCreature.size.y}, 1);
-
-		PhysicsObj::addJoint(r0, {0, -r0.size.y / 2}, newCreature, {0, newCreature.size.y / 2});
-		r0.motor = .1;
-
-		newCreature.segments.emplace_back(&r0);
-	}
-	auto &r1 = env.addEntity<TestObj>();
-	{
-		r1.setup(r0.position + agl::Vec<float, 2>{0, r0.size.y}, {4, r0.size.y}, 1);
-
-		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, r0, {0, r0.size.y / 2});
-
-		newCreature.segments.emplace_back(&r1);
-	}
-	{
-		auto &r2 = env.addEntity<TestObj>();
-		r2.setup(r1.position + agl::Vec<float, 2>{0, r1.size.y}, {4, r1.size.y}, 1);
-
-		PhysicsObj::addJoint(r2, {0, -r2.size.y / 2}, r1, {0, r1.size.y / 2});
-
-		newCreature.segments.emplace_back(&r2);
-	}
-
-	// newCreature.position.x += newCreature.size.x / 2;
-	// newCreature.position.y += newCreature.size.y / 2;
-	// newCreature.rotation = PI / 2;
+	newCreature.setup(creatureData, &simulationRules, env, position);
+	// // newCreature.rotation = ((float)rand() / (float)RAND_MAX) * PI * 2;
+	//
+	// newCreature.segments.emplace_back(&newCreature);
+	//
+	// auto &r0 = env.addEntity<TestObj>();
+	// {
+	// 	r0.setup({position.x, position.y + newCreature.size.y}, {4, newCreature.size.y}, 1);
+	//
+	// 	PhysicsObj::addJoint(r0, {0, -r0.size.y / 2}, newCreature, {0, newCreature.size.y / 2});
+	// 	r0.motor = .1;
+	//
+	// 	newCreature.segments.emplace_back(&r0);
+	// }
+	//
+	// {
+	// 	auto &r1 = env.addEntity<TestObj>();
+	// 	{
+	// 		r1.setup(newCreature.position + agl::Vec<float, 2>{newCreature.size.x / 2 + 8, 0}, {2, 16}, 1);
+	// 		r1.rotation = -PI / 2;
+	//
+	// 		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, newCreature, {newCreature.size.x / 2, 0});
+	//
+	// 		newCreature.segments.emplace_back(&r1);
+	// 	}
+	// }
+	// {
+	// 	auto &r1 = env.addEntity<TestObj>();
+	// 	{
+	// 		r1.setup(newCreature.position + agl::Vec<float, 2>{-newCreature.size.x / 2 - 8, 0}, {2, 16}, 1);
+	// 		r1.rotation = PI / 2;
+	//
+	// 		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, newCreature, {-newCreature.size.x / 2, 0});
+	//
+	// 		newCreature.segments.emplace_back(&r1);
+	// 	}
+	// }
+	//
+	// // newCreature.position.x += newCreature.size.x / 2;
+	// // newCreature.position.y += newCreature.size.y / 2;
+	// // newCreature.rotation = PI / 2;
 }
 
 void Simulation::removeCreature(std::list<BaseEntity *>::iterator creature)
@@ -792,14 +798,14 @@ void Simulation::updateSimulation()
 
 	env.update<Creature, Food>(
 		[](Creature &creature, Food &food, auto, auto) {
-			for (auto &seg : creature.segments)
-			{
-				if ((seg->position - food.position).length() < 20)
-				{
-					creature.biomass += 1;
-					food.exists = false;
-				}
-			}
+			// for (auto &seg : creature.segments)
+			// {
+			// 	if ((seg->position - food.position).length() < 20)
+			// 	{
+			// 		creature.biomass += 1;
+			// 		food.exists = false;
+			// 	}
+			// }
 		},
 		[](Creature &creature) { return creature.foodRelPos.distance; });
 

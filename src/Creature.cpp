@@ -7,7 +7,8 @@ Creature::Creature() : Entity<PhysicsObj>(exists, position)
 	return;
 }
 
-void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRules)
+void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRules, Environment &env,
+					 agl::Vec<float, 2> pos)
 {
 	// INPUT
 	// constant
@@ -33,8 +34,6 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	sight	 = creatureData.sight;
 	speed	 = creatureData.speed;
 	sizeData = creatureData.size;
-
-	PhysicsObj::setup({0, 0}, {sizeData * 24, sizeData * 24}, 4);
 
 	hue = creatureData.hue;
 
@@ -79,10 +78,74 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	foodRelPos	   = {0, rayLength};
 	meatRelPos	   = {0, rayLength};
 
+	PhysicsObj *lastSpine = nullptr;
+
+	int totalJoints = 0;
+
+	for (int i = 0; i < creatureData.sd.size(); i++)
+	{
+		if (i != 0)
+		{
+			TestObj &en = env.addEntity<TestObj>();
+
+			en.setup(lastSpine->position +
+						 agl::Vec<float, 2>{0, (lastSpine->size.y / 2) + (creatureData.sd[i].size.y / 2)},
+					 creatureData.sd[i].size, VITEDENS * creatureData.sd[i].size.x * creatureData.sd[i].size.y);
+
+			PhysicsObj::addJoint(en, {0, -en.size.y / 2}, *lastSpine, {0, lastSpine->size.y / 2});
+			totalJoints++;
+
+			segments.emplace_back(&en);
+		}
+		else
+		{
+			PhysicsObj::setup(position, creatureData.sd[0].size,
+							  VITEDENS * creatureData.sd[i].size.x * creatureData.sd[i].size.y);
+			segments.emplace_back(this);
+		}
+
+		lastSpine = segments.back();
+
+		PhysicsObj *lastLimb = lastSpine;
+
+		for (int x = 0; x < creatureData.sd[i].branch.size(); x++)
+		{
+			TestObj &en = env.addEntity<TestObj>();
+
+			en.setup(lastLimb->position +
+						 agl::Vec<float, 2>{(lastLimb->size.x / 2) + (creatureData.sd[i].size.x / 2), 0},
+					 creatureData.sd[i].size, VITEDENS * creatureData.sd[i].size.x * creatureData.sd[i].size.y);
+
+			PhysicsObj::addJoint(en, {-en.size.x / 2, 0}, *lastLimb, {lastLimb->size.x / 2, 0});
+			totalJoints++;
+
+			segments.emplace_back(&en);
+
+			lastLimb = &en;
+		}
+
+		lastLimb = lastSpine;
+		for (int x = 0; x < creatureData.sd[i].branch.size(); x++)
+		{
+			TestObj &en = env.addEntity<TestObj>();
+
+			en.setup(lastLimb->position -
+						 agl::Vec<float, 2>{(lastLimb->size.x / 2) + (creatureData.sd[i].size.x / 2), 0},
+					 creatureData.sd[i].size, VITEDENS * creatureData.sd[i].size.x * creatureData.sd[i].size.y);
+
+			PhysicsObj::addJoint(en, {en.size.x / 2, 0}, *lastLimb, {-lastLimb->size.x / 2, 0});
+			totalJoints++;
+
+			segments.emplace_back(&en);
+
+			lastLimb = &en;
+		}
+	}
+
 	std::vector<in::Connection> connection(creatureData.connection,
 										   creatureData.connection + creatureData.totalConnections);
 
-	in::NetworkStructure structure(this->creatureData.totalConnections, 8, 0, 3, connection);
+	in::NetworkStructure structure(totalJoints * 2 + 2, {}, totalJoints, false);
 
 	network = new in::NeuralNetwork(structure);
 
@@ -257,7 +320,7 @@ void Creature::updateActions()
 			float diff = ang - net;
 			// std::cout << diff << '\n';
 
-			seg->motor = (1/6. * diff);
+			seg->motor = (1 / 6. * diff);
 			// std::cout << agl::radianToDegree(joint[i].getAngle()) << '\n';
 
 			node++;

@@ -47,6 +47,7 @@ CreatureData::CreatureData(const CreatureData &creatureData)
 	metabolism	= creatureData.metabolism;
 	useNEAT		= creatureData.useNEAT;
 	usePG		= creatureData.usePG;
+	sd			= creatureData.sd;
 }
 
 void CreatureData::operator=(CreatureData &creatureData)
@@ -70,6 +71,7 @@ void CreatureData::operator=(CreatureData &creatureData)
 	metabolism	= creatureData.metabolism;
 	useNEAT		= creatureData.useNEAT;
 	usePG		= creatureData.usePG;
+	sd			= creatureData.sd;
 }
 
 CreatureData::~CreatureData()

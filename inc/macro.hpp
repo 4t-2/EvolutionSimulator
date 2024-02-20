@@ -23,6 +23,8 @@
 // food experiences a pushback force at the border of the simulation
 #define FOODBORDER
 
+#define VITEDENS (1./144.)
+
 #define THREADS	  20
 #define EATRADIUS 20
 #define DAMAGE	  4

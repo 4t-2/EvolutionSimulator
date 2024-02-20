@@ -92,7 +92,7 @@ class Creature : public Entity<PhysicsObj>
 		Creature();
 		~Creature();
 
-		void setup(CreatureData &creatureData, SimulationRules *simulationRules);
+		void setup(CreatureData &creatureData, SimulationRules *simulationRules, Environment &env, agl::Vec<float, 2> pos);
 		void clear();
 
 		void learnBrain(SimulationRules &simRules);
