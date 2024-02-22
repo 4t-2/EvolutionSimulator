@@ -2,6 +2,8 @@
 #include "../inc/Buffer.hpp"
 #include <thread>
 
+#define MASSCALC(size, dens) size.x *size.y *dens
+
 Creature::Creature() : Entity<PhysicsObj>(exists, position)
 {
 	return;
@@ -95,57 +97,59 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 			PhysicsObj::addJoint(en, {0, -en.size.y / 2}, *lastSpine, {0, lastSpine->size.y / 2});
 			totalJoints++;
 
+			en.maxMotor = std::min(en.size.x, lastSpine->size.x) * (1 / 4.);
+
 			segments.emplace_back(&en);
 		}
 		else
 		{
-			PhysicsObj::setup(position, creatureData.sd[0].size,
+			PhysicsObj::setup(pos, creatureData.sd[0].size,
 							  VITEDENS * creatureData.sd[i].size.x * creatureData.sd[i].size.y);
 			segments.emplace_back(this);
 		}
 
 		lastSpine = segments.back();
 
-		PhysicsObj *lastLimb = lastSpine;
+		PhysicsObj *lastLimb = nullptr;
 
-		for (int x = 0; x < creatureData.sd[i].branch.size(); x++)
+		for (int s = -1; s < 2; s += 2)
 		{
-			TestObj &en = env.addEntity<TestObj>();
+			lastLimb = lastSpine;
 
-			en.setup(lastLimb->position +
-						 agl::Vec<float, 2>{(lastLimb->size.x / 2) + (creatureData.sd[i].size.x / 2), 0},
-					 creatureData.sd[i].size, VITEDENS * creatureData.sd[i].size.x * creatureData.sd[i].size.y);
+			for (int x = 0; x < creatureData.sd[i].branch.size(); x++)
+			{
+				TestObj &en = env.addEntity<TestObj>();
 
-			PhysicsObj::addJoint(en, {-en.size.x / 2, 0}, *lastLimb, {lastLimb->size.x / 2, 0});
-			totalJoints++;
+				en.setup(lastLimb->position +
+							 agl::Vec<float, 2>{(lastLimb->size.x / 2) + (creatureData.sd[i].branch[x].size.y / 2), 0} *
+								 s,
+						 creatureData.sd[i].branch[x].size, MASSCALC(creatureData.sd[i].branch[x].size, VITEDENS));
 
-			segments.emplace_back(&en);
+				en.rotation = PI / 2 * -s;
 
-			lastLimb = &en;
-		}
+				PhysicsObj::addJoint(en, {0, -en.size.y / 2}, *lastLimb, {lastLimb->size.x / 2 * s, 0});
+				totalJoints++;
 
-		lastLimb = lastSpine;
-		for (int x = 0; x < creatureData.sd[i].branch.size(); x++)
-		{
-			TestObj &en = env.addEntity<TestObj>();
+				segments.emplace_back(&en);
 
-			en.setup(lastLimb->position -
-						 agl::Vec<float, 2>{(lastLimb->size.x / 2) + (creatureData.sd[i].size.x / 2), 0},
-					 creatureData.sd[i].size, VITEDENS * creatureData.sd[i].size.x * creatureData.sd[i].size.y);
+				en.maxMotor = std::min(en.size.x, lastLimb->size.y) * (1 / 4.);
 
-			PhysicsObj::addJoint(en, {en.size.x / 2, 0}, *lastLimb, {-lastLimb->size.x / 2, 0});
-			totalJoints++;
-
-			segments.emplace_back(&en);
-
-			lastLimb = &en;
+				lastLimb = &en;
+			}
 		}
 	}
+	auto vec = {in::Connection{1, 6, 1}, in::Connection{1, 7, 1}};
 
-	std::vector<in::Connection> connection(creatureData.connection,
-										   creatureData.connection + creatureData.totalConnections);
+	in::NetworkStructure structure(2, totalJoints * 2 + 2, 0, totalJoints, vec);
 
-	in::NetworkStructure structure(totalJoints * 2 + 2, {}, totalJoints, false);
+	// std::vector<in::Connection> connection(creatureData.connection,
+	// 									   creatureData.connection
+	// + creatureData.totalConnections);
+	//
+	// in::NetworkStructure structure(totalJoints * 2 + 2, {}, totalJoints,
+	// false);
+
+	// in::NetworkStructure::randomWeights(structure);
 
 	network = new in::NeuralNetwork(structure);
 
@@ -320,7 +324,7 @@ void Creature::updateActions()
 			float diff = ang - net;
 			// std::cout << diff << '\n';
 
-			seg->motor = (1 / 6. * diff);
+			seg->motor = (1 / 6. * diff) * seg->maxMotor;
 			// std::cout << agl::radianToDegree(joint[i].getAngle()) << '\n';
 
 			node++;

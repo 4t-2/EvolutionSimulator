@@ -623,7 +623,7 @@ void Simulation::updateSimulation()
 		{
 			CreatureData creatureData = creature.creatureData;
 
-			mutate(&creatureData, simulationRules.bodyMutation, simulationRules.brainMutation);
+			// mutate(&creatureData, simulationRules.bodyMutation, simulationRules.brainMutation);
 
 			creatureData.startEnergy = creature.eggEnergyCost;
 
@@ -798,14 +798,14 @@ void Simulation::updateSimulation()
 
 	env.update<Creature, Food>(
 		[](Creature &creature, Food &food, auto, auto) {
-			// for (auto &seg : creature.segments)
-			// {
-			// 	if ((seg->position - food.position).length() < 20)
-			// 	{
-			// 		creature.biomass += 1;
-			// 		food.exists = false;
-			// 	}
-			// }
+			for (auto &seg : creature.segments)
+			{
+				if ((seg->position - food.position).length() < 20)
+				{
+					creature.biomass += 1;
+					food.exists = false;
+				}
+			}
 		},
 		[](Creature &creature) { return creature.foodRelPos.distance; });
 

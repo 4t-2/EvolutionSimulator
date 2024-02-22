@@ -40,6 +40,7 @@ class PhysicsObj : public BaseEntity
 		PhysicsObj		  *rootConnect = nullptr;
 		agl::Vec<float, 2> local1;
 		agl::Vec<float, 2> local2;
+		float			   maxMotor = 1;
 
 		PolyShape *shape;
 
@@ -249,23 +250,26 @@ class World
 		static void motor(PhysicsObj &b1)
 		{
 			float vel	  = b1.rootConnect->angularVelocity - b1.angularVelocity;
-			float impulse = (b1.motor - vel) ;//* (1 / (b1.inertia + b1.rootConnect->inertia));
+			float impulse = (b1.motor - vel); //* (1 / (b1.inertia + b1.rootConnect->inertia));
 
 			// float torque= 1;
 			// impulse = std::clamp(impulse, -torque, torque);
 
-            float oldImp = b1.oldImpulse;
-            b1.oldImpulse = oldImp;
-			impulse = impulse - oldImp;
+			float oldImp  = b1.oldImpulse;
+			b1.oldImpulse = oldImp;
+			impulse		  = impulse - oldImp;
 
-            // float impulse = b1.motor;
+			// float impulse = b1.motor;
 
 			b1.angularAcceleration -= impulse * b1.invInertia;
 			b1.rootConnect->angularAcceleration += impulse * b1.rootConnect->invInertia;
 
+            // std::cout << impulse << '\n';
+
 			// float torque = 100000000;
 			//
-			// float Cdot		   = b1.angularVelocity - b1.rootConnect->angularVelocity
+			// float Cdot		   = b1.angularVelocity -
+			// b1.rootConnect->angularVelocity
 			// - b1.motor; float impulse	   = (1 / (b1.rootConnect->inertia +
 			// b1.inertia)
 			// * Cdot); float motorImpulse = std::clamp(b1.oldImpulse + impulse,
