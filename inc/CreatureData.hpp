@@ -13,12 +13,9 @@ class SegmentData
 class CreatureData
 {
 	public:
-		in::Connection *connection = nullptr; // NOTE maybe store as List<Connection>,
-											  // would make mutation easier
-		int	  totalConnections;
+		in::NetworkStructure *netStr = nullptr;
+
 		float sight; // 0 - 2
-		float speed; // 0 - 2
-		float size;	 // 0 - 2
 		int	  hue;	 // 0 - 359
 
 		float startEnergy;
@@ -28,19 +25,14 @@ class CreatureData
 		bool useNEAT;
 		bool usePG;
 
-		std::vector<SegmentData> sd = {
-			{{24, 24}, {}},
-			{{8, 24}, {}},
-			{{4, 24}, {}},
-		};
+		std::vector<SegmentData> sd;
 
 		CreatureData();
-		CreatureData(float sight, float speed, float size, int hue, int totalConnections);
+		CreatureData(float sight, int hue);
 		CreatureData(const CreatureData &creatureData);
 		~CreatureData();
 
 		void operator=(CreatureData &creatureData);
 
-		void setConnection(int index, int start, int end, float weight);
-		void setNetwork(in::NetworkStructure &structure);
+		static int totalSegs(std::vector<SegmentData> &segs);
 };

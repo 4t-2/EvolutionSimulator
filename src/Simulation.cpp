@@ -37,26 +37,12 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	env.setupGrid(simulationRules.size, simulationRules.gridResolution);
 
-	in::NetworkStructure basicStructure(24, 8, 0, 3, {{1, 8, 1}, {1, 9, 1}, {1, 10, 1}});
-
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
-		Buffer buf(EXTRA_BYTES);
-		randomData(&buf);
-		CreatureData creatureData(1, .5, 1, 0, basicStructure.totalConnections);
+		CreatureData creatureData(1, 0);
 
-		// creatureData.sight		= (buf.data[0] * 2) / 255.;
-		// creatureData.speed		= (buf.data[1] * 2) / 255.;
-		// creatureData.size		= (buf.data[2] * 2) / 255.;
-		// creatureData.hue		= (buf.data[3] * 359.) / 255.;
-		// creatureData.preference = (buf.data[4] / 255.);
-		// creatureData.metabolism = ((buf.data[5] * 2.) / 255.);
-
-		creatureData.useNEAT = true;
-		creatureData.usePG	 = false;
-
-		creatureData.setNetwork(basicStructure);
-
+		creatureData.useNEAT	= true;
+		creatureData.usePG		= false;
 		creatureData.preference = 1;
 		creatureData.metabolism = METABOLISM;
 
@@ -120,10 +106,11 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 	//
 	// auto &r0 = env.addEntity<TestObj>();
 	// {
-	// 	r0.setup({position.x, position.y + newCreature.size.y}, {4, newCreature.size.y}, 1);
+	// 	r0.setup({position.x, position.y + newCreature.size.y}, {4,
+	// newCreature.size.y}, 1);
 	//
-	// 	PhysicsObj::addJoint(r0, {0, -r0.size.y / 2}, newCreature, {0, newCreature.size.y / 2});
-	// 	r0.motor = .1;
+	// 	PhysicsObj::addJoint(r0, {0, -r0.size.y / 2}, newCreature, {0,
+	// newCreature.size.y / 2}); 	r0.motor = .1;
 	//
 	// 	newCreature.segments.emplace_back(&r0);
 	// }
@@ -131,10 +118,12 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 	// {
 	// 	auto &r1 = env.addEntity<TestObj>();
 	// 	{
-	// 		r1.setup(newCreature.position + agl::Vec<float, 2>{newCreature.size.x / 2 + 8, 0}, {2, 16}, 1);
-	// 		r1.rotation = -PI / 2;
+	// 		r1.setup(newCreature.position + agl::Vec<float,
+	// 2>{newCreature.size.x
+	// / 2 + 8, 0}, {2, 16}, 1); 		r1.rotation = -PI / 2;
 	//
-	// 		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, newCreature, {newCreature.size.x / 2, 0});
+	// 		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, newCreature,
+	// {newCreature.size.x / 2, 0});
 	//
 	// 		newCreature.segments.emplace_back(&r1);
 	// 	}
@@ -142,10 +131,12 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 	// {
 	// 	auto &r1 = env.addEntity<TestObj>();
 	// 	{
-	// 		r1.setup(newCreature.position + agl::Vec<float, 2>{-newCreature.size.x / 2 - 8, 0}, {2, 16}, 1);
-	// 		r1.rotation = PI / 2;
+	// 		r1.setup(newCreature.position + agl::Vec<float,
+	// 2>{-newCreature.size.x / 2 - 8, 0}, {2, 16}, 1); 		r1.rotation = PI /
+	// 2;
 	//
-	// 		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, newCreature, {-newCreature.size.x / 2, 0});
+	// 		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, newCreature,
+	// {-newCreature.size.x / 2, 0});
 	//
 	// 		newCreature.segments.emplace_back(&r1);
 	// 	}
@@ -181,7 +172,6 @@ void Simulation::addFood(agl::Vec<float, 2> position)
 {
 	Food &newFood	 = env.addEntity<Food>();
 	newFood.position = position;
-	newFood.energy	 = simulationRules.foodEnergy;
 
 #ifdef ACTIVEFOOD
 	newFood.nextRandPos(simulationRules.size);
@@ -211,9 +201,8 @@ void Simulation::removeFood(std::list<BaseEntity *>::iterator food)
 
 void Simulation::addMeat(agl::Vec<float, 2> position, float energy)
 {
-	Meat &newMeat	  = env.addEntity<Meat>();
-	newMeat.position  = position;
-	newMeat.energyVol = (float)energy / meatEnergyDensity;
+	Meat &newMeat	 = env.addEntity<Meat>();
+	newMeat.position = position;
 	// newMeat.radius	  = (energy / 50.) * 5;
 	newMeat.rotation = ((float)rand() / (float)RAND_MAX) * 360;
 	newMeat.lifetime = newMeat.energyVol * 288;
@@ -289,9 +278,9 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	{
 		int nonExistIndex = -1;
 
-		in::Connection *connection = creatureData->connection;
+		in::Connection *connection = (in::Connection *)creatureData->netStr->connection;
 
-		for (int i = 0; i < creatureData->totalConnections; i++)
+		for (int i = 0; i < creatureData->netStr->totalConnections; i++)
 		{
 			if (!connection[i].exists)
 			{
@@ -316,7 +305,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 
 		if (type == 0)
 		{
-			int index = round((rand() / (float)RAND_MAX) * (creatureData->totalConnections - 1));
+			int index = round((rand() / (float)RAND_MAX) * (creatureData->netStr->totalConnections - 1));
 			int start = connection[index].startNode;
 			int end	  = connection[index].endNode;
 
@@ -324,19 +313,20 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 		}
 		else if (type == 1)
 		{
-			int index = round((rand() / (float)RAND_MAX) * (creatureData->totalConnections - 1));
+			int index = round((rand() / (float)RAND_MAX) * (creatureData->netStr->totalConnections - 1));
 
-			connection[index].exists = false;
+			creatureData->netStr->removeConnection(index);
 		}
 		else if (type == 2)
 		{
 			int node = -1;
 
-			for (int x = (TOTAL_INPUT); x < TOTAL_INPUT + TOTAL_HIDDEN; x++)
+			for (int x = (creatureData->netStr->totalInputNodes);
+				 x < creatureData->netStr->totalInputNodes + creatureData->netStr->totalHiddenNodes; x++)
 			{
 				node = x;
 
-				for (int i = 0; i < creatureData->totalConnections; i++)
+				for (int i = 0; i < creatureData->netStr->totalConnections; i++)
 				{
 					if (!connection[i].exists)
 					{
@@ -357,7 +347,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 
 			if (node != -1)
 			{
-				int index = round((rand() / (float)RAND_MAX) * (creatureData->totalConnections - 1));
+				int index = round((rand() / (float)RAND_MAX) * (creatureData->netStr->totalConnections - 1));
 
 				connection[nonExistIndex].exists	= true;
 				connection[nonExistIndex].startNode = node;
@@ -370,16 +360,17 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 		else if (type == 3)
 		{
 			std::vector<int> hiddenNodes;
-			hiddenNodes.reserve(creatureData->totalConnections);
+			hiddenNodes.reserve(creatureData->netStr->totalConnections);
 
-			for (int i = 0; i < creatureData->totalConnections; i++)
+			for (int i = 0; i < creatureData->netStr->totalConnections; i++)
 			{
 				if (!connection[i].exists)
 				{
 					continue;
 				}
 
-				if (connection[i].startNode < (TOTAL_INPUT + TOTAL_OUTPUT))
+				if (connection[i].startNode <
+					(creatureData->netStr->totalInputNodes + creatureData->netStr->totalOutputNodes))
 				{
 					auto it = std::find(hiddenNodes.begin(), hiddenNodes.end(), connection[i].startNode);
 					if (it != hiddenNodes.end())
@@ -389,23 +380,25 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 				}
 			}
 
-			int startNode = round((rand() / (float)RAND_MAX) * (TOTAL_INPUT + hiddenNodes.size() - 1));
-			int endNode	  = round((rand() / (float)RAND_MAX) * (TOTAL_OUTPUT + hiddenNodes.size() - 1));
+			int startNode =
+				round((rand() / (float)RAND_MAX) * (creatureData->netStr->totalInputNodes + hiddenNodes.size() - 1));
+			int endNode =
+				round((rand() / (float)RAND_MAX) * (creatureData->netStr->totalOutputNodes + hiddenNodes.size() - 1));
 
-			if (startNode >= TOTAL_INPUT)
+			if (startNode >= creatureData->netStr->totalInputNodes)
 			{
-				startNode -= TOTAL_INPUT;
+				startNode -= creatureData->netStr->totalInputNodes;
 				startNode = hiddenNodes[startNode];
 			}
 
-			if (endNode >= TOTAL_OUTPUT)
+			if (endNode >= creatureData->netStr->totalOutputNodes)
 			{
-				endNode -= TOTAL_OUTPUT;
+				endNode -= creatureData->netStr->totalOutputNodes;
 				endNode = hiddenNodes[startNode];
 			}
 			else
 			{
-				endNode += TOTAL_INPUT;
+				endNode += creatureData->netStr->totalInputNodes;
 			}
 
 			connection[nonExistIndex].exists	= true;
@@ -608,6 +601,8 @@ void Simulation::updateSimulation()
 		creature.updateNetwork();
 		creature.updateActions();
 
+		// std::cout << creature.position << '\n';
+
 		// egg laying
 		if (creature.layingEgg)
 		{
@@ -623,7 +618,8 @@ void Simulation::updateSimulation()
 		{
 			CreatureData creatureData = creature.creatureData;
 
-			// mutate(&creatureData, simulationRules.bodyMutation, simulationRules.brainMutation);
+			// mutate(&creatureData, simulationRules.bodyMutation,
+			// simulationRules.brainMutation);
 
 			creatureData.startEnergy = creature.eggEnergyCost;
 

@@ -34,8 +34,6 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->creatureData = creatureData;
 
 	sight	 = creatureData.sight;
-	speed	 = creatureData.speed;
-	sizeData = creatureData.size;
 
 	hue = creatureData.hue;
 
@@ -48,14 +46,14 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->maxForce	  = 1.5 * speed;
 	this->maxRotation = 0.05 * speed;
 
-	this->health = 100 * sizeData * sizeData * sizeData;
-	this->life	 = 60 * 60 * 10 * sizeData * sizeData * sizeData;
+	this->health = 100;
+	this->life	 = 60 * 60 * 10;
 
-	this->maxEnergy = 100 * sizeData * sizeData * sizeData;
-	this->maxHealth = 100 * sizeData * sizeData * sizeData;
-	this->maxLife	= 60 * 60 * sizeData * sizeData * sizeData;
+	this->maxEnergy = 100;
+	this->maxHealth = 100;
+	this->maxLife	= 60 * 60;
 
-	this->maxBiomass	= 100 * sizeData * sizeData * sizeData;
+	this->maxBiomass	= 100;
 	this->biomass		= 0;
 	this->energyDensity = 0.0;
 
@@ -300,11 +298,11 @@ void Creature::updateNetwork()
 
 	network->update();
 
-	for (int i = 0; i < network->structure.totalOutputNodes; i++)
-	{
-		network->outputNode[i].value += shift[i];
-		network->outputNode[i].value = std::clamp<float>(network->outputNode[i].value, -1, 1);
-	}
+	// for (int i = 0; i < network->structure.totalOutputNodes; i++)
+	// {
+	// 	network->outputNode[i].value += shift[i];
+	// 	network->outputNode[i].value = std::clamp<float>(network->outputNode[i].value, -1, 1);
+	// }
 }
 
 void Creature::updateActions()

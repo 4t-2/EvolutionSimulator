@@ -14,8 +14,8 @@
 
 struct Memory
 {
-	float state[TOTAL_INPUT];
-	float action[TOTAL_OUTPUT];
+	std::vector<float> state;
+	std::vector<float> action;
 	float reward;
 };
 
@@ -82,10 +82,10 @@ class Creature : public Entity<PhysicsObj>
 		agl::Vec<int, 2> startGridOffset;
 		agl::Vec<int, 2> endGridOffset;
 
-		Memory memory[240];
+		std::vector<Memory> memory;
 		float baseline = 0;
 		float reward = 0;
-		float shift[TOTAL_OUTPUT];
+		float shift[20];
 
 		std::vector<PhysicsObj*> segments;
 

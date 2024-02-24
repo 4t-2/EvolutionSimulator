@@ -2,45 +2,37 @@
 
 CreatureData::CreatureData()
 {
-	connection = nullptr;
+	netStr = nullptr;
 
 	return;
 }
 
-CreatureData::CreatureData(float sight, float speed, float size, int hue, int totalConnections)
+CreatureData::CreatureData(float sight, int hue)
 {
-	this->sight			   = sight;
-	this->speed			   = speed;
-	this->size			   = size;
-	this->totalConnections = totalConnections;
-	this->hue			   = hue;
-	this->startEnergy	   = 25 * size * size * size;
+	this->sight = sight;
+	this->hue	= hue;
 
-	connection = new in::Connection[totalConnections];
+	// default design
 
-	for (int i = 0; i < totalConnections; i++)
-	{
-		connection[i].exists = false;
-	}
+	sd = {
+		{{24, 24}, {}},
+		{{8, 24}, {}},
+		{{4, 24}, {}},
+	};
+
+	auto vec = {in::Connection{1, 6, 1}, in::Connection{1, 7, 1}};
+
+	netStr = new in::NetworkStructure(2, totalSegs(sd) * 2 + 2, 0, totalSegs(sd), vec);
 
 	return;
 }
 
 CreatureData::CreatureData(const CreatureData &creatureData)
 {
-	totalConnections = creatureData.totalConnections;
-
-	delete[] connection;
-	connection = new in::Connection[totalConnections];
-
-	for (int i = 0; i < totalConnections; i++)
-	{
-		connection[i] = creatureData.connection[i];
-	}
+	delete netStr;
+	netStr = new in::NetworkStructure(*creatureData.netStr);
 
 	sight		= creatureData.sight;
-	speed		= creatureData.speed;
-	size		= creatureData.size;
 	hue			= creatureData.hue;
 	startEnergy = creatureData.startEnergy;
 	preference	= creatureData.preference;
@@ -52,19 +44,10 @@ CreatureData::CreatureData(const CreatureData &creatureData)
 
 void CreatureData::operator=(CreatureData &creatureData)
 {
-	totalConnections = creatureData.totalConnections;
-
-	delete[] connection;
-	connection = new in::Connection[totalConnections];
-
-	for (int i = 0; i < totalConnections; i++)
-	{
-		connection[i] = creatureData.connection[i];
-	}
+	delete netStr;
+	netStr = new in::NetworkStructure(*creatureData.netStr);
 
 	sight		= creatureData.sight;
-	speed		= creatureData.speed;
-	size		= creatureData.size;
 	hue			= creatureData.hue;
 	startEnergy = creatureData.startEnergy;
 	preference	= creatureData.preference;
@@ -76,25 +59,24 @@ void CreatureData::operator=(CreatureData &creatureData)
 
 CreatureData::~CreatureData()
 {
-	delete[] connection;
+	delete netStr;
 
 	return;
 }
 
-void CreatureData::setConnection(int index, int startNode, int endNode, float weight)
+int CreatureData::totalSegs(std::vector<SegmentData> &segs)
 {
-	connection[index].startNode = startNode;
-	connection[index].endNode	= endNode;
-	connection[index].weight	= weight;
-	connection[index].exists	= true;
+	int total = 0;
 
-	return;
-}
-
-void CreatureData::setNetwork(in::NetworkStructure &structure)
-{
-	for (int i = 0; i < totalConnections; i++)
+	for (int i = 0; i < segs.size(); i++)
 	{
-		connection[i] = structure.connection[i];
+		if (i != 0)
+		{
+			total++;
+		}
+
+		total += segs[i].branch.size() * 2;
 	}
+
+	return total;
 }

@@ -68,43 +68,6 @@ agl::Vec<float, 2> getCursorScenePosition(agl::Vec<float, 2> cursorWinPos, agl::
 	return ((cursorWinPos - (winSize * .5)) * winScale) + cameraPos;
 }
 
-void printConnections(CreatureData creatureData)
-{
-	for (int i = 0; i < creatureData.totalConnections; i++)
-	{
-		printf("connection %d going from %d to %d with weight %f\n", i, creatureData.connection[i].startNode,
-			   creatureData.connection[i].endNode, creatureData.connection[i].weight);
-	}
-
-	return;
-}
-
-void loadRules(std::string path, SimulationRules *simulationRules)
-{
-	// read in order in .hpp
-	const int	  bufLength = 12;
-	std::string	  buffer[bufLength];
-	std::ifstream stream(path);
-
-	for (int i = 0; i < bufLength; i++)
-	{
-		std::getline(stream, buffer[i]);
-		std::getline(stream, buffer[i]);
-	}
-
-	simulationRules->size.x			   = stoi(buffer[0]);
-	simulationRules->size.y			   = stoi(buffer[1]);
-	simulationRules->gridResolution.x  = stoi(buffer[2]);
-	simulationRules->gridResolution.y  = stoi(buffer[3]);
-	simulationRules->startingCreatures = stoi(buffer[4]);
-	simulationRules->foodEnergy		   = stoi(buffer[5]);
-	simulationRules->foodCap		   = stoi(buffer[7]);
-
-	stream.close();
-
-	return;
-}
-
 template <typename T> bool contains(std::list<BaseEntity *> &list, T *p)
 {
 	return std::find_if(list.begin(), list.end(), [&](BaseEntity *&d) { return d == (BaseEntity *)(DoNotUse *)p; }) !=
@@ -212,36 +175,15 @@ int main()
 	agl::Rectangle blankRect;
 	blankRect.setTexture(&blank);
 
-	std::string nodeNames[11];
-	nodeNames[0] = "Constant";
-	nodeNames[1] = "sin";
-	nodeNames[2] = "angle 1";
-	nodeNames[3] = "motor 1";
-	nodeNames[4] = "angle 2";
-	nodeNames[5] = "motor 2";
-	nodeNames[6] = "angle 3";
-	nodeNames[7] = "motor 3";
-
-	for (int i = TOTAL_INPUT; i < TOTAL_INPUT + TOTAL_HIDDEN; i++)
-	{
-		nodeNames[i] = "Hidden";
-	}
-
-	nodeNames[8]  = "move 1";
-	nodeNames[9]  = "move 2";
-	nodeNames[10] = "move 3";
-
 	printf("loading simulation rules from sim.conf\n");
 
 	SimulationRules simulationRules;
 
-	loadRules("./conf/sim.conf", &simulationRules);
-
-	std::cout << "startingCreatures - " << simulationRules.startingCreatures << '\n';
-	std::cout << "foodEnergy - " << simulationRules.foodEnergy << '\n';
-	std::cout << "maxFood - " << simulationRules.foodCap << '\n';
-	std::cout << "size - " << simulationRules.size << '\n';
-	std::cout << "gridResolution - " << simulationRules.gridResolution << '\n';
+	{
+		std::fstream fs("./conf/sim.conf", std::ios::in);
+		recurse(Input(fs), simulationRules, "simulationRules");
+		recurse(Output(std::cout), simulationRules, "simulationRules");
+	}
 
 	background.setSize(simulationRules.size);
 
@@ -455,12 +397,7 @@ int main()
 
 	struct
 	{
-			FieldElement<float> *foodDen;
-			FieldElement<float> *foodVol;
-			FieldElement<float> *meatDen;
-			FieldElement<float> *leachVol;
 			FieldElement<int>	*maxFood;
-			FieldElement<float> *damage;
 			FieldElement<float> *energyCostMultiplier;
 			FieldElement<float> *learnRate;
 			FieldElement<int>	*brainMutation;
@@ -472,12 +409,7 @@ int main()
 	simulation.foodCap = simulationRules.foodCap;
 
 	Menu simRules("SimRules", 200,													//
-				  FieldElement<float>{"FdEnDn", simulation.foodEnergyDensity},		//
-				  FieldElement<float>{"FdVol", (simulation.foodVol)},				//
-				  FieldElement<float>{"MtEnDn", (simulation.meatEnergyDensity)},	//
-				  FieldElement<float>{"LeVol", (simulation.leachVol)},				//
 				  FieldElement<int>{"maxFd", (simulation.foodCap)},					//
-				  FieldElement<float>{"dmg", (simulation.damage)},					//
 				  FieldElement<float>{"EnCoMu", (simulation.energyCostMultiplier)}, //
 				  FieldElement<float>{"Lrate", (simulationRules.learningRate)},		//
 				  FieldElement<int>{"braMut", (simulationRules.brainMutation)},		//
@@ -893,8 +825,51 @@ int main()
 		{
 			if (contains(simulation.env.getList<Creature>(), focusCreature))
 			{
-				nodeName =
-					nodeNames[creatureNetworkPointers.network->selectedID] + " " +
+				int node = creatureNetworkPointers.network->selectedID;
+
+				nodeName = "";
+
+				if (node < focusCreature->network->structure.totalInputNodes)
+				{
+					switch (node)
+					{
+						case 0:
+							nodeName = "Constant";
+							break;
+						case 1:
+							nodeName = "Sin";
+							break;
+						default:
+							if (node % 2 == 0)
+							{
+								nodeName = "Angle " + std::to_string(node - 1);
+							}
+							else
+							{
+								nodeName = "Motor " + std::to_string(node - 2);
+							}
+							break;
+					}
+				}
+				else
+				{
+					if (node < focusCreature->network->structure.totalNodes -
+								   focusCreature->network->structure.totalOutputNodes)
+					{
+						nodeName =
+							"Hidden " + std::to_string(node - focusCreature->network->structure.totalInputNodes + 1);
+					}
+					else
+					{
+						nodeName =
+							"Move " + std::to_string(((node - focusCreature->network->structure.totalInputNodes) -
+													  focusCreature->network->structure.totalHiddenNodes) +
+													 1);
+					}
+				}
+
+				nodeName +=
+					": " +
 					std::to_string(focusCreature->network->getNode(creatureNetworkPointers.network->selectedID).value);
 			}
 			else
@@ -1127,12 +1102,7 @@ int main()
 		endif:;
 		}
 
-		simulation.foodEnergyDensity			 = simRulesPointers.foodDen->value;
-		simulation.foodVol						 = simRulesPointers.foodVol->value;
-		simulation.meatEnergyDensity			 = simRulesPointers.meatDen->value;
-		simulation.leachVol						 = simRulesPointers.leachVol->value;
 		simulation.foodCap						 = simRulesPointers.maxFood->value;
-		simulation.damage						 = simRulesPointers.damage->value;
 		simulation.energyCostMultiplier			 = simRulesPointers.energyCostMultiplier->value;
 		simulation.simulationRules.learningRate	 = simRulesPointers.learnRate->value;
 		simulation.simulationRules.brainMutation = simRulesPointers.brainMutation->value;

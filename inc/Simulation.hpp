@@ -23,12 +23,7 @@ class Simulation
 
 		int frame = 0;
 
-		float &foodEnergyDensity	= simulationRules.foodEnergyDensity;
-		float &meatEnergyDensity	= simulationRules.meatEnergyDensity;
 		int	  &foodCap				= simulationRules.foodCap;
-		float &foodVol				= simulationRules.foodVol;
-		float &leachVol				= simulationRules.leachVol;
-		float &damage				= simulationRules.damage;
 		float &energyCostMultiplier = simulationRules.energyCostMultiplier;
 
         Simulation()
