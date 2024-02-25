@@ -11,6 +11,24 @@ void recurse(U processor, T &v, std::string name = "null")
 	processor.process(name, v);
 }
 
+template <typename T, typename U> void recurse(U processor, std::vector<T> &v, std::string name = "null")
+{
+	processor.process(name, v);
+
+	for (auto &ele : v)
+	{
+		recurse(U(processor), ele, "[]");
+	}
+}
+
+template <typename> struct is_std_vector : std::false_type
+{
+};
+
+template <typename T, typename A> struct is_std_vector<std::vector<T, A>> : std::true_type
+{
+};
+
 #define RECSER(x) recurse(processor, x, std::string(#x).substr(2))
 
 class Output
@@ -38,6 +56,10 @@ class Output
 			{
 				stream << name << " = " << value << '\n';
 			}
+			else if constexpr (is_std_vector<T>::value)
+			{
+				stream << name << " & " << value.size() << '\n';
+			}
 			else
 			{
 				stream << name << " :\n";
@@ -49,8 +71,13 @@ class Input
 {
 	public:
 		std::istream &stream;
+		void		 *vecp = nullptr;
 
 		Input(std::istream &stream) : stream(stream)
+		{
+		}
+
+		Input(Input &i) : stream(i.stream), vecp(i.vecp)
 		{
 		}
 
@@ -67,6 +94,16 @@ class Input
 			if (vec[1] == "=")
 			{
 				value = unstring<T>(vec[2]);
+			}
+
+			if (vec[1] == "&")
+			{
+				if constexpr (is_std_vector<T>::value)
+				{
+					value.clear();
+					value.resize(unstring<int>(vec[2]));
+				}
+				vecp = &value;
 			}
 		}
 

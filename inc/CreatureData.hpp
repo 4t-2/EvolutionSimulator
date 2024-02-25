@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Serializer.hpp"
 #include <AGL/agl.hpp>
 #include <IN/intnet.hpp>
 
@@ -36,3 +37,19 @@ class CreatureData
 
 		static int totalSegs(std::vector<SegmentData> &segs);
 };
+
+template <typename T, typename U> void recurse(T processor, agl::Vec<U, 2> &v, std::string name = "null")
+{
+	processor.process(name, v);
+
+	RECSER(v.x);
+	RECSER(v.y);
+}
+
+template <typename T> void recurse(T processor, SegmentData &v, std::string name = "null")
+{
+	processor.process(name, v);
+
+	RECSER(v.size);
+	RECSER(v.branch);
+}
