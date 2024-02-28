@@ -64,7 +64,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->eggTotalCost	= eggHealthCost + eggEnergyCost;
 	this->eggDesposit	= 0;
 
-	this->energy = creatureData.startEnergy;
+	this->energy = creatureData.startEnergy + 1;
 
 	int xOffset = (roundUp(rayLength / ((float)simulationRules->size.x / simulationRules->gridResolution.x), 2) / 2);
 	int yOffset = (roundUp(rayLength / ((float)simulationRules->size.y / simulationRules->gridResolution.y), 2) / 2);
@@ -136,20 +136,8 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 			}
 		}
 	}
-	auto vec = {in::Connection{1, 6, 1}, in::Connection{1, 7, 1}};
 
-	in::NetworkStructure structure(2, totalJoints * 2 + 2, 0, totalJoints, vec);
-
-	// std::vector<in::Connection> connection(creatureData.connection,
-	// 									   creatureData.connection
-	// + creatureData.totalConnections);
-	//
-	// in::NetworkStructure structure(totalJoints * 2 + 2, {}, totalJoints,
-	// false);
-
-	// in::NetworkStructure::randomWeights(structure);
-
-	network = new in::NeuralNetwork(structure);
+	network = new in::NeuralNetwork(*creatureData.netStr);;
 
 	network->setActivation(in::tanh);
 	network->learningRate = .1;

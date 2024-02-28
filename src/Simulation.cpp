@@ -26,6 +26,11 @@ void randomData(Buffer *buffer)
 	return;
 }
 
+int generateRandomNumber(int min, int max)
+{
+	return min + rand() % (max - min + 1);
+}
+
 void Simulation::create(SimulationRules simulationRules, int seed)
 {
 	active = true;
@@ -39,7 +44,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
-		CreatureData creatureData(1, 0);
+		CreatureData creatureData(1, generateRandomNumber(0, 255));
 
 		creatureData.useNEAT	= true;
 		creatureData.usePG		= false;
@@ -53,6 +58,8 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 		this->addCreature(creatureData, position);
 	}
 
+	std::cout << foodCap << '\n';
+
 	for (int i = 0; i < foodCap; i++)
 	{
 		this->addFood({(float)rand() / (float)RAND_MAX * simulationRules.size.x,
@@ -60,6 +67,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	}
 
 	foodCap = simulationRules.foodCap;
+	std::cout << foodCap << '\n';
 
 	env.setThreads(simulationRules.threads);
 
@@ -132,8 +140,8 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> posi
 	// 	auto &r1 = env.addEntity<TestObj>();
 	// 	{
 	// 		r1.setup(newCreature.position + agl::Vec<float,
-	// 2>{-newCreature.size.x / 2 - 8, 0}, {2, 16}, 1); 		r1.rotation = PI /
-	// 2;
+	// 2>{-newCreature.size.x / 2 - 8, 0}, {2, 16}, 1); 		r1.rotation = PI
+	// / 2;
 	//
 	// 		PhysicsObj::addJoint(r1, {0, -r1.size.y / 2}, newCreature,
 	// {-newCreature.size.x / 2, 0});
@@ -243,6 +251,77 @@ float mutShift(float f, float min, float max)
 	return std::max((float)min, std::min(max, f + push));
 }
 
+void recurseSegs(std::vector<SegmentData> &sd)
+{
+	for (SegmentData &s : sd)
+	{
+		if (generateRandomNumber(0, 1))
+		{
+			agl::Vec<int, 2> delta = {generateRandomNumber(-1, 1), generateRandomNumber(-1, 1)};
+
+			s.size += delta;
+
+			if (s.size.x < 1)
+			{
+				s.size.x = 1;
+			}
+			else if (s.size.y < 1)
+			{
+				s.size.y = 1;
+			}
+		}
+
+		recurseSegs(s.branch);
+	}
+}
+
+void mutateBodu(in::NetworkStructure *netStr, std::vector<SegmentData> &sd)
+{
+	if (1) // remove
+	{
+		int seg = 1;
+
+		int del = 1 + CreatureData::totalSegs(sd[seg].branch);
+
+		sd.erase(std::next(sd.begin(), seg));
+
+		int node = 2 + (2 * seg) + netStr->totalInputNodes + netStr->totalHiddenNodes;
+
+		for (int i = node; i < (node + del); i++)
+		{
+			for (int x = 0; x < netStr->totalConnections; x++)
+			{
+				if (netStr->connection[x].endNode == node || netStr->connection[x].startNode == node)
+				{
+					netStr->removeConnection(x);
+					continue;
+				}
+
+				if (netStr->connection[x].endNode >= (node + del))
+				{
+					((in::Connection *)&netStr->connection[x])->endNode -= del;
+				}
+				else if (netStr->connection[x].startNode >= (node + del))
+				{
+					((in::Connection *)&netStr->connection[x])->endNode -= del;
+				}
+			}
+		}
+	}
+	else if (0) // add
+	{
+		int seg = 0;
+
+		sd.insert(std::next(sd.begin(), seg), {sd[seg].size});
+	}
+	else if (0) // duplicate
+	{
+		int seg = 0;
+
+		sd.insert(std::next(sd.begin(), seg), sd[seg]);
+		Debug::log.emplace_back(std::to_string(sd.size()) + " is new");
+	}
+}
 void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 {
 	// creatureData->sight		 = mutShift(creatureData->sight, .5, 4);
@@ -269,6 +348,78 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 	// creatureData->preference = (buf.data[4] / 255.);
 	// creatureData->metabolism = ((buf.data[5] * 2.) / 255.);
 
+	// {
+	// 	int perc = generateRandomNumber(0, 9);
+	//
+	// 	if (perc == 1)
+	// 	{
+	// 		int choice = generateRandomNumber(0, 3);
+	//
+	// 		if (choice == 0) // remove
+	// 		{
+	// 			int seg = generateRandomNumber(0, creatureData->sd.size() -
+	// 1);
+	//
+	// 			int del = 1 +
+	// CreatureData::totalSegs(creatureData->sd[seg].branch);
+	//
+	// 			creatureData->sd.erase(std::next(creatureData->sd.begin(),
+	// seg));
+	//
+	// 			int node =
+	// 				2 + (2 * seg) + creatureData->netStr->totalInputNodes +
+	// creatureData->netStr->totalHiddenNodes;
+	//
+	// 			for (int i = node; i < (node + del); i++)
+	// 			{
+	// 				for (int x = 0; x < creatureData->netStr->totalConnections;
+	// x++)
+	// 				{
+	// 					if (creatureData->netStr->connection[x].endNode == node
+	// || 						creatureData->netStr->connection[x].startNode == node)
+	// 					{
+	// 						creatureData->netStr->removeConnection(x);
+	// 						continue;
+	// 					}
+	//
+	// 					if (creatureData->netStr->connection[x].endNode >= (node +
+	// del))
+	// 					{
+	// 						((in::Connection
+	// *)&creatureData->netStr->connection[x])->endNode -= del;
+	// 					}
+	// 					else if (creatureData->netStr->connection[x].startNode >=
+	// (node + del))
+	// 					{
+	// 						((in::Connection
+	// *)&creatureData->netStr->connection[x])->endNode -= del;
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 		else if (choice == 1) // add
+	// 		{
+	// 			int seg = generateRandomNumber(0, creatureData->sd.size() -
+	// 1);
+	//
+	// 			creatureData->sd.insert(std::next(creatureData->sd.begin(), seg),
+	// {creatureData->sd[seg].size});
+	// 		}
+	// 		else if (choice == 2) // duplicate
+	// 		{
+	// 			int seg = generateRandomNumber(0, creatureData->sd.size() -
+	// 1);
+	//
+	// 			creatureData->sd.insert(std::next(creatureData->sd.begin(), seg),
+	// creatureData->sd[seg]);
+	// 		}
+	// 	}
+	// }
+	//
+	recurseSegs(creatureData->sd);
+
+	// mutateBodu(creatureData->netStr, creatureData->sd);
+	// return;
 	if (!creatureData->useNEAT)
 	{
 		return;
@@ -618,8 +769,7 @@ void Simulation::updateSimulation()
 		{
 			CreatureData creatureData = creature.creatureData;
 
-			// mutate(&creatureData, simulationRules.bodyMutation,
-			// simulationRules.brainMutation);
+			mutate(&creatureData, simulationRules.bodyMutation, simulationRules.brainMutation);
 
 			creatureData.startEnergy = creature.eggEnergyCost;
 
@@ -652,6 +802,12 @@ void Simulation::updateSimulation()
 		if (creature.health <= 0)
 		{
 			// this->addMeat(creature.position, creature.maxHealth / 4);
+			creature.exists = false;
+			return;
+		}
+
+		if(creature.velocity.length() > 10)
+		{
 			creature.exists = false;
 			return;
 		}

@@ -407,6 +407,7 @@ int main()
 	} simRulesPointers;
 
 	simulation.foodCap = simulationRules.foodCap;
+	std::cout << simulation.foodCap << " CAP" << '\n';
 
 	Menu simRules("SimRules", 200,													//
 				  FieldElement<int>{"maxFd", (simulation.foodCap)},					//
@@ -925,6 +926,7 @@ int main()
 			simulationRules.gridResolution.y  = simMenuPointers.gridY->value;
 			simulationRules.startingCreatures = simMenuPointers.startingCreatures->value;
 			simulationRules.threads			  = simMenuPointers.threads->value;
+			simulationRules.foodCap			  = simRulesPointers.maxFood->value;
 
 			simulation.create(simulationRules, simMenuPointers.seed->value);
 
@@ -1195,6 +1197,8 @@ int main()
 		leftClickListener.update(event.isPointerButtonPressed(agl::Button::Left));
 
 		milliDiff = getMillisecond() - start;
+
+		// std::cout << simulation.foodCap << '\n';
 	}
 
 	if (simulation.active)
