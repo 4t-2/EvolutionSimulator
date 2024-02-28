@@ -29,13 +29,13 @@ class CreatureData
 		std::vector<SegmentData> sd;
 
 		CreatureData();
-		CreatureData(float sight, int hue);
+		CreatureData(float sight, int hue, std::vector<SegmentData> &segs);
 		CreatureData(const CreatureData &creatureData);
 		~CreatureData();
 
 		void operator=(CreatureData &creatureData);
 
-		static int totalSegs(std::vector<SegmentData> &segs);
+		static int totalSegJoints(std::vector<SegmentData> &segs);
 };
 
 template <typename T, typename U> void recurse(T processor, agl::Vec<U, 2> &v, std::string name = "null")

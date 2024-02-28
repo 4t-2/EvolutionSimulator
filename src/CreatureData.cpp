@@ -7,48 +7,53 @@ CreatureData::CreatureData()
 	return;
 }
 
-CreatureData::CreatureData(float sight, int hue)
+CreatureData::CreatureData(float sight, int hue, std::vector<SegmentData> &segs)
 {
 	this->sight = sight;
 	this->hue	= hue;
 
 	// default design
 
-	// sd = {
-	// 	{{24, 24}, {}},
-	// 	{{8, 24}, {}},
-	// 	{{4, 24}, {}},
-	// };
+	// sd = segs;
 
-	int length = 2 + rand() % (5 - 2 + 1);
+	sd = {
+		{{24, 24}, {}},
+		{{8, 24}, {{{4, 12}, {}}}},
+		{{4, 24}, {}},
+	};
 
-	agl::Vec<int, 2> lastVec = {100, 100};
+	// int length = 2 + rand() % (5 - 2 + 1);
+	//
+	// agl::Vec<int, 2> lastVec = {100, 100};
+	//
+	// for (int i = 0; i < length; i++)
+	// {
+	// 	agl::Vec<int, 2> size = {4 + rand() % (24 - 4 + 1), 4 + rand() % (24 - 4 + 1)};
+	//
+	// 	size.x = size.x > lastVec.x ? lastVec.x : size.x;
+	// 	lastVec.x = size.x;
+	//
+	// 	int limbs = -1 + rand() % (1 - (-1) + 1);
+	//
+	// 	sd.push_back({size});
+	//
+	// 	for (int x = 0; x < limbs; x++)
+	// 	{
+	// 		agl::Vec<int, 2> sizeLimb = {4 + rand() % (12 - 4 + 1), 4 + rand() % (24 - 4 + 1)};
+	//
+	// 		sizeLimb.x = sizeLimb.x > size.y ? size.y : sizeLimb.x;
+	//
+	// 		sd.back().branch.push_back({sizeLimb});
+	// 	}
+	// }
 
-	for (int i = 0; i < length; i++)
-	{
-		agl::Vec<int, 2> size = {4 + rand() % (24 - 4 + 1), 4 + rand() % (24 - 4 + 1)};
+	auto vec = {in::Connection{1, 10, 0}, in::Connection{1, 13, 1}};
+	netStr = new in::NetworkStructure(2, totalSegJoints(sd) * 2 + 2, 0, totalSegJoints(sd), vec);
 
-		size.x = size.x > lastVec.x ? lastVec.x : size.x;
-		lastVec.x = size.x;
+	recurse(Output(std::cout), sd, "name");
 
-		int limbs = -1 + rand() % (1 - (-1) + 1);
-
-		sd.push_back({size});
-
-		for (int x = 0; x < limbs; x++)
-		{
-			agl::Vec<int, 2> sizeLimb = {4 + rand() % (12 - 4 + 1), 4 + rand() % (24 - 4 + 1)};
-
-			sizeLimb.x = sizeLimb.x > size.y ? size.y : sizeLimb.x;
-
-			sd.back().branch.push_back({sizeLimb});
-		}
-	}
-
-	// auto vec = {in::Connection{1, 6, 1}, in::Connection{1, 7, 1}};
-
-	netStr = new in::NetworkStructure(totalSegs(sd) * 2 + 2, {}, totalSegs(sd), true);
-	in::NetworkStructure::randomWeights(*netStr);
+	// netStr = new in::NetworkStructure(totalSegs(sd) * 2 + 2, {}, totalSegs(sd), true);
+	// in::NetworkStructure::randomWeights(*netStr);
 
 	return;
 }
@@ -90,7 +95,7 @@ CreatureData::~CreatureData()
 	return;
 }
 
-int CreatureData::totalSegs(std::vector<SegmentData> &segs)
+int CreatureData::totalSegJoints(std::vector<SegmentData> &segs)
 {
 	int total = 0;
 

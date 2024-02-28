@@ -407,7 +407,6 @@ int main()
 	} simRulesPointers;
 
 	simulation.foodCap = simulationRules.foodCap;
-	std::cout << simulation.foodCap << " CAP" << '\n';
 
 	Menu simRules("SimRules", 200,													//
 				  FieldElement<int>{"maxFd", (simulation.foodCap)},					//

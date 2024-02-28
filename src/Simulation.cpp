@@ -44,7 +44,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
-		CreatureData creatureData(1, generateRandomNumber(0, 255));
+		CreatureData creatureData(1, generateRandomNumber(0, 255), simulationRules.startBody);
 
 		creatureData.useNEAT	= true;
 		creatureData.usePG		= false;
@@ -58,8 +58,6 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 		this->addCreature(creatureData, position);
 	}
 
-	std::cout << foodCap << '\n';
-
 	for (int i = 0; i < foodCap; i++)
 	{
 		this->addFood({(float)rand() / (float)RAND_MAX * simulationRules.size.x,
@@ -67,7 +65,6 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 	}
 
 	foodCap = simulationRules.foodCap;
-	std::cout << foodCap << '\n';
 
 	env.setThreads(simulationRules.threads);
 
@@ -281,7 +278,7 @@ void mutateBodu(in::NetworkStructure *netStr, std::vector<SegmentData> &sd)
 	{
 		int seg = 1;
 
-		int del = 1 + CreatureData::totalSegs(sd[seg].branch);
+		int del = 1 + CreatureData::totalSegJoints(sd[seg].branch);
 
 		sd.erase(std::next(sd.begin(), seg));
 
@@ -324,102 +321,69 @@ void mutateBodu(in::NetworkStructure *netStr, std::vector<SegmentData> &sd)
 }
 void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 {
-	// creatureData->sight		 = mutShift(creatureData->sight, .5, 4);
-	// creatureData->speed		 = mutShift(creatureData->speed, .5, 4);
-	// creatureData->size		 = mutShift(creatureData->size, .5, 4);
 	creatureData->hue = mutShift(creatureData->hue / 60., 0, 359. / 60) * 60;
-	// creatureData->preference = mutShift(creatureData->preference, 0, 1);
-	// creatureData->metabolism = mutShift(creatureData->metabolism, 0, 2);
 
-	// Buffer buf(EXTRA_BYTES);
-	// buf.data[0] = 255 * (creatureData->sight / 2);
-	// buf.data[1] = 255 * (creatureData->speed / 2);
-	// buf.data[2] = 255 * (creatureData->size / 2);
-	// buf.data[3] = 255 * (creatureData->hue / 359.);
-	// buf.data[4] = 255 * (creatureData->preference / 1);
-	// buf.data[5] = 255 * (creatureData->metabolism / 2);
-	//
-	// buf.mutate(bodyMutation);
-	//
-	// creatureData->sight		 = (buf.data[0] * 2) / 255.;
-	// creatureData->speed		 = (buf.data[1] * 2) / 255.;
-	// creatureData->size		 = (buf.data[2] * 2) / 255.;
-	// creatureData->hue		 = (buf.data[3] * 359.) / 255.;
-	// creatureData->preference = (buf.data[4] / 255.);
-	// creatureData->metabolism = ((buf.data[5] * 2.) / 255.);
+	{
+		int perc = generateRandomNumber(0, 9);
 
-	// {
-	// 	int perc = generateRandomNumber(0, 9);
-	//
-	// 	if (perc == 1)
-	// 	{
-	// 		int choice = generateRandomNumber(0, 3);
-	//
-	// 		if (choice == 0) // remove
-	// 		{
-	// 			int seg = generateRandomNumber(0, creatureData->sd.size() -
-	// 1);
-	//
-	// 			int del = 1 +
-	// CreatureData::totalSegs(creatureData->sd[seg].branch);
-	//
-	// 			creatureData->sd.erase(std::next(creatureData->sd.begin(),
-	// seg));
-	//
-	// 			int node =
-	// 				2 + (2 * seg) + creatureData->netStr->totalInputNodes +
-	// creatureData->netStr->totalHiddenNodes;
-	//
-	// 			for (int i = node; i < (node + del); i++)
-	// 			{
-	// 				for (int x = 0; x < creatureData->netStr->totalConnections;
-	// x++)
-	// 				{
-	// 					if (creatureData->netStr->connection[x].endNode == node
-	// || 						creatureData->netStr->connection[x].startNode == node)
-	// 					{
-	// 						creatureData->netStr->removeConnection(x);
-	// 						continue;
-	// 					}
-	//
-	// 					if (creatureData->netStr->connection[x].endNode >= (node +
-	// del))
-	// 					{
-	// 						((in::Connection
-	// *)&creatureData->netStr->connection[x])->endNode -= del;
-	// 					}
-	// 					else if (creatureData->netStr->connection[x].startNode >=
-	// (node + del))
-	// 					{
-	// 						((in::Connection
-	// *)&creatureData->netStr->connection[x])->endNode -= del;
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 		else if (choice == 1) // add
-	// 		{
-	// 			int seg = generateRandomNumber(0, creatureData->sd.size() -
-	// 1);
-	//
-	// 			creatureData->sd.insert(std::next(creatureData->sd.begin(), seg),
-	// {creatureData->sd[seg].size});
-	// 		}
-	// 		else if (choice == 2) // duplicate
-	// 		{
-	// 			int seg = generateRandomNumber(0, creatureData->sd.size() -
-	// 1);
-	//
-	// 			creatureData->sd.insert(std::next(creatureData->sd.begin(), seg),
-	// creatureData->sd[seg]);
-	// 		}
-	// 	}
-	// }
-	//
-	recurseSegs(creatureData->sd);
+		perc = 1;
+
+		if (perc == 1)
+		{
+			int choice = generateRandomNumber(0, 3);
+
+			choice = 0;
+
+			if (choice == 0) // remove
+			{
+				int seg = generateRandomNumber(0, creatureData->sd.size() - 1);
+
+				int del = 1 + creatureData->sd[seg].branch.size() * 2;
+
+				creatureData->sd.erase(std::next(creatureData->sd.begin(), seg));
+
+				int node = creatureData->netStr->totalInputNodes + creatureData->netStr->totalHiddenNodes + seg - 1;
+
+				for (int x = 0; x < creatureData->netStr->totalConnections; x++)
+				{
+					if ((creatureData->netStr->connection[x].endNode >= node) &&
+							(creatureData->netStr->connection[x].endNode < node + del) ||
+						(creatureData->netStr->connection[x].startNode == node) &&
+							(creatureData->netStr->connection[x].endNode < node + del))
+					{
+						creatureData->netStr->removeConnection(x);
+						continue;
+					}
+
+					if (creatureData->netStr->connection[x].endNode >= (node + del))
+					{
+						((in::Connection *)&creatureData->netStr->connection[x])->endNode -= del;
+					}
+					else if (creatureData->netStr->connection[x].startNode >= (node + del))
+					{
+						((in::Connection *)&creatureData->netStr->connection[x])->endNode -= del;
+					}
+				}
+			}
+			else if (choice == 1) // add
+			{
+				int seg = generateRandomNumber(0, creatureData->sd.size() - 1);
+
+				creatureData->sd.insert(std::next(creatureData->sd.begin(), seg), {creatureData->sd[seg].size});
+			}
+			else if (choice == 2) // duplicate
+			{
+				int seg = generateRandomNumber(0, creatureData->sd.size() - 1);
+
+				creatureData->sd.insert(std::next(creatureData->sd.begin(), seg), creatureData->sd[seg]);
+			}
+		}
+	}
+
+	// recurseSegs(creatureData->sd);
 
 	// mutateBodu(creatureData->netStr, creatureData->sd);
-	// return;
+	return;
 	if (!creatureData->useNEAT)
 	{
 		return;
@@ -806,7 +770,7 @@ void Simulation::updateSimulation()
 			return;
 		}
 
-		if(creature.velocity.length() > 10)
+		if (creature.velocity.length() > 10)
 		{
 			creature.exists = false;
 			return;
