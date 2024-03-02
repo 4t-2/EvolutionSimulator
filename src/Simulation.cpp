@@ -44,7 +44,7 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
-		CreatureData creatureData(1, generateRandomNumber(0, 255), simulationRules.startBody);
+		CreatureData creatureData(1, generateRandomNumber(0, 255), simulationRules.startBody, simulationRules.startBrain, simulationRules.maxConnections);
 
 		creatureData.useNEAT	= true;
 		creatureData.usePG		= false;

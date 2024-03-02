@@ -58,7 +58,7 @@ class Output
 			}
 			else if constexpr (is_std_vector<T>::value)
 			{
-				stream << name << " & " << value.size() << '\n';
+				stream << name << " &" << '\n';
 			}
 			else
 			{
@@ -71,13 +71,12 @@ class Input
 {
 	public:
 		std::istream &stream;
-		void		 *vecp = nullptr;
 
 		Input(std::istream &stream) : stream(stream)
 		{
 		}
 
-		Input(Input &i) : stream(i.stream), vecp(i.vecp)
+		Input(Input &i) : stream(i.stream)
 		{
 		}
 
@@ -86,6 +85,19 @@ class Input
 			std::string buf;
 
 			std::getline(stream, buf);
+
+			int indent = 0;
+			for (char c : buf)
+			{
+				if (c == '\t')
+				{
+					indent++;
+				}
+				else
+				{
+					break;
+				}
+			}
 
 			buf = trim(buf);
 
@@ -100,10 +112,44 @@ class Input
 			{
 				if constexpr (is_std_vector<T>::value)
 				{
+					std::streampos pos = stream.tellg();
+
 					value.clear();
-					value.resize(unstring<int>(vec[2]));
+
+					int size = 0;
+
+					std::string buffer;
+					while (std::getline(stream, buffer))
+					{
+						int ico = 0;
+
+						for (char c : buffer)
+						{
+							if (c == '\t')
+							{
+								ico++;
+							}
+							else
+							{
+								break;
+							}
+						}
+
+						if (ico == (indent + 1))
+						{
+							size++;
+						}
+						else if (ico <= indent)
+						{
+							break;
+						}
+					}
+
+					value.resize(size);
+
+					stream.clear();
+					stream.seekg(pos);
 				}
-				vecp = &value;
 			}
 		}
 

@@ -7,61 +7,18 @@ CreatureData::CreatureData()
 	return;
 }
 
-CreatureData::CreatureData(float sight, int hue, std::vector<SegmentData> &segs)
+CreatureData::CreatureData(float sight, int hue, std::vector<SegmentData> &segs, std::vector<in::Connection> &cons, int maxCon)
 {
 	this->sight = sight;
 	this->hue	= hue;
 
 	// default design
 
-	// sd = segs;
+	sd = segs;
 
-	sd = {
-		{{24, 24}, {}},
-		{{4, 24}, {}},
-	};
+	std::vector<in::Connection> vec = cons;
 
-	// int length = 2 + rand() % (5 - 2 + 1);
-	//
-	// agl::Vec<int, 2> lastVec = {100, 100};
-	//
-	// for (int i = 0; i < length; i++)
-	// {
-	// 	agl::Vec<int, 2> size = {4 + rand() % (24 - 4 + 1), 4 + rand() % (24 - 4
-	// + 1)};
-	//
-	// 	size.x = size.x > lastVec.x ? lastVec.x : size.x;
-	// 	lastVec.x = size.x;
-	//
-	// 	int limbs = -1 + rand() % (1 - (-1) + 1);
-	//
-	// 	sd.push_back({size});
-	//
-	// 	for (int x = 0; x < limbs; x++)
-	// 	{
-	// 		agl::Vec<int, 2> sizeLimb = {4 + rand() % (12 - 4 + 1), 4 +
-	// rand() % (24 - 4 + 1)};
-	//
-	// 		sizeLimb.x = sizeLimb.x > size.y ? size.y : sizeLimb.x;
-	//
-	// 		sd.back().branch.push_back({sizeLimb});
-	// 	}
-	// }
-
-	// con
-	// sin
-
-	// ang
-	// mot
-	// ang
-	// mot
-
-	// mov
-	// mov
-
-	std::vector<in::Connection> vec = {in::Connection{1, 4, 1}};
-
-	while (vec.size() < 10)
+	while (vec.size() < maxCon)
 	{
 		in::Connection c;
 		c.id		= -1;
@@ -73,16 +30,7 @@ CreatureData::CreatureData(float sight, int hue, std::vector<SegmentData> &segs)
 		vec.push_back(c);
 	}
 
-	netStr = new in::NetworkStructure(10, totalSegJoints(sd) * 2 + 2, 0, totalSegJoints(sd), vec);
-
-	// std::cout << *netStr << '\n';
-
-	// recurse(Output(std::cout), sd, "name");
-
-	// netStr = new in::NetworkStructure(totalSegJoints(sd) * 2 + 2, {},
-	// totalSegJoints(sd), false); in::NetworkStructure::randomWeights(*netStr);
-
-	// (in::NetworkStructureType &)netStr->type = in::Dynamic;
+	netStr = new in::NetworkStructure(maxCon, totalSegJoints(sd) * 2 + 2, 0, totalSegJoints(sd), vec);
 
 	return;
 }

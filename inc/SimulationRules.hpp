@@ -31,11 +31,23 @@ class SimulationRules
 		float					 vaporize	   = .9;
 		std::vector<SegmentData> startBody = {
 			 {{24, 24}, {}},
-			 {{8, 24}, {}},
 			 {{4, 24}, {}},
 		 };
-		// std::vector<int> inty = {1, 2, 3, 4};
+		std::vector<in::Connection> startBrain = {in::Connection(1, 4, 1)};
+		int maxConnections;
 };
+
+template <typename T> void recurse(T processor, in::Connection &c, std::string name = "null")
+{
+	processor.process(name, c);
+
+	RECSER(c.startNode);
+	RECSER(c.endNode);
+	RECSER(c.weight);
+	RECSER(c.id);
+	RECSER(c.valid);
+	RECSER(c.exists);
+}
 
 template <typename T> void recurse(T processor, SimulationRules &s, std::string name = "null")
 {
@@ -54,4 +66,6 @@ template <typename T> void recurse(T processor, SimulationRules &s, std::string 
 	RECSER(s.exploration);
 	RECSER(s.vaporize);
 	RECSER(s.startBody);
+	RECSER(s.startBrain);
+	RECSER(s.maxConnections);
 }

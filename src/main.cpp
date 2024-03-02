@@ -918,7 +918,6 @@ int main()
 		}
 		else if (simMenuPointers.start->state && !simulation.active)
 		{
-			SimulationRules simulationRules;
 			simulationRules.size.x			  = simMenuPointers.sizeX->value;
 			simulationRules.size.y			  = simMenuPointers.sizeY->value;
 			simulationRules.gridResolution.x  = simMenuPointers.gridX->value;
@@ -926,7 +925,7 @@ int main()
 			simulationRules.startingCreatures = simMenuPointers.startingCreatures->value;
 			simulationRules.threads			  = simMenuPointers.threads->value;
 			simulationRules.foodCap			  = simRulesPointers.maxFood->value;
-
+			
 			simulation.create(simulationRules, simMenuPointers.seed->value);
 
 			background.setSize(simulationRules.size);

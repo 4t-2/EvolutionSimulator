@@ -29,7 +29,7 @@ class CreatureData
 		std::vector<SegmentData> sd;
 
 		CreatureData();
-		CreatureData(float sight, int hue, std::vector<SegmentData> &segs);
+		CreatureData(float sight, int hue, std::vector<SegmentData> &segs, std::vector<in::Connection> &cons, int maxCon);
 		CreatureData(const CreatureData &creatureData);
 		~CreatureData();
 
