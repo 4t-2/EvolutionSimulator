@@ -204,6 +204,7 @@ int main()
 
 	bool leftClick;
 	bool previousLeftClick;
+  (void) previousLeftClick;
 
 	Listener leftClickListener([&]() { leftClick = true; }, [&]() { leftClick = false; }, [&]() { leftClick = false; });
 
@@ -494,7 +495,7 @@ int main()
 
 		debugLogPointers.t8->str = str;
 	};
-
+  (void)sendDebugLog;
 	// menubar
 
 	MenuBar menuBar(&quitMenu,		  //
@@ -511,6 +512,8 @@ int main()
 	bool mHeld		= false;
 	bool b1Held		= false;
 	bool ReturnHeld = false;
+  (void) mHeld;
+  (void) ReturnHeld;
 
 	bool skipRender = false;
 
@@ -519,6 +522,7 @@ int main()
 	printf("entering sim loop\n");
 
 	bool quiting = false;
+  (void) quiting;
 
 	while (!event.windowClose())
 	{
@@ -881,6 +885,7 @@ int main()
 			{
 				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
 																	   sizeMultiplier, cameraPosition);
+        (void) cursorRelPos;
 
 				// simulation.env.getArea<Meat>(
 				// 	[&](Meat &meat) {
@@ -902,7 +907,7 @@ int main()
 			{
 				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
 																	   sizeMultiplier, cameraPosition);
-
+        (void) cursorRelPos;
 				// NOTE force is disabled
 				// simulation.env.getArea<Creature>(
 				// 	[&](Creature &creature) {
@@ -977,6 +982,7 @@ int main()
 		}
 
 		static float cameraSpeed = 4;
+    (void) cameraSpeed;
 
 		const float sizeDelta = .2;
 

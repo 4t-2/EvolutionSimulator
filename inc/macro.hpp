@@ -18,7 +18,7 @@
 // #define ACTIVEFOOD 500
 
 // food experiences drag, value is drag coeficient
-#define FOODDRAG 0.0005
+#define FOODDRAG 0.0005f
 
 // food experiences a pushback force at the border of the simulation
 #define FOODBORDER
@@ -65,8 +65,10 @@
 
 #define BASE_B_VALUE 63
 
-#define WIDTH  1920
-#define HEIGHT 1080
+#define WIDTH  1300
+#define HEIGHT 700
+//#define WIDTH  1920
+//#define HEIGHT 1080
 
 #define CLEARCOLOR \
 	{              \
@@ -82,4 +84,5 @@
 
 #define MENU_BORDEREDGE (float)2
 
-#define ENERGYCOSTMULTIPLIER 0.0003
+#define ENERGYCOSTMULTIPLIER 0.0003f
+

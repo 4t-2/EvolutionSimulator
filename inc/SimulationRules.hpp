@@ -23,12 +23,12 @@ class SimulationRules
 
 		int threads = THREADS;
 
-		float					 learningRate  = .1;
+		float					 learningRate  = .1f;
 		int						 memory		   = 240;
 		int						 brainMutation = 3;
 		int						 bodyMutation  = 50;
-		float					 exploration   = .5;
-		float					 vaporize	   = .9;
+		float					 exploration   = .5f;
+		float					 vaporize	   = .9f;
 		std::vector<SegmentData> startBody = {
 			 {{24, 24}, {}},
 			 {{4, 24}, {}},

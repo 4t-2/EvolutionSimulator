@@ -130,6 +130,9 @@ class Environment
 	public:
 		struct GridCell
 		{
+        GridCell(){}
+        GridCell(const GridCell& o):list(o.list){}
+        GridCell(GridCell&& o):list(std::move(o.list)){}
 				std::list<BaseEntity *> list;
 				std::mutex				mtx;
 		};
@@ -161,10 +164,22 @@ class Environment
 			this->gridResolution = gridResolution;
 
 			grid.resize(gridResolution.x);
+      
+      for(int i = 0; i < gridResolution.x; i++){
+        std::vector<std::map<std::size_t, GridCell>> row;
+        if(grid.size() < i) grid.emplace_back(std::move(row));
+        for(int j = grid[i].size(); j < gridResolution.y; j++)
+       {
+          std::map<std::size_t, GridCell> cellmap;
+          grid[i].emplace_back(std::move(cellmap));
+        }
+        
+      }
+      /*
 			for (auto &vec : grid)
 			{
 				vec.resize(gridResolution.y);
-			}
+			}*/
 
 			randomPosition = new agl::Vec<int, 2>[gridResolution.x * gridResolution.y];
 
@@ -265,9 +280,9 @@ class Environment
 				{
 					for (int y = start.y; y <= end.y; y++)
 					{
-						auto &list = getListInGrid({x, y}, hashT);
-
-						for (auto it = list.begin(); it != list.end(); it++)
+						auto *list = getListInGrid({x, y}, hashT);
+            if(list)
+						for (auto it = list->begin(); it != list->end(); it++)
 						{
 							T *addressT;
 
@@ -290,8 +305,8 @@ class Environment
 		agl::Vec<int, 2> toGridPosition(agl::Vec<float, 2> position)
 		{
 			agl::Vec<int, 2> gridPosition;
-			gridPosition.x = (position.x / size.x) * (gridResolution.x);
-			gridPosition.y = (position.y / size.y) * (gridResolution.y);
+			gridPosition.x = (int)floorf((position.x / size.x) * (gridResolution.x));
+			gridPosition.y = (int)floorf((position.y / size.y) * (gridResolution.y));
 
 			if (gridPosition.x < 0)
 			{
@@ -317,7 +332,13 @@ class Environment
 		template <typename T> void addToGrid(BaseEntity &entity)
 		{
 			agl::Vec<int, 2> gridPosition = toGridPosition(entity.position);
-			auto			&map		  = grid[gridPosition.x][gridPosition.y];
+      size_t len1 = grid.size();
+      auto			&vec1		  = grid[gridPosition.x];
+      size_t len2 = vec1.size();
+      (void)len1;
+      (void)len2;
+      auto			&map		  = vec1[gridPosition.y];
+			
 
 			map[typeid(T).hash_code()].list.emplace_back(&entity);
 		}
@@ -380,9 +401,15 @@ class Environment
 			}
 		}
 
-		std::list<BaseEntity *> &getListInGrid(agl::Vec<int, 2> pos, std::size_t hash)
+		std::list<BaseEntity *> *getListInGrid(agl::Vec<int, 2> pos, std::size_t hash)
 		{
-			return grid.at(pos.x).at(pos.y)[hash].list;
+      auto &cellmap = grid.at(pos.x).at(pos.y);
+      
+      auto cell = cellmap.find(hash);
+      if(cell != cellmap.end())
+        return &cell->second.list;
+      else
+        return nullptr;
 		}
 
 		// template <typename T, typename U, bool oneWay = false, bool mirror =
@@ -464,7 +491,8 @@ class Environment
 		template <typename T, typename U, bool oneWay = false, bool mirror = false, bool sameGrid = false>
 		void gridUpdate(std::function<void(T &, U &, std::size_t, std::size_t)> func, agl::Vec<int, 2> gridPosition,
 						agl::Vec<int, 2> gridOffset, std::size_t hashT, std::size_t hashU, T *addressT,
-						std::list<BaseEntity *>::iterator &it1)
+						std::list<BaseEntity *>::iterator &it1,
+						const std::list<BaseEntity *>::iterator &end1)
 		{
 			long long offsetU;
 
@@ -473,11 +501,12 @@ class Environment
 				offsetU = traitMap[std::pair(hashU, typeid(T).hash_code())];
 			}
 
-			auto &list2 = getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y + gridPosition.y}, hashU);
+			auto list2 = getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y + gridPosition.y}, hashU);
 
-			std::list<BaseEntity *>::iterator it2 = sameGrid ? std::next(it1, 1) : list2.begin();
+			std::list<BaseEntity *>::iterator it2 = sameGrid ? std::next(it1, 1) : list2->begin();
+ const std::list<BaseEntity *>::iterator &end2 = sameGrid ? end1 : list2->end();
 
-			for (; *it2 != *list2.end(); it2++)
+			for (; it2 != end2; it2++)
 			{
 				U *addressU;
 
@@ -565,7 +594,7 @@ class Environment
 												grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
 												grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 												gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT,
-																				 hashU, addressT, it);
+																				 hashU, addressT, it, listT.end());
 												grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
 												grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
 											}
@@ -576,7 +605,7 @@ class Environment
 											grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
 											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 											gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, 0}, hashT, hashU,
-																			 addressT, it);
+																			 addressT, it, listT.end());
 											grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
 											grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.unlock();
 										}
@@ -599,12 +628,12 @@ class Environment
 									if (hashT == hashU && oneWay)
 									{
 										gridUpdate<T, U, oneWay, mirror, true>(func, gridPosition, {0, 0}, hashT, hashU,
-																			   addressT, it);
+																			   addressT, it, listT.end());
 									}
 									else
 									{
 										gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {0, 0}, hashT, hashU,
-																		 addressT, it);
+																		 addressT, it, listT.end());
 									}
 
 									if (hashT > hashU)
@@ -627,7 +656,7 @@ class Environment
 										grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 										grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
 										gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, 0}, hashT, hashU,
-																		 addressT, it);
+																		 addressT, it, listT.end());
 										grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.unlock();
 										grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
 									}
@@ -638,7 +667,7 @@ class Environment
 											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 											grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
 											gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT, hashU,
-																			 addressT, it);
+																			 addressT, it, listT.end());
 											grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
 											grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
 										}

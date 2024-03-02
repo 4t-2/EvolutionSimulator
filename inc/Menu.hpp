@@ -234,7 +234,7 @@ class InnerArea : public agl::Drawable, public MenuShare
 		void drawFunction(agl::RenderWindow &window) override
 		{
 			bool state = true;
-
+      (void)state;
 			// body
 			rect->setRotation({0, 0, 0});
 			rect->setTexture(blank);

@@ -564,7 +564,8 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 			int index = round((rand() / (float)RAND_MAX) * (creatureData->netStr->totalConnections - 1));
 			int start = connection[index].startNode;
 			int end	  = connection[index].endNode;
-
+      (void)start;
+      (void)end;
 			connection[index].weight = ((rand() / (float)RAND_MAX) * 4) - 2;
 		}
 		else if (type == 1)
@@ -840,7 +841,7 @@ void newAirRes(PhysicsObj &o)
 
 	float			   velMag = o.velocity.length();
 	agl::Vec<float, 2> velNor = o.velocity.normalized();
-
+  (void) velNor;
 	float relAng = velAng - o.GetAngle();
 
 	for (int i = 0; i < 4; i++)
@@ -981,6 +982,7 @@ void Simulation::updateSimulation()
 
 	env.selfUpdate<Food>([&](Food &food) {
 		PhysicsObj &circle = food;
+    (void) circle;
 
 #ifdef ACTIVEFOOD
 		if ((food->nextPos - food->position).length() < 50)

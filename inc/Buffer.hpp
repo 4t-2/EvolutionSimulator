@@ -22,7 +22,7 @@ class Buffer
 			{
 				for (int x = 0; x < 8; x++)
 				{
-					int mutation = (((float)rand() / (float)RAND_MAX) * chance);
+					int mutation = (int)floorf(((float)rand() / (float)RAND_MAX) * (float)chance);
 					data[i]		 = data[i] ^ ((mutation == 0) << x);
 				}
 			}

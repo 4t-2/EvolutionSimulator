@@ -72,7 +72,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 			PhysicsObj::addJoint(en, {0, -en.size.y / 2}, *lastSpine, {0, lastSpine->size.y / 2});
 			totalJoints++;
 
-			en.maxMotor = std::min(en.size.x, lastSpine->size.x) * (1 / 4.);
+			en.maxMotor = std::min(en.size.x, lastSpine->size.x) * (1 / 4.f);
 
 			segments.emplace_back(&en);
 		}
@@ -99,10 +99,11 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 				en.setup(lastLimb[(s + 1) / 2]->position +
 							 agl::Vec<float, 2>{
 								 (lastLimb[(s + 1) / 2]->size.x / 2) + (creatureData.sd[i].branch[x].size.y / 2), 0} *
-								 s,
+								 (float)s,
+
 						 creatureData.sd[i].branch[x].size, MASSCALC(creatureData.sd[i].branch[x].size, VITEDENS));
 
-				en.rotation = PI / 2 * -s;
+				en.rotation = (float)PI / 2 * -s;
 
 				PhysicsObj::addJoint(en, {0, -en.size.y / 2}, *lastLimb[(s + 1) / 2],
 									 {lastLimb[(s + 1) / 2]->size.x / 2 * s, 0});
@@ -110,7 +111,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 
 				segments.emplace_back(&en);
 
-				en.maxMotor = std::min(en.size.x, lastLimb[(s + 1) / 2]->size.y) * (1 / 4.);
+				en.maxMotor = std::min(en.size.x, lastLimb[(s + 1) / 2]->size.y) * (1 / 4.f);
 
 				lastLimb[(s + 1) / 2] = &en;
 			}
@@ -121,7 +122,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	;
 
 	network->setActivation(in::tanh);
-	network->learningRate = .1;
+	network->learningRate = .1f;
 }
 
 void Creature::clear()
@@ -249,15 +250,15 @@ void Creature::updateNetwork()
 	int node = 2;
 
 	network->setInputNode(0, 1);
-	network->setInputNode(1, sin((maxLife - life) / 20.));
+	network->setInputNode(1, sinf((maxLife - life) / 20.f));
 
 	for (int i = 0; i < segments.size(); i++)
 	{
 		if (segments[i]->rootConnect != nullptr)
 		{
-			network->setInputNode(node, segments[i]->getJointAngle() / (PI / 2));
+			network->setInputNode(node, segments[i]->getJointAngle() / (float)(PI / 2));
 			node++;
-			network->setInputNode(node, segments[i]->motor / (PI / 2));
+			network->setInputNode(node, segments[i]->motor / (float)(PI / 2));
 			node++;
 		}
 	}
@@ -281,7 +282,7 @@ void Creature::updateActions()
 		if (seg->rootConnect != nullptr)
 		{
 			float ang = seg->getJointAngle();
-			float net = network->outputNode[node].value * (PI / 2);
+			float net = network->outputNode[node].value * (float)(PI / 2);
 
 			// float net = sin(frame / 20.);
 			// std::cout << ang << '\n';
@@ -289,7 +290,7 @@ void Creature::updateActions()
 			float diff = ang - net;
 			// std::cout << diff << '\n';
 
-			seg->motor = (1 / 6. * diff) * seg->maxMotor;
+			seg->motor = (1 / 6.f * diff) * seg->maxMotor;
 			// std::cout << agl::radianToDegree(joint[i].getAngle()) << '\n';
 
 			node++;
