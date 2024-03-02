@@ -28,7 +28,12 @@ void randomData(Buffer *buffer)
 
 int generateRandomNumber(int min, int max)
 {
-	return min + rand() % (max - min + 1);
+	int ran = rand();
+	std::cout << ran << '\n';
+	std::cout << min << '\n';
+	std::cout << max << '\n';
+	std::cout << '\n';
+	return min + ran % (max - min + 1);
 }
 
 void Simulation::create(SimulationRules simulationRules, int seed)
@@ -257,15 +262,15 @@ void recurseSegs(std::vector<SegmentData> &sd)
 			agl::Vec<int, 2> delta = {generateRandomNumber(-1, 1), generateRandomNumber(-1, 1)};
 
 			s.size += delta;
+		}
 
-			if (s.size.x < 1)
-			{
-				s.size.x = 1;
-			}
-			else if (s.size.y < 1)
-			{
-				s.size.y = 1;
-			}
+		if (s.size.x < 1)
+		{
+			s.size.x = 1;
+		}
+		else if (s.size.y < 1)
+		{
+			s.size.y = 1;
 		}
 
 		recurseSegs(s.branch);
@@ -319,71 +324,234 @@ void mutateBodu(in::NetworkStructure *netStr, std::vector<SegmentData> &sd)
 		Debug::log.emplace_back(std::to_string(sd.size()) + " is new");
 	}
 }
+
+bool inRange(int num, int min, int max)
+{
+	return num >= min && num <= max ? true : false;
+}
+
+int segTotalOneSided(std::vector<SegmentData> &segs)
+{
+	int total = 0;
+
+	for (int i = 0; i < segs.size(); i++)
+	{
+		if (i != 0)
+		{
+			total++;
+		}
+
+		total += segs[i].branch.size();
+	}
+
+	return total;
+}
+
 void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 {
 	creatureData->hue = mutShift(creatureData->hue / 60., 0, 359. / 60) * 60;
 
 	{
-		int perc = generateRandomNumber(0, 9);
+		int perc = generateRandomNumber(0, 4);
 
-		perc = 1;
-
-		if (perc == 1)
+		if (perc == 0)
 		{
-			int choice = generateRandomNumber(0, 3);
+			int choice = generateRandomNumber(0, 1);
 
-			choice = 0;
+			std::vector<int> jointMap;
 
-			if (choice == 0) // remove
+			for (int i = 0; i < creatureData->netStr->totalNodes; i++)
 			{
-				int seg = generateRandomNumber(0, creatureData->sd.size() - 1);
+				jointMap.push_back(i);
+			}
 
-				int del = 1 + creatureData->sd[seg].branch.size() * 2;
+			if (choice == 0 && creatureData->sd.size() > 1) // remove
+			{
+				int segTot		   = CreatureData::totalSegJoints(creatureData->sd);
+				int segTotOneSided = segTotalOneSided(creatureData->sd);
 
-				creatureData->sd.erase(std::next(creatureData->sd.begin(), seg));
+				int seg = generateRandomNumber(1, segTotOneSided - 1);
 
-				int node = creatureData->netStr->totalInputNodes + creatureData->netStr->totalHiddenNodes + seg - 1;
+				int del = 0;
 
-				for (int x = 0; x < creatureData->netStr->totalConnections; x++)
+				int segTrack   = 0;
+				int actualNode = -1;
+
+				for (int i = 0; i < creatureData->sd.size(); i++)
 				{
-					if ((creatureData->netStr->connection[x].endNode >= node) &&
-							(creatureData->netStr->connection[x].endNode < node + del) ||
-						(creatureData->netStr->connection[x].startNode == node) &&
-							(creatureData->netStr->connection[x].endNode < node + del))
+					if (seg == segTrack)
 					{
-						creatureData->netStr->removeConnection(x);
+						del = creatureData->sd[i].branch.size() + 1;
+						creatureData->sd.erase(std::next(creatureData->sd.begin(), i));
+						goto exit1;
+					}
+					segTrack++;
+					actualNode++;
+					for (int x = 0; x < creatureData->sd[i].branch.size(); x++)
+					{
+						if (seg == segTrack)
+						{
+							del = 1;
+							creatureData->sd[i].branch.erase(std::next(creatureData->sd[i].branch.begin(), x));
+							goto exit1;
+						}
+						segTrack++;
+						actualNode += 2;
+					}
+				}
+
+			exit1:;
+
+				for (auto it = jointMap.begin(); it != jointMap.end();)
+				{
+					int node = *it;
+
+					if (node == (actualNode * 2) + 2)
+					{
+						it = jointMap.erase(it, std::next(it, del * 2));
+
+						continue;
+					}
+					if (node == creatureData->netStr->totalInputNodes + actualNode)
+					{
+						it = jointMap.erase(it, std::next(it, del));
 						continue;
 					}
 
-					if (creatureData->netStr->connection[x].endNode >= (node + del))
+					it++;
+				}
+
+				for (int i = 0; i < creatureData->netStr->totalConnections; i++)
+				{
+					in::Connection *con = (in::Connection *)&creatureData->netStr->connection[i];
+
+					if (!con->exists || !con->valid)
 					{
-						((in::Connection *)&creatureData->netStr->connection[x])->endNode -= del;
+						continue;
 					}
-					else if (creatureData->netStr->connection[x].startNode >= (node + del))
+
+					if (inRange(con->startNode, (actualNode * 2) + 2, (actualNode * 2) + 2 + (del * 2) - 1))
 					{
-						((in::Connection *)&creatureData->netStr->connection[x])->endNode -= del;
+						creatureData->netStr->removeConnection(i);
+					}
+					if (inRange(con->startNode, creatureData->netStr->totalInputNodes + actualNode,
+								creatureData->netStr->totalInputNodes + actualNode + del - 1))
+					{
+						creatureData->netStr->removeConnection(i);
+					}
+					if (inRange(con->endNode, creatureData->netStr->totalInputNodes + actualNode,
+								creatureData->netStr->totalInputNodes + actualNode + del - 1))
+					{
+						creatureData->netStr->removeConnection(i);
 					}
 				}
 			}
-			else if (choice == 1) // add
+			else if (choice == 1) // extend
 			{
+				int segTot		   = CreatureData::totalSegJoints(creatureData->sd);
+				int segTotOneSided = segTotalOneSided(creatureData->sd);
+
 				int seg = generateRandomNumber(0, creatureData->sd.size() - 1);
 
-				creatureData->sd.insert(std::next(creatureData->sd.begin(), seg), {creatureData->sd[seg].size});
-			}
-			else if (choice == 2) // duplicate
-			{
-				int seg = generateRandomNumber(0, creatureData->sd.size() - 1);
+				enum ExTy
+				{
+					Length,
+					Split
+				} et;
 
-				creatureData->sd.insert(std::next(creatureData->sd.begin(), seg), creatureData->sd[seg]);
+				int actualNode = 0;
+
+				for (int i = 0; i < creatureData->sd.size(); i++)
+				{
+					if (i == seg)
+					{
+						if (i == (creatureData->sd.size() - 1))
+						{
+							creatureData->sd.push_back({creatureData->sd[i].size / 2});
+							et = Length;
+						}
+						else
+						{
+							agl::Vec<int, 2> size;
+							if (creatureData->sd[i].branch.size() == 0)
+							{
+								size = creatureData->sd[i].size / 2;
+							}
+							else
+							{
+								size = creatureData->sd[i].branch.back().size / 2;
+							}
+
+							creatureData->sd[i].branch.push_back({size});
+							et = Split;
+						}
+						break;
+					}
+
+					actualNode += 1 + creatureData->sd[i].branch.size();
+				}
+
+				for (auto it = jointMap.begin(); it != jointMap.end();)
+				{
+					int node = *it;
+
+					if (node == (actualNode * 2) + 2 - 1)
+					{
+						it = jointMap.insert(std::next(it, 1), -69);
+						it = jointMap.insert(std::next(it, 1), -69);
+
+						if (et == Split)
+						{
+							it = jointMap.insert(std::next(it, 1), -69);
+							it = jointMap.insert(std::next(it, 1), -69);
+						}
+
+						it = std::next(it, 1);
+
+						continue;
+					}
+					if (node == creatureData->netStr->totalInputNodes + actualNode - 1)
+					{
+						it = jointMap.insert(std::next(it, 1), -69);
+
+						if (et == Split)
+						{
+							it = jointMap.insert(std::next(it, 1), -69);
+						}
+
+						it = std::next(it, 1);
+						continue;
+					}
+
+					it++;
+				}
 			}
+
+			for (int i = 0; i < creatureData->netStr->totalConnections; i++)
+			{
+				in::Connection *con = (in::Connection *)&creatureData->netStr->connection[i];
+				for (int i = 0; i < jointMap.size(); i++)
+				{
+					if (jointMap[i] == con->startNode)
+					{
+						con->startNode = i;
+					}
+					if (jointMap[i] == con->endNode)
+					{
+						con->endNode = i;
+					}
+				}
+			}
+
+			(int &)creatureData->netStr->totalInputNodes  = CreatureData::totalSegJoints(creatureData->sd) * 2 + 2;
+			(int &)creatureData->netStr->totalOutputNodes = CreatureData::totalSegJoints(creatureData->sd);
+			(int &)creatureData->netStr->totalNodes =
+				(int &)creatureData->netStr->totalInputNodes + (int &)creatureData->netStr->totalOutputNodes;
 		}
 	}
 
-	// recurseSegs(creatureData->sd);
+	recurseSegs(creatureData->sd);
 
-	// mutateBodu(creatureData->netStr, creatureData->sd);
-	return;
 	if (!creatureData->useNEAT)
 	{
 		return;
@@ -752,7 +920,7 @@ void Simulation::updateSimulation()
 		// tired creature damage
 		if (creature.energy <= 0)
 		{
-			creature.health--;
+			// creature.health--;
 			creature.energy = 0;
 		}
 

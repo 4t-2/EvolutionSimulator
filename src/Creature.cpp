@@ -33,7 +33,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 
 	this->creatureData = creatureData;
 
-	sight	 = creatureData.sight;
+	sight = creatureData.sight;
 
 	hue = creatureData.hue;
 
@@ -108,36 +108,40 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 
 		lastSpine = segments.back();
 
-		PhysicsObj *lastLimb = nullptr;
+		PhysicsObj *lastLimb[2] = {nullptr, nullptr};
 
-		for (int s = -1; s < 2; s += 2)
+		lastLimb[0] = lastSpine;
+		lastLimb[1] = lastSpine;
+
+		for (int x = 0; x < creatureData.sd[i].branch.size(); x++)
 		{
-			lastLimb = lastSpine;
-
-			for (int x = 0; x < creatureData.sd[i].branch.size(); x++)
+			for (int s = -1; s < 2; s += 2)
 			{
 				TestObj &en = env.addEntity<TestObj>();
 
-				en.setup(lastLimb->position +
-							 agl::Vec<float, 2>{(lastLimb->size.x / 2) + (creatureData.sd[i].branch[x].size.y / 2), 0} *
+				en.setup(lastLimb[(s + 1) / 2]->position +
+							 agl::Vec<float, 2>{
+								 (lastLimb[(s + 1) / 2]->size.x / 2) + (creatureData.sd[i].branch[x].size.y / 2), 0} *
 								 s,
 						 creatureData.sd[i].branch[x].size, MASSCALC(creatureData.sd[i].branch[x].size, VITEDENS));
 
 				en.rotation = PI / 2 * -s;
 
-				PhysicsObj::addJoint(en, {0, -en.size.y / 2}, *lastLimb, {lastLimb->size.x / 2 * s, 0});
+				PhysicsObj::addJoint(en, {0, -en.size.y / 2}, *lastLimb[(s + 1) / 2],
+									 {lastLimb[(s + 1) / 2]->size.x / 2 * s, 0});
 				totalJoints++;
 
 				segments.emplace_back(&en);
 
-				en.maxMotor = std::min(en.size.x, lastLimb->size.y) * (1 / 4.);
+				en.maxMotor = std::min(en.size.x, lastLimb[(s + 1) / 2]->size.y) * (1 / 4.);
 
-				lastLimb = &en;
+				lastLimb[(s + 1) / 2] = &en;
 			}
 		}
 	}
 
-	network = new in::NeuralNetwork(*creatureData.netStr);;
+	network = new in::NeuralNetwork(*creatureData.netStr);
+	;
 
 	network->setActivation(in::tanh);
 	network->learningRate = .1;
@@ -289,7 +293,8 @@ void Creature::updateNetwork()
 	// for (int i = 0; i < network->structure.totalOutputNodes; i++)
 	// {
 	// 	network->outputNode[i].value += shift[i];
-	// 	network->outputNode[i].value = std::clamp<float>(network->outputNode[i].value, -1, 1);
+	// 	network->outputNode[i].value =
+	// std::clamp<float>(network->outputNode[i].value, -1, 1);
 	// }
 }
 

@@ -628,15 +628,15 @@ int main()
 			},
 			topLeftGrid, bottomRightGrid);
 
-		// simulation.env.view<Meat>(
-		// 	[&](auto &meat, auto) {
-		// 		meatShape.setPosition(meat.position);
-		// 		meatShape.setSize(meat.size);
-		// 		meatShape.setOffset({0, 0});
-		// 		meatShape.setRotation({0, 0, meat.rotation});
-		// 		window.drawShape(meatShape);
-		// 	},
-		// 	topLeftGrid, bottomRightGrid);
+		simulation.env.view<Meat>(
+			[&](auto &meat, auto) {
+				meatShape.setPosition(meat.position);
+				meatShape.setSize(meat.size);
+				meatShape.setOffset(meat.size / -2);
+				meatShape.setRotation({0, 0, -meat.radToDeg()});
+				window.drawShape(meatShape);
+			},
+			topLeftGrid, bottomRightGrid);
 
 		// draw eggs
 		simulation.env.view<Egg>(

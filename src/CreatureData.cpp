@@ -18,7 +18,6 @@ CreatureData::CreatureData(float sight, int hue, std::vector<SegmentData> &segs)
 
 	sd = {
 		{{24, 24}, {}},
-		{{8, 24}, {{{4, 12}, {}}}},
 		{{4, 24}, {}},
 	};
 
@@ -28,7 +27,8 @@ CreatureData::CreatureData(float sight, int hue, std::vector<SegmentData> &segs)
 	//
 	// for (int i = 0; i < length; i++)
 	// {
-	// 	agl::Vec<int, 2> size = {4 + rand() % (24 - 4 + 1), 4 + rand() % (24 - 4 + 1)};
+	// 	agl::Vec<int, 2> size = {4 + rand() % (24 - 4 + 1), 4 + rand() % (24 - 4
+	// + 1)};
 	//
 	// 	size.x = size.x > lastVec.x ? lastVec.x : size.x;
 	// 	lastVec.x = size.x;
@@ -39,7 +39,8 @@ CreatureData::CreatureData(float sight, int hue, std::vector<SegmentData> &segs)
 	//
 	// 	for (int x = 0; x < limbs; x++)
 	// 	{
-	// 		agl::Vec<int, 2> sizeLimb = {4 + rand() % (12 - 4 + 1), 4 + rand() % (24 - 4 + 1)};
+	// 		agl::Vec<int, 2> sizeLimb = {4 + rand() % (12 - 4 + 1), 4 +
+	// rand() % (24 - 4 + 1)};
 	//
 	// 		sizeLimb.x = sizeLimb.x > size.y ? size.y : sizeLimb.x;
 	//
@@ -47,13 +48,28 @@ CreatureData::CreatureData(float sight, int hue, std::vector<SegmentData> &segs)
 	// 	}
 	// }
 
-	auto vec = {in::Connection{1, 10, 0}, in::Connection{1, 13, 1}};
-	netStr = new in::NetworkStructure(2, totalSegJoints(sd) * 2 + 2, 0, totalSegJoints(sd), vec);
+	// con
+	// sin
 
-	recurse(Output(std::cout), sd, "name");
+	// ang
+	// mot
+	// ang
+	// mot
 
-	// netStr = new in::NetworkStructure(totalSegs(sd) * 2 + 2, {}, totalSegs(sd), true);
-	// in::NetworkStructure::randomWeights(*netStr);
+	// mov
+	// mov
+
+	auto vec = {in::Connection{1, 4, 1}};
+	netStr	 = new in::NetworkStructure(10, totalSegJoints(sd) * 2 + 2, 0, totalSegJoints(sd), vec);
+
+	// std::cout << *netStr << '\n';
+
+	// recurse(Output(std::cout), sd, "name");
+
+	// netStr = new in::NetworkStructure(totalSegJoints(sd) * 2 + 2, {},
+	// totalSegJoints(sd), false); in::NetworkStructure::randomWeights(*netStr);
+
+	// (in::NetworkStructureType &)netStr->type = in::Dynamic;
 
 	return;
 }

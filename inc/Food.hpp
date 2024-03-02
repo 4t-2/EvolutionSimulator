@@ -14,7 +14,7 @@ class Food : public Entity<PhysicsObj>
 
 		Food() : Entity<PhysicsObj>(exists, position)
 		{
-            setup({0, 0}, {5, 5}, 1);
+            setup({0, 0}, {10, 10}, 1);
 		}
 
 		int	  id;

@@ -13,10 +13,9 @@ class Meat : public Entity<PhysicsObj>
 		{
 			mass   = 2;
 			// radius = 5;
-            size = {5, 5};
+            size = {10, 10};
 		}
 
 		float lifetime	= 0;
-		float rotation	= 0;
 		float energyVol = 60;
 };
