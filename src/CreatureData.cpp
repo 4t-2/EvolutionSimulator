@@ -59,8 +59,21 @@ CreatureData::CreatureData(float sight, int hue, std::vector<SegmentData> &segs)
 	// mov
 	// mov
 
-	auto vec = {in::Connection{1, 4, 1}};
-	netStr	 = new in::NetworkStructure(10, totalSegJoints(sd) * 2 + 2, 0, totalSegJoints(sd), vec);
+	std::vector<in::Connection> vec = {in::Connection{1, 4, 1}};
+
+	while (vec.size() < 10)
+	{
+		in::Connection c;
+		c.id		= -1;
+		c.valid		= false;
+		c.exists	= false;
+		c.weight	= -1;
+		c.startNode = -1;
+		c.endNode	= -1;
+		vec.push_back(c);
+	}
+
+	netStr = new in::NetworkStructure(10, totalSegJoints(sd) * 2 + 2, 0, totalSegJoints(sd), vec);
 
 	// std::cout << *netStr << '\n';
 

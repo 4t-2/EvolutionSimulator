@@ -28,12 +28,7 @@ void randomData(Buffer *buffer)
 
 int generateRandomNumber(int min, int max)
 {
-	int ran = rand();
-	std::cout << ran << '\n';
-	std::cout << min << '\n';
-	std::cout << max << '\n';
-	std::cout << '\n';
-	return min + ran % (max - min + 1);
+	return min + rand() % (max - min + 1);
 }
 
 void Simulation::create(SimulationRules simulationRules, int seed)
@@ -370,7 +365,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 				int segTot		   = CreatureData::totalSegJoints(creatureData->sd);
 				int segTotOneSided = segTotalOneSided(creatureData->sd);
 
-				int seg = generateRandomNumber(1, segTotOneSided - 1);
+				int seg = generateRandomNumber(1, segTotOneSided);
 
 				int del = 0;
 
@@ -579,7 +574,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 			max = 1;
 		}
 
-		int type = round((rand() / (float)RAND_MAX) * max);
+		int type = generateRandomNumber(0, 3);
 
 		// 0 - mutate weight
 		// 1 - remove connection
@@ -604,10 +599,9 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 		{
 			int node = -1;
 
-			for (int x = (creatureData->netStr->totalInputNodes);
-				 x < creatureData->netStr->totalInputNodes + creatureData->netStr->totalHiddenNodes; x++)
+			for (int x = 0; x < creatureData->netStr->totalHiddenNodes; x++)
 			{
-				node = x;
+				node = x + creatureData->netStr->totalInputNodes;
 
 				for (int i = 0; i < creatureData->netStr->totalConnections; i++)
 				{
@@ -685,6 +679,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 			}
 
 			connection[nonExistIndex].exists	= true;
+			connection[nonExistIndex].valid		= true;
 			connection[nonExistIndex].startNode = startNode;
 			connection[nonExistIndex].endNode	= endNode;
 			connection[nonExistIndex].weight	= ((rand() / (float)RAND_MAX) * 4) - 2;
