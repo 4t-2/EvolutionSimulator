@@ -44,7 +44,8 @@ void Simulation::create(SimulationRules simulationRules, int seed)
 
 	for (int i = 0; i < simulationRules.startingCreatures; i++)
 	{
-		CreatureData creatureData(1, generateRandomNumber(0, 255), simulationRules.startBody, simulationRules.startBrain, simulationRules.maxConnections);
+		CreatureData creatureData(1, generateRandomNumber(0, 255), simulationRules.startBody,
+								  simulationRules.startBrain, simulationRules.maxConnections);
 
 		creatureData.useNEAT	= true;
 		creatureData.usePG		= false;
@@ -76,29 +77,6 @@ void Simulation::destroy()
 	active = false;
 
 	env.destroy();
-
-#ifdef LOGCREATUREDATA
-
-	std::fstream neat("./plot/neat.txt", std::ios::out);
-	std::fstream rl("./plot/rl.txt", std::ios::out);
-	std::fstream both("./plot/both.txt", std::ios::out);
-
-	for (int x = 0; x < totalNEAT.size(); x++)
-	{
-		neat << totalNEAT[x] << "\n";
-		rl << totalRL[x] << "\n";
-		both << totalBOTH[x] << "\n";
-	}
-
-	neat.close();
-	rl.close();
-	both.close();
-
-	totalNEAT.clear();
-	totalRL.clear();
-	totalBOTH.clear();
-
-#endif
 }
 
 void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> position)
@@ -822,8 +800,29 @@ void calcAirResForSide(PhysicsObj &o, agl::Vec<float, 2> norm, std::function<flo
 
 	agl::Vec<float, 2> r1 = norm * side2 / 2;
 
+	agl::Vec<float, 2> rp1		= perp(r1);
+	agl::Vec<float, 2> rp2		= perp(norm * velMag / -2);
+	agl::Vec<float, 2> startVel = (o.velocity + (rp1 * -o.angularVelocity));
+
+	agl::Vec<float, 2> outAcc;
+	float			   outRot;
+
 	World::resolve(o.velocity, {0, 0}, o.angularVelocity, 0, o.invInertia, 1 / inertia, o.invMass, 1 / mass, norm, r1,
-				   norm * velMag / -2, o.acceleration, airAccLin, o.angularAcceleration, airAccRot, 1);
+				   norm * velMag / -2, outAcc, airAccLin, outRot, airAccRot, 1);
+
+	agl::Vec<float, 2> offVel = (outAcc + (rp1 * -outRot));
+
+	float l1 = offVel.length();
+	float l2 = startVel.length();
+
+	if (l1 > l2)
+	{
+		outAcc /= l1 / l2;
+		outRot /= l1 / l2;
+	}
+
+	o.acceleration += outAcc;
+	o.angularAcceleration += outRot;
 }
 
 void newAirRes(PhysicsObj &o)
@@ -887,7 +886,7 @@ void Simulation::updateSimulation()
 			if (creature.energy > creature.eggTotalCost)
 			{
 				creature.incubating = true;
-				creature.reward += 50;
+				// creature.reward += 50;
 			}
 		}
 
@@ -951,13 +950,22 @@ void Simulation::updateSimulation()
 				PhysicsObj &b1 = **itx;
 				PhysicsObj &b2 = **ity;
 
+				std::vector<ConstraintFailure> cf;
+
 				if (b1.rootConnect == &b2)
 				{
 					World::motor(b1);
+					JointConstraint::probe(b1, b2, cf);
 				}
 				else if (b2.rootConnect == &b1)
 				{
 					World::motor(b2);
+					JointConstraint::probe(b2, b1, cf);
+				}
+
+				for (ConstraintFailure &c: cf)
+				{
+					World::resolve(c, cf.size());
 				}
 			}
 		}
@@ -1039,22 +1047,14 @@ void Simulation::updateSimulation()
 		[](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT, std::size_t hashU) {
 			std::vector<ConstraintFailure> failure;
 
-			if (circle.rootConnect == &otherCircle)
-			{
-				JointConstraint::probe(circle, otherCircle, failure);
-			}
-			else if (otherCircle.rootConnect == &circle)
-			{
-				JointConstraint::probe(otherCircle, circle, failure);
-			}
-			else
+			if (circle.rootConnect != &otherCircle && otherCircle.rootConnect != &circle)
 			{
 				CollisionConstraint::probe(circle, otherCircle, failure);
 			}
 
 			for (ConstraintFailure &f : failure)
 			{
-				World::resolve(f, 1);
+				World::resolve(f, failure.size());
 			}
 		},
 		[](PhysicsObj &circle) { return 100; });
@@ -1086,7 +1086,7 @@ void Simulation::updateSimulation()
 				}
 			}
 		},
-		[](Creature &creature) { return creature.foodRelPos.distance; });
+		[](Creature &creature) { return ((creature.size.x + creature.size.y) / 2) * 4; });
 
 	// creature eating
 	// env.update<Creature, Food>(
@@ -1206,31 +1206,4 @@ void Simulation::update()
 	this->updateSimulation();
 
 	frame++;
-
-#ifdef LOGCREATUREDATA
-	int neat = 0;
-	int rl	 = 0;
-	int both = 0;
-
-	env.view<Creature>([&](Creature &creature, auto it) {
-		CreatureData *data = &creature.creatureData;
-
-		if (data->useNEAT && !data->usePG)
-		{
-			neat++;
-		}
-		else if (!data->useNEAT && data->usePG)
-		{
-			rl++;
-		}
-		else if (data->useNEAT && data->usePG)
-		{
-			both++;
-		}
-	});
-
-	totalNEAT.emplace_back(neat);
-	totalRL.emplace_back(rl);
-	totalBOTH.emplace_back(both);
-#endif
 }

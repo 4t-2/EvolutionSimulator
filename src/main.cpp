@@ -104,6 +104,9 @@ int main()
 	agl::Shader viteShader;
 	viteShader.loadFromFile("./shader/viteVert.glsl", "./shader/vite.glsl");
 
+	agl::Shader menuShader;
+	menuShader.loadFromFile("./shader/menuVert.glsl", "./shader/menu.glsl");
+
 	agl::Camera camera;
 	camera.setOrthographicProjection(0, WIDTH, HEIGHT, 0, 0.1, 100);
 	agl::Vec<float, 2> cameraPosition = {0, 0};
@@ -326,34 +329,24 @@ int main()
 			ValueElement<float> *energy;
 			ValueElement<float> *lifeLeft;
 			SpacerElement		*sp2;
-			ValueElement<float> *sight;
-			ValueElement<float> *speed;
-			ValueElement<float> *size;
 			ValueElement<int>	*hue;
 			SpacerElement		*sp3;
 			ValueElement<float> *biomass;
 			ValueElement<float> *energyDensity;
-			ValueElement<float> *metabolism;
-			ValueElement<float> *preference;
 	} creatureMiscPointers;
 
-	Menu creatureMisc("CreatureMisc", 200,																	  //
-					  ValueElement<bool>{"Eating", [&]() { return &focusCreature->eating; }},				  //
-					  ValueElement<bool>{"Laying Egg", [&]() { return &focusCreature->layingEgg; }},		  //
-					  SpacerElement{},																		  //
-					  ValueElement<float>{"Health", [&]() { return &focusCreature->health; }},				  //
-					  ValueElement<float>{"Energy", [&]() { return &focusCreature->energy; }},				  //
-					  ValueElement<int>{"Life Left", [&]() { return &focusCreature->life; }},				  //
-					  SpacerElement{},																		  //
-					  ValueElement<float>{"Sight", [&]() { return &focusCreature->sight; }},				  //
-					  ValueElement<float>{"Speed", [&]() { return &focusCreature->speed; }},				  //
-					  ValueElement<float>{"Size", [&]() { return &focusCreature->sizeData; }},				  //
-					  ValueElement<int>{"Hue", [&]() { return &focusCreature->hue; }},						  //
-					  SpacerElement{},																		  //
-					  ValueElement<float>{"Biomass", [&]() { return &focusCreature->biomass; }},			  //
-					  ValueElement<float>{"Energy Density", [&]() { return &focusCreature->energyDensity; }}, //
-					  ValueElement<float>{"Metabolism", [&]() { return &focusCreature->metabolism; }},		  //
-					  ValueElement<float>{"Preference", [&]() { return &focusCreature->preference; }}		  //
+	Menu creatureMisc("CreatureMisc", 200,																	 //
+					  ValueElement<bool>{"Eating", [&]() { return &focusCreature->eating; }},				 //
+					  ValueElement<bool>{"Laying Egg", [&]() { return &focusCreature->layingEgg; }},		 //
+					  SpacerElement{},																		 //
+					  ValueElement<float>{"Health", [&]() { return &focusCreature->health; }},				 //
+					  ValueElement<float>{"Energy", [&]() { return &focusCreature->energy; }},				 //
+					  ValueElement<int>{"Life Left", [&]() { return &focusCreature->life; }},				 //
+					  SpacerElement{},																		 //
+					  ValueElement<int>{"Hue", [&]() { return &focusCreature->creatureData.hue; }},			 //
+					  SpacerElement{},																		 //
+					  ValueElement<float>{"Biomass", [&]() { return &focusCreature->biomass; }},			 //
+					  ValueElement<float>{"Energy Density", [&]() { return &focusCreature->energyDensity; }} //
 	);
 
 	creatureMisc.bindPointers(&creatureMiscPointers);
@@ -534,36 +527,6 @@ int main()
 
 		event.poll();
 
-		// if (event.isKeyPressed(agl::Key::M))
-		// {
-		// 	mHeld = true;
-		// }
-		// else if (mHeld)
-		// {
-		// 	mHeld = false;
-		//
-		// 	CreatureData creatureData(1, 1, 1, 60, 15);
-		//
-		// 	creatureData.setConnection(0, CONSTANT_INPUT, FOWARD_OUTPUT, 1);
-		// 	creatureData.setConnection(1, CONSTANT_INPUT, EAT_OUTPUT, 1);
-		// 	creatureData.setConnection(2, CONSTANT_INPUT, LAYEGG_OUTPUT, 1);
-		// 	creatureData.setConnection(3, CREATURE_ROTATION, LEFT_OUTPUT, 1);
-		// 	creatureData.setConnection(4, CREATURE_ROTATION, RIGHT_OUTPUT, -1);
-		// 	creatureData.setConnection(5, CONSTANT_INPUT, RIGHT_OUTPUT, -1);
-		// 	creatureData.setConnection(6, CONSTANT_INPUT, LEFT_OUTPUT, -1);
-		// 	creatureData.setConnection(7, CREATURE_PREFERENCE, RIGHT_OUTPUT, 1);
-		// 	creatureData.setConnection(8, CREATURE_PREFERENCE, LEFT_OUTPUT, 1);
-		//
-		// 	creatureData.preference = 0;
-		// 	creatureData.metabolism = METABOLISM;
-		//
-		// 	agl::Vec<float, 2> position;
-		// 	position.x = (rand() / (float)RAND_MAX) * simulationRules.size.x;
-		// 	position.y = (rand() / (float)RAND_MAX) * simulationRules.size.y;
-		//
-		// 	simulation.addCreature(creatureData, position);
-		// }
-
 		if (!simMenuPointers.pause->state && simulation.active)
 		{
 			static float cycle = 0;
@@ -674,146 +637,10 @@ int main()
 			},
 			topLeftGrid, bottomRightGrid);
 
-		// simulation.env.view<TestObj>([&](auto &obj, auto){std::cout << &obj << "
-		// " << obj.position.x << '\n';});
-		// std::cout << simulation.env.getListInGrid({0, 0},
-		// typeid(TestObj).hash_code()).size() << '\n';
-
-		// draw rays
-		// if (contains(simulation.env.getList<Creature>(), focusCreature))
-		// {
-		// 	rayShape.setSize(agl::Vec<float, 3>{1, RAY_LENGTH *
-		// focusCreature->sight}); 	rayShape.setPosition(focusCreature->position);
-		//
-		// 	{
-		// 		float angleOffset =
-		// focusCreature->network->getNode(CREATURE_ROTATION).value * 180;
-		// 		angleOffset += 180;
-		//
-		// 		float rayAngle = angleOffset -
-		// agl::radianToDegree(focusCreature->rotation);
-		//
-		// 		float weight =
-		// focusCreature->network->getNode(CREATURE_DISTANCE).value;
-		//
-		// 		rayShape.setColor({0, (unsigned char)(weight * 255),
-		// BASE_B_VALUE});
-		//
-		// 		rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
-		// 		window.drawShape(rayShape);
-		// 	}
-		// 	{
-		// 		float angleOffset =
-		// focusCreature->network->getNode(FOOD_ROTATION).value * 180;
-		// angleOffset
-		// += 180;
-		//
-		// 		float rayAngle = angleOffset -
-		// agl::radianToDegree(focusCreature->rotation);
-		//
-		// 		float weight =
-		// focusCreature->network->getNode(FOOD_DISTANCE).value;
-		//
-		// 		rayShape.setColor({0, (unsigned char)(weight * 255),
-		// BASE_B_VALUE});
-		//
-		// 		rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
-		// 		window.drawShape(rayShape);
-		// 	}
-		// 	{
-		// 		float angleOffset =
-		// focusCreature->network->getNode(MEAT_ROTATION).value * 180;
-		// angleOffset
-		// += 180;
-		//
-		// 		float rayAngle = angleOffset -
-		// agl::radianToDegree(focusCreature->rotation);
-		//
-		// 		float weight =
-		// focusCreature->network->getNode(MEAT_DISTANCE).value;
-		//
-		// 		rayShape.setColor({0, (unsigned char)(weight * 255),
-		// BASE_B_VALUE});
-		//
-		// 		rayShape.setRotation(agl::Vec<float, 3>{0, 0, rayAngle});
-		// 		window.drawShape(rayShape);
-		// 	}
-		// }
-
-		// draw creature
-		// simulation.env.view<Creature>(
-		// 	[&](auto &creature, auto) {
-		// 		creatureShape.setPosition(creature.position);
-		// 		creatureShape.setRotation(agl::Vec<float, 3>{0,
-		// 0, -float(creature.rotation * 180 / PI)});
-		//
-		// 		float speed = creature.velocity.length();
-		//
-		// 		creatureShape.setTexture(&creatureBodyTexture);
-		//
-		// 		int textureFrame = int(simulation.frame * (speed /
-		// 8)) % 6;
-		//
-		// 		if (textureFrame > 2)
-		// 		{
-		// 			textureFrame -= 2;
-		//
-		// 			creatureShape.setTextureScaling({-(1. / 3.),
-		// 1});
-		// 		}
-		// 		else
-		// 		{
-		// 			creatureShape.setTextureScaling({1. / 3.,
-		// 1});
-		// 		}
-		//
-		// 		creatureShape.setTextureTranslation({float(1. / 3.)
-		// * textureFrame, 0});
-		//
-		// 		if (event.isKeyPressed(agl::Key::Z))
-		// 		{
-		// 			agl::Vec<float, 3> blue	  =
-		// agl::Vec<float, 3>{0, 0, 255} * creature.creatureData.usePG;
-		// agl::Vec<float, 3> yellow = agl::Vec<float, 3>{255, 255, 0} *
-		// creature.creatureData.useNEAT;
-		//
-		// 			creatureShape.setColor({(unsigned char)(blue.x
-		// + yellow.x), (unsigned char)(blue.y + yellow.y),
-		// (unsigned char)(blue.z + yellow.z)});
-		// 		}
-		// 		else
-		// 		{
-		// 			creatureShape.setColor(hueToRGB(creature.hue));
-		// 		}
-		//
-		// 		float size = creature.sizeData;
-		//
-		// 		creatureShape.setSize(agl::Vec<float, 3>{25 * size,
-		// 60 * size,
-		// 0}); 		creatureShape.setOffset(agl::Vec<float,
-		// 3>{(float)-12.5 * size, (float)-12.5 * size, -1});
-		//
-		// 		window.drawShape(creatureShape);
-		//
-		// 		creatureShape.setTexture(&creatureExtraTexture);
-		//
-		// 		creatureShape.setColor(agl::Color::White);
-		//
-		// 		creatureShape.setTextureScaling({1, 1});
-		// 		creatureShape.setTextureTranslation({1, 1});
-		//
-		// 		creatureShape.setOffset(agl::Vec<float,
-		// 3>{(float)-12.5 * size, (float)-12.5 * size, -.5});
-		//
-		// 		window.drawShape(creatureShape);
-		// 	},
-		// 	topLeftGrid, bottomRightGrid);
-
 	skipSimRender:;
 
 		window.getShaderUniforms(simpleShader);
 		simpleShader.use();
-		window.updateMvp(camera);
 
 		// gui rendering
 
@@ -893,6 +720,11 @@ int main()
 
 		Debug::log.clear();
 
+		// window.getShaderUniforms(menuShader);
+		// menuShader.use();
+		//
+		// window.updateMvp(guiCamera);
+
 		window.draw(menuBar);
 
 		window.display();
@@ -925,7 +757,7 @@ int main()
 			simulationRules.startingCreatures = simMenuPointers.startingCreatures->value;
 			simulationRules.threads			  = simMenuPointers.threads->value;
 			simulationRules.foodCap			  = simRulesPointers.maxFood->value;
-			
+
 			simulation.create(simulationRules, simMenuPointers.seed->value);
 
 			background.setSize(simulationRules.size);

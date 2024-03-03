@@ -23,7 +23,7 @@
 // food experiences a pushback force at the border of the simulation
 #define FOODBORDER
 
-#define VITEDENS (1./144.)
+#define VITEDENS (1. / 144.)
 
 #define THREADS	  20
 #define EATRADIUS 20
@@ -33,7 +33,7 @@
 #define MEATVOL	 60
 #define LEACHVOL 1
 
-#define FOODCAP 
+#define FOODCAP
 
 #define BITEDELAY 20
 
@@ -81,18 +81,5 @@
 #define MENU_DECORATIONHEIGHT (float)(4 + (MENU_BORDERTHICKNESS * 4))
 
 #define MENU_BORDEREDGE (float)2
-
-#define MENU_BORDERCOLOR \
-	{                    \
-		140, 140, 140    \
-	}
-#define MENU_SHADOWCOLOR \
-	{                    \
-		100, 100, 100    \
-	}
-#define MENU_BODYCOLOR \
-	{                  \
-		210, 210, 210  \
-	}
 
 #define ENERGYCOSTMULTIPLIER 0.0003

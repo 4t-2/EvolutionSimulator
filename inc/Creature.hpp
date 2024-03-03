@@ -31,10 +31,6 @@ class Creature : public Entity<PhysicsObj>
         bool exists;
         agl::Vec<float, 2> position;
 
-		RelPos creatureRelPos;
-		RelPos foodRelPos;
-		RelPos meatRelPos;
-
 		in::NeuralNetwork *network = nullptr;
 
 		bool eating	   = false;
@@ -42,10 +38,6 @@ class Creature : public Entity<PhysicsObj>
 
 		bool incubating = 0;
 		
-		float sight = 0;
-		float speed = 0;
-		float sizeData	= 0;
-
 		// sight + (speed^2)(size^3)
 		float energy	= 0;
 		float health	= 0;
@@ -63,29 +55,7 @@ class Creature : public Entity<PhysicsObj>
 		float eggEnergyCost = 0;
 		float eggDesposit = 0;
 
-		float &preference = creatureData.preference; // plant = 1
-													 // meat  = 0
-
-		float &metabolism = creatureData.metabolism;
-
-		float maxForce	  = 0;
-		float maxRotation = 0;
-
-		float rayLength = 0;
-
-		int hue = 0;
-
-		SimulationRules *simulationRules;
-
 		CreatureData creatureData;
-
-		agl::Vec<int, 2> startGridOffset;
-		agl::Vec<int, 2> endGridOffset;
-
-		std::vector<Memory> memory;
-		float baseline = 0;
-		float reward = 0;
-		float shift[20];
 
 		std::vector<PhysicsObj*> segments;
 

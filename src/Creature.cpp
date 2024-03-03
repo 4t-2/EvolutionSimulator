@@ -29,22 +29,11 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	// Eat
 	// Lay egg
 
-	this->simulationRules = simulationRules;
-
 	this->creatureData = creatureData;
-
-	sight = creatureData.sight;
-
-	hue = creatureData.hue;
 
 	// sight = 1;
 	// speed = 1;
 	// size = 1;
-
-	this->rayLength = RAY_LENGTH * sight;
-
-	this->maxForce	  = 1.5 * speed;
-	this->maxRotation = 0.05 * speed;
 
 	this->health = 100;
 	this->life	 = 60 * 60 * 10;
@@ -65,18 +54,6 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 	this->eggDesposit	= 0;
 
 	this->energy = creatureData.startEnergy + 1;
-
-	int xOffset = (roundUp(rayLength / ((float)simulationRules->size.x / simulationRules->gridResolution.x), 2) / 2);
-	int yOffset = (roundUp(rayLength / ((float)simulationRules->size.y / simulationRules->gridResolution.y), 2) / 2);
-
-	startGridOffset.x = -xOffset;
-	startGridOffset.y = -yOffset;
-	endGridOffset.x	  = xOffset;
-	endGridOffset.y	  = yOffset;
-
-	creatureRelPos = {0, rayLength};
-	foodRelPos	   = {0, rayLength};
-	meatRelPos	   = {0, rayLength};
 
 	PhysicsObj *lastSpine = nullptr;
 
@@ -160,9 +137,6 @@ void Creature::clear()
 	network	  = nullptr;
 	eating	  = false;
 	layingEgg = false;
-	sight	  = 0;
-	speed	  = 0;
-	sizeData  = 0;
 	energy	  = 0;
 	health	  = 0;
 
@@ -185,92 +159,92 @@ void Creature::learnBrain(SimulationRules &simRules)
 
 void Creature::updateNetwork()
 {
-	if (creatureData.usePG)
-	{
-		int memSlot = (maxLife - life) % simulationRules->memory;
-
-		if (memSlot == 0)
-		{
-			for (int i = 0; i < network->structure.totalOutputNodes; i++)
-			{
-				shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * simulationRules->exploration;
-			}
-		}
-
-		for (int i = 0; i < network->structure.totalInputNodes; i++)
-		{
-			memory[memSlot].state[i] = network->inputNode[i]->value;
-			if (std::isnan(memory[memSlot].state[i]))
-			{
-				std::cout << life << " nan " << i << '\n';
-			}
-		}
-
-		if (std::isnan(reward))
-		{
-			std::cout << "reward" << '\n';
-		}
-		memory[memSlot].reward = reward;
-		reward				   = 0;
-
-		for (int i = 0; i < network->structure.totalOutputNodes; i++)
-		{
-			memory[memSlot].action[i] = network->outputNode[i].value;
-			if (std::isnan(memory[memSlot].action[i]))
-			{
-				std::cout << life << " nan  action " << i << '\n';
-			}
-		}
-	}
-
-	if ((maxLife - life) % simulationRules->memory == 0 && maxLife != life && creatureData.usePG)
-	{
-		float loss = 0;
-
-		for (int x = simulationRules->memory - 1; x >= 0; x--)
-		{
-			for (int y = 1; (x + y) < simulationRules->memory; y++)
-			{
-				float old = memory[x].reward;
-				memory[x].reward += memory[x + y].reward * std::pow(simulationRules->vaporize, y);
-			}
-
-			loss += memory[x].reward;
-		}
-
-		loss /= simulationRules->memory;
-
-		int oldLoss = loss;
-		loss -= baseline;
-
-		baseline = oldLoss;
-
-		std::vector<float> gradients;
-
-		network->setupGradients(&gradients);
-
-		for (int i = 0; i < simulationRules->memory; i++)
-		{
-			for (int x = 0; x < network->structure.totalInputNodes; x++)
-			{
-				network->setInputNode(x, memory[i].state[x]);
-			}
-
-			network->update();
-
-			std::vector<float> target(network->structure.totalOutputNodes);
-
-			for (int x = 0; x < network->structure.totalOutputNodes; x++)
-			{
-				target[x] = memory[i].action[x];
-			}
-
-			network->calcGradients(&gradients, target);
-		}
-
-		network->learningRate = simulationRules->learningRate;
-		network->applyGradients(gradients, loss, simulationRules->memory);
-	}
+	// if (creatureData.usePG)
+	// {
+	// 	int memSlot = (maxLife - life) % simulationRules->memory;
+	//
+	// 	if (memSlot == 0)
+	// 	{
+	// 		for (int i = 0; i < network->structure.totalOutputNodes; i++)
+	// 		{
+	// 			shift[i] = (((rand() / (float)RAND_MAX) * 2) - 1) * simulationRules->exploration;
+	// 		}
+	// 	}
+	//
+	// 	for (int i = 0; i < network->structure.totalInputNodes; i++)
+	// 	{
+	// 		memory[memSlot].state[i] = network->inputNode[i]->value;
+	// 		if (std::isnan(memory[memSlot].state[i]))
+	// 		{
+	// 			std::cout << life << " nan " << i << '\n';
+	// 		}
+	// 	}
+	//
+	// 	if (std::isnan(reward))
+	// 	{
+	// 		std::cout << "reward" << '\n';
+	// 	}
+	// 	memory[memSlot].reward = reward;
+	// 	reward				   = 0;
+	//
+	// 	for (int i = 0; i < network->structure.totalOutputNodes; i++)
+	// 	{
+	// 		memory[memSlot].action[i] = network->outputNode[i].value;
+	// 		if (std::isnan(memory[memSlot].action[i]))
+	// 		{
+	// 			std::cout << life << " nan  action " << i << '\n';
+	// 		}
+	// 	}
+	// }
+	//
+	// if ((maxLife - life) % simulationRules->memory == 0 && maxLife != life && creatureData.usePG)
+	// {
+	// 	float loss = 0;
+	//
+	// 	for (int x = simulationRules->memory - 1; x >= 0; x--)
+	// 	{
+	// 		for (int y = 1; (x + y) < simulationRules->memory; y++)
+	// 		{
+	// 			float old = memory[x].reward;
+	// 			memory[x].reward += memory[x + y].reward * std::pow(simulationRules->vaporize, y);
+	// 		}
+	//
+	// 		loss += memory[x].reward;
+	// 	}
+	//
+	// 	loss /= simulationRules->memory;
+	//
+	// 	int oldLoss = loss;
+	// 	loss -= baseline;
+	//
+	// 	baseline = oldLoss;
+	//
+	// 	std::vector<float> gradients;
+	//
+	// 	network->setupGradients(&gradients);
+	//
+	// 	for (int i = 0; i < simulationRules->memory; i++)
+	// 	{
+	// 		for (int x = 0; x < network->structure.totalInputNodes; x++)
+	// 		{
+	// 			network->setInputNode(x, memory[i].state[x]);
+	// 		}
+	//
+	// 		network->update();
+	//
+	// 		std::vector<float> target(network->structure.totalOutputNodes);
+	//
+	// 		for (int x = 0; x < network->structure.totalOutputNodes; x++)
+	// 		{
+	// 			target[x] = memory[i].action[x];
+	// 		}
+	//
+	// 		network->calcGradients(&gradients, target);
+	// 	}
+	//
+	// 	network->learningRate = simulationRules->learningRate;
+	// 	network->applyGradients(gradients, loss, simulationRules->memory);
+	// }
 
 	int node = 2;
 

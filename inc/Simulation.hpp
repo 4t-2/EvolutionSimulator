@@ -17,10 +17,6 @@ class Simulation
 
 		bool active;
 
-		std::vector<int> totalNEAT;
-		std::vector<int> totalRL;
-		std::vector<int> totalBOTH;
-
 		int frame = 0;
 
 		int	  &foodCap				= simulationRules.foodCap;
