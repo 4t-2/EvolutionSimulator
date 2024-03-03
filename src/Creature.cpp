@@ -82,6 +82,7 @@ void Creature::setup(CreatureData &creatureData, SimulationRules *simulationRule
 							  VITEDENS * creatureData.sd[i].size.x * creatureData.sd[i].size.y);
 			segments.emplace_back(this);
 		}
+    (void) totalJoints;
 
 		lastSpine = segments.back();
 

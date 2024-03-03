@@ -25,7 +25,7 @@
 
 #define VITEDENS (1. / 144.)
 
-#define THREADS	  20
+#define THREADS	  1
 #define EATRADIUS 20
 #define DAMAGE	  4
 

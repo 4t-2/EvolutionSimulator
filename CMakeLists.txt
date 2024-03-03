@@ -46,7 +46,7 @@ target_include_directories(EvolutionSimulator
 					PUBLIC "./lib")
 target_link_libraries(EvolutionSimulator glfw )
 #target_link_libraries(EvolutionSimulator glew )
-target_link_libraries(EvolutionSimulator ${GLEW_LIBRARIES} )
+target_link_libraries(EvolutionSimulator ${GLEW_STATIC_LIBRARY} )
 #target_include_directories(EvolutionSimulator INTERFACE )
 #link_libraries(${GLEW_LIBRARIES})
 #target_include_directories(EvolutionSimulator )

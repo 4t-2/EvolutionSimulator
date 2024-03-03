@@ -194,7 +194,8 @@ int main()
 
 	// background.setPosition(simulationRules.size * .5);
 
-	Simulation simulation;
+	Simulation simulation{};
+  simulation.active = 0;
 	// simulation.create(simulationRules, 0);
 
 	Creature *focusCreature = nullptr;

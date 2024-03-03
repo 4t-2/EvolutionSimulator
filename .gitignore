@@ -28,6 +28,9 @@
 
 # Executables
 *.exe
+*.pdb
+*.raddbg
+*.ilk
 *.out
 *.app
 
@@ -36,6 +39,9 @@ lib/AGL
 
 # cmake
 build/*
+
+#ext deps
+dependents/*
 
 *.xcf
 .cache

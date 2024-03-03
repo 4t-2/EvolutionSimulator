@@ -332,11 +332,15 @@ class Environment
 		template <typename T> void addToGrid(BaseEntity &entity)
 		{
 			agl::Vec<int, 2> gridPosition = toGridPosition(entity.position);
+     
       size_t len1 = grid.size();
+      
       auto			&vec1		  = grid[gridPosition.x];
       size_t len2 = vec1.size();
+      
       (void)len1;
       (void)len2;
+      
       auto			&map		  = vec1[gridPosition.y];
 			
 

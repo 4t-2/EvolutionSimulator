@@ -341,6 +341,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 			if (choice == 0 && creatureData->sd.size() > 1) // remove
 			{
 				int segTot		   = CreatureData::totalSegJoints(creatureData->sd);
+        (void)segTot;
 				int segTotOneSided = segTotalOneSided(creatureData->sd);
 
 				int seg = generateRandomNumber(1, segTotOneSided);
@@ -422,7 +423,9 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 			else if (choice == 1) // extend
 			{
 				int segTot		   = CreatureData::totalSegJoints(creatureData->sd);
+        (void)segTot;
 				int segTotOneSided = segTotalOneSided(creatureData->sd);
+        (void)segTotOneSided;
 
 				int seg = generateRandomNumber(0, creatureData->sd.size() - 1);
 
@@ -551,6 +554,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 		{
 			max = 1;
 		}
+    (void) max;
 
 		int type = generateRandomNumber(0, 3);
 
@@ -803,6 +807,7 @@ void calcAirResForSide(PhysicsObj &o, agl::Vec<float, 2> norm, std::function<flo
 
 	agl::Vec<float, 2> rp1		= perp(r1);
 	agl::Vec<float, 2> rp2		= perp(norm * velMag / -2);
+  (void)rp2;
 	agl::Vec<float, 2> startVel = (o.velocity + (rp1 * -o.angularVelocity));
 
 	agl::Vec<float, 2> outAcc;
