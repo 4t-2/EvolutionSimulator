@@ -9,3 +9,6 @@ agl::Texture	 *MenuShare::blank;
 void			 *MenuShare::focusedMenu;
 bool			 *MenuShare::leftClick;
 FocusableElement *FocusableElement::focusedField;
+agl::Shader		 *MenuShare::menuShader;
+agl::Shader		 *MenuShare::baseShader;
+agl::Camera		 *MenuShare::camera;

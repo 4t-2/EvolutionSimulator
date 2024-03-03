@@ -31,15 +31,18 @@ inline bool pointInArea(agl::Vec<float, 2> point, agl::Vec<float, 2> position, a
 class MenuShare
 {
 	public:
-		static agl::Event		*event;
-		static agl::Text		*text;
-		static agl::Text		*smallText;
-		static agl::Rectangle	*rect;
-		static agl::Circle		*circ;
-		static agl::Texture		*border;
-		static agl::Texture		*blank;
-		static void				*focusedMenu;
-		static bool				*leftClick;
+		static agl::Event	  *event;
+		static agl::Text	  *text;
+		static agl::Text	  *smallText;
+		static agl::Rectangle *rect;
+		static agl::Circle	  *circ;
+		static agl::Texture	  *border;
+		static agl::Texture	  *blank;
+		static void			  *focusedMenu;
+		static bool			  *leftClick;
+		static agl::Shader	  *menuShader;
+		static agl::Shader	  *baseShader;
+		static agl::Camera	  *camera;
 
 		static void init(agl::Texture *blank, agl::Font *font, agl::Font *smallFont, agl::Event *event, bool *leftClick)
 		{
@@ -98,36 +101,24 @@ class OuterArea : public agl::Drawable, public MenuShare
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
+			window.getShaderUniforms(*menuShader);
+			menuShader->use();
+			window.updateMvp(*camera);
+
+			glUniform1f(menuShader->getUniformLocation("scaleX"), size.x);
+			glUniform1f(menuShader->getUniformLocation("scaleY"), size.y);
+			glUniform1i(menuShader->getUniformLocation("type"), 1);
+
 			rect->setTexture(blank);
 			rect->setColor(agl::Color::White);
 
-			rect->setColor({0, 0, 0});
 			rect->setPosition(position);
 			rect->setSize(size);
 			window.drawShape(*rect);
-
-			rect->setColor({0xFF, 0xFF, 0xFF});
-			rect->setPosition(position);
-			rect->setSize(size + agl::Vec<float, 2>{-1, -1});
-			window.drawShape(*rect);
-
-			rect->setColor({0x80, 0x80, 0x80});
-			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
-			rect->setSize(size + agl::Vec<float, 2>{-2, -2});
-			window.drawShape(*rect);
-
-			rect->setColor({0xDF, 0xDF, 0xDF});
-			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
-			rect->setSize(size + agl::Vec<float, 2>{-3, -3});
-			window.drawShape(*rect);
-
-			// body
-			rect->setRotation({0, 0, 0});
-			rect->setTexture(blank);
-			rect->setSize(size + agl::Vec<float, 2>{-4, -4});
-			rect->setPosition(position + agl::Vec<float, 2>{2, 2});
-			rect->setColor({0xc0, 0xc0, 0xc0});
-			window.drawShape(*rect);
+			
+			window.getShaderUniforms(*baseShader);
+			baseShader->use();
+			window.updateMvp(*camera);
 		}
 };
 
@@ -139,22 +130,24 @@ class ThinAreaOut : public agl::Drawable, public MenuShare
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
-			rect->setTexture(blank);
+			window.getShaderUniforms(*menuShader);
+			menuShader->use();
+			window.updateMvp(*camera);
 
-			rect->setColor({0xFF, 0xFF, 0xFF});
+			glUniform1f(menuShader->getUniformLocation("scaleX"), size.x);
+			glUniform1f(menuShader->getUniformLocation("scaleY"), size.y);
+			glUniform1i(menuShader->getUniformLocation("type"), 0);
+
+			rect->setColor(agl::Color::White);
 			rect->setPosition(position);
 			rect->setSize(size);
+			rect->setTextureScaling({1, 1, 1});
+			rect->setTextureTranslation({0, 0, 0});
 			window.drawShape(*rect);
-
-			rect->setColor({0x80, 0x80, 0x80});
-			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
-			rect->setSize(size - agl::Vec<float, 2>{1, 1});
-			window.drawShape(*rect);
-
-			rect->setColor({0xC0, 0xC0, 0xC0});
-			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
-			rect->setSize(size - agl::Vec<float, 2>{2, 2});
-			window.drawShape(*rect);
+			
+			window.getShaderUniforms(*baseShader);
+			baseShader->use();
+			window.updateMvp(*camera);
 		}
 };
 
@@ -166,22 +159,23 @@ class ThinAreaIn : public agl::Drawable, public MenuShare
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
+			window.getShaderUniforms(*menuShader);
+			menuShader->use();
+			window.updateMvp(*camera);
+
+			glUniform1f(menuShader->getUniformLocation("scaleX"), size.x);
+			glUniform1f(menuShader->getUniformLocation("scaleY"), size.y);
+			glUniform1i(menuShader->getUniformLocation("type"), 2);
+
 			rect->setTexture(blank);
 
-			rect->setColor({0x80, 0x80, 0x80});
+			rect->setColor(agl::Color::White);
 			rect->setPosition(position);
 			rect->setSize(size);
-			window.drawShape(*rect);
 
-			rect->setColor({0xFF, 0xFF, 0xFF});
-			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
-			rect->setSize(size - agl::Vec<float, 2>{1, 1});
-			window.drawShape(*rect);
-
-			rect->setColor({0xC0, 0xC0, 0xC0});
-			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
-			rect->setSize(size - agl::Vec<float, 2>{2, 2});
-			window.drawShape(*rect);
+			window.getShaderUniforms(*baseShader);
+			baseShader->use();
+			window.updateMvp(*camera);
 		}
 };
 
@@ -193,6 +187,14 @@ class DipArea : public agl::Drawable, public MenuShare
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
+			window.getShaderUniforms(*menuShader);
+			menuShader->use();
+			window.updateMvp(*camera);
+
+			glUniform1f(menuShader->getUniformLocation("scaleX"), size.x);
+			glUniform1f(menuShader->getUniformLocation("scaleY"), size.y);
+			glUniform1i(menuShader->getUniformLocation("type"), 3);
+
 			rect->setTexture(blank);
 			rect->setColor(agl::Color::White);
 
@@ -201,27 +203,9 @@ class DipArea : public agl::Drawable, public MenuShare
 			rect->setSize(size);
 			window.drawShape(*rect);
 
-			rect->setColor({0xFF, 0xFF, 0xFF});
-			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
-			rect->setSize(size + agl::Vec<float, 2>{-1, -1});
-			window.drawShape(*rect);
-
-			rect->setColor({0x80, 0x80, 0x80});
-			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
-			rect->setSize(size + agl::Vec<float, 2>{-2, -2});
-			window.drawShape(*rect);
-
-			rect->setColor({0xDF, 0xDF, 0xDF});
-			rect->setPosition(position + agl::Vec<float, 2>{2, 2});
-			rect->setSize(size + agl::Vec<float, 2>{-3, -3});
-			window.drawShape(*rect);
-
-			// body
-			rect->setRotation({0, 0, 0});
-			rect->setSize(size + agl::Vec<float, 2>{-4, -4});
-			rect->setPosition(position + agl::Vec<float, 2>{2, 2});
-			rect->setColor({0xc0, 0xc0, 0xc0});
-			window.drawShape(*rect);
+			window.getShaderUniforms(*baseShader);
+			baseShader->use();
+			window.updateMvp(*camera);
 		}
 };
 
@@ -233,44 +217,27 @@ class InnerArea : public agl::Drawable, public MenuShare
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
+			window.getShaderUniforms(*menuShader);
+			menuShader->use();
+			window.updateMvp(*camera);
+
+			glUniform1f(menuShader->getUniformLocation("scaleX"), size.x);
+			glUniform1f(menuShader->getUniformLocation("scaleY"), size.y);
+			glUniform1i(menuShader->getUniformLocation("type"), 4);
+
 			bool state = true;
       (void)state;
 			// body
 			rect->setRotation({0, 0, 0});
 			rect->setTexture(blank);
-			rect->setSize(size + agl::Vec<float, 2>{-1, -1});
-			rect->setPosition(position + agl::Vec<float, 2>{1, 1});
+			rect->setSize(size);
+			rect->setPosition(position);
 			rect->setColor(agl::Color::White);
 			window.drawShape(*rect);
 
-			rect->setTexture(border);
-
-			// left
-			rect->setTextureTranslation({1 - ((1 / MENU_BORDERTHICKNESS) * 2), 0});
-			rect->setTextureScaling({1. / MENU_BORDERTHICKNESS, 1. / MENU_DECORATIONHEIGHT});
-			rect->setSize({1, size.y - 1});
-			rect->setPosition(position);
-			window.drawShape(*rect);
-
-			// up
-			rect->setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 2});
-			rect->setSize({2, size.x - 2});
-			rect->setRotation({0, 0, 90});
-			rect->setTextureScaling({2 / MENU_BORDERTHICKNESS, 1 / MENU_DECORATIONHEIGHT});
-			rect->setPosition(position + agl::Vec<float, 2>{1, 2});
-			window.drawShape(*rect);
-
-			rect->setRotation({0, 0, 0});
-
-			// down
-			rect->setSize({2, size.x - 2});
-			rect->setRotation({0, 0, 90});
-			rect->setTextureTranslation({1 - (2 / MENU_BORDERTHICKNESS), 3 / MENU_DECORATIONHEIGHT});
-			rect->setTextureScaling({2 / MENU_BORDERTHICKNESS, 1 / MENU_DECORATIONHEIGHT});
-			rect->setPosition(position + agl::Vec<float, 2>{1, size.y});
-			window.drawShape(*rect);
-
-			rect->setRotation({0, 0, 0});
+			window.getShaderUniforms(*baseShader);
+			baseShader->use();
+			window.updateMvp(*camera);
 		}
 };
 
@@ -282,84 +249,27 @@ class PressedArea : public agl::Drawable, public MenuShare
 
 		void drawFunction(agl::RenderWindow &window) override
 		{
-			// draw button
+			window.getShaderUniforms(*menuShader);
+			menuShader->use();
+			window.updateMvp(*camera);
 
-			rect->setTexture(border);
-			rect->setColor(agl::Color::White);
+			glUniform1f(menuShader->getUniformLocation("scaleX"), size.x);
+			glUniform1f(menuShader->getUniformLocation("scaleY"), size.y);
+			glUniform1i(menuShader->getUniformLocation("type"), 5);
 
-			// left
-			rect->setTextureTranslation({0, (1 / MENU_DECORATIONHEIGHT) * 3});
-
-			rect->setSize({MENU_BORDERTHICKNESS, size.y});
-			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
-			rect->setPosition(position);
-			window.drawShape(*rect);
-
-			// right
-			rect->setSize({MENU_BORDERTHICKNESS, size.y});
-			rect->setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 1});
-			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
-			rect->setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, 0});
-			window.drawShape(*rect);
-
-			rect->setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 1});
-			rect->setSize({MENU_BORDERTHICKNESS, size.x});
-			rect->setRotation({0, 0, 90});
-			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
-			rect->setPosition(position + agl::Vec<float, 2>{0, MENU_BORDERTHICKNESS});
-			window.drawShape(*rect);
-
-			// down
-			rect->setSize({MENU_BORDERTHICKNESS, size.x});
-			rect->setRotation({0, 0, 90});
-			rect->setTextureTranslation({0, 1 / MENU_DECORATIONHEIGHT * 3});
-			rect->setTextureScaling({1, 1 / MENU_DECORATIONHEIGHT});
-			rect->setPosition(position + agl::Vec<float, 2>{0, size.y});
-			window.drawShape(*rect);
-
-			rect->setRotation({0, 0, 0});
-
-			// tr
-			rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 3});
-			rect->setRotation({0, 0, 90});
-			rect->setPosition(position + agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
-			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
-			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
-			window.drawShape(*rect);
-
-			// br
-			rect->setRotation({0, 0, 0});
-			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
-			rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 3});
-			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
-			rect->setPosition(position +
-							  agl::Vec<float, 2>{size.x - MENU_BORDERTHICKNESS, size.y - MENU_BORDERTHICKNESS});
-			window.drawShape(*rect);
-
-			// tl
-			rect->setRotation({0, 0, 180});
-			rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 3});
-			rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
-			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
-			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
-			window.drawShape(*rect);
-
-			// bl
-			rect->setRotation({0, 0, 270});
-			rect->setTextureTranslation({0, 1. - (MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT) * 3});
-			rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDERTHICKNESS, size.y - MENU_BORDERTHICKNESS});
-			rect->setSize({MENU_BORDERTHICKNESS, MENU_BORDERTHICKNESS});
-			rect->setTextureScaling({1, MENU_BORDERTHICKNESS / MENU_DECORATIONHEIGHT});
-			window.drawShape(*rect);
+			bool state = true;
 
 			// body
 			rect->setRotation({0, 0, 0});
 			rect->setTexture(blank);
-			rect->setSize(agl::Vec<float, 2>{size.x, size.y} -
-						  agl::Vec<float, 2>{MENU_BORDEREDGE, MENU_BORDEREDGE} * 2);
-			rect->setPosition(position + agl::Vec<float, 2>{MENU_BORDEREDGE, MENU_BORDEREDGE});
-			rect->setColor({0xc0, 0xc0, 0xc0});
+			rect->setSize(size);
+			rect->setPosition(position);
+			rect->setColor(agl::Color::White);
 			window.drawShape(*rect);
+
+			window.getShaderUniforms(*baseShader);
+			baseShader->use();
+			window.updateMvp(*camera);
 		}
 };
 
@@ -555,7 +465,6 @@ class FocusableElement
 	public:
 		virtual void unFocus()
 		{
-
 		}
 		static FocusableElement *focusedField;
 };
@@ -864,10 +773,10 @@ class NetworkGraph : public MenuElement
 class SimpleMenu : public agl::Drawable, public MenuShare
 {
 	public:
-		bool			 exists = false;
+		bool			 exists	  = false;
 		agl::Vec<int, 3> position = {0, 0};
-		agl::Vec<int, 2> size = {0, 0};
-		std::string		 title = "";
+		agl::Vec<int, 2> size	  = {0, 0};
+		std::string		 title	  = "";
 
 		void open(agl::Vec<int, 2> position)
 		{
@@ -954,11 +863,11 @@ template <typename... ElementType> class Menu : public SimpleMenu
 		template <size_t i = 0>
 			typename std::enable_if < i<sizeof...(ElementType), void>::type pointerAssign(void *pointerStruct)
 		{
-			int64_t  address = (int64_t)(pointerStruct);
-			int64_t  offset  = i * 8;
-			int64_t *item	  = (int64_t *)(address + offset);
+			int64_t	 address = (int64_t)(pointerStruct);
+			int64_t	 offset	 = i * 8;
+			int64_t *item	 = (int64_t *)(address + offset);
 
-			*item = (int64_t)&this->get<i>();
+			*item = (int64_t) & this->get<i>();
 
 			pointerAssign<i + 1>(pointerStruct);
 		}

@@ -212,6 +212,9 @@ int main()
 	// menu shit
 
 	MenuShare::init(&blank, &font, &smallFont, &event, &leftClick);
+	MenuShare::menuShader = &menuShader;
+	MenuShare::baseShader = &simpleShader;
+	MenuShare::camera	  = &guiCamera;
 
 	// simulation info
 
