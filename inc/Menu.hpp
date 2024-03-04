@@ -172,7 +172,10 @@ class ThinAreaIn : public agl::Drawable, public MenuShare
 			rect->setColor(agl::Color::White);
 			rect->setPosition(position);
 			rect->setSize(size);
-
+			rect->setTextureScaling({1, 1, 1});
+			rect->setTextureTranslation({0, 0, 0});
+			window.drawShape(*rect);
+			
 			window.getShaderUniforms(*baseShader);
 			baseShader->use();
 			window.updateMvp(*camera);

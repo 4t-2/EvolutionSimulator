@@ -60,3 +60,6 @@ bin/EvolutionSimulator
 bin/READ.txt
 bin/creature (copy 1).vt
 bin/creature.vt
+
+lib/stb_image.h
+lib/stb_truetype.h

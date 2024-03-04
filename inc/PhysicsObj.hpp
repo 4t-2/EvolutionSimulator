@@ -339,8 +339,8 @@ class World
 			float restitution = 0;
 			auto  top		  = (offset * -(1 + restitution)).dot(collision.normal);
 
-			float botl1 = std::powf(rp1.dot(collision.normal), 2) * collision.b1->invInertia;
-			float botl2 = std::powf(rp2.dot(collision.normal), 2) * collision.b2->invInertia;
+			float botl1 = std::pow(rp1.dot(collision.normal), 2) * collision.b1->invInertia;
+			float botl2 = std::pow(rp2.dot(collision.normal), 2) * collision.b2->invInertia;
 
 			auto bottom = collision.normal.dot(collision.normal * (collision.b1->invMass + collision.b2->invMass)) +
 						  botl1 + botl2;
@@ -368,8 +368,8 @@ class World
 			float restitution = 0;
 			auto  top		  = (relVel * -(1 + restitution)).dot(collision.normal);
 
-			float botl1 = std::powf(rp1.dot(collision.normal), 2) * collision.b1->invInertia;
-			float botl2 = std::powf(rp2.dot(collision.normal), 2) * collision.b2->invInertia;
+			float botl1 = std::pow(rp1.dot(collision.normal), 2) * collision.b1->invInertia;
+			float botl2 = std::pow(rp2.dot(collision.normal), 2) * collision.b2->invInertia;
 
 			auto bottom = collision.normal.dot(collision.normal * (collision.b1->invMass + collision.b2->invMass)) +
 						  botl1 + botl2;
@@ -402,8 +402,8 @@ class World
 			float restitution = 1;
 			auto  top		  = (relVel * -(1 + restitution)).dot(normal);
 
-			float botl1 = std::powf(rp1.dot(normal), 2) * invInertia1;
-			float botl2 = std::powf(rp2.dot(normal), 2) * invInertia2;
+			float botl1 = std::pow(rp1.dot(normal), 2) * invInertia1;
+			float botl2 = std::pow(rp2.dot(normal), 2) * invInertia2;
 
 			auto  bottom  = normal.dot(normal * (invMass1 + invMass2)) + botl1 + botl2;
 			float impulse = top / bottom;
