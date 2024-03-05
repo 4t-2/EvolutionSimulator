@@ -65,7 +65,7 @@ class MenuBar : public agl::Drawable, public MenuShare
 				text->clearText();
 				text->setText(menu[i]->title);
 				text->setPosition(oldPen + agl::Vec<float, 2>{9, 0});
-				text->setColor(agl::Color::Black);
+				text->setColor(agl::Color::White);
 				pen = window.drawText(*text) + text->getPosition();
 
 				agl::Vec<float, 2> position = oldPen;

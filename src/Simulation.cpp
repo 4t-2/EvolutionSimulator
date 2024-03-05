@@ -810,8 +810,8 @@ void calcAirResForSide(PhysicsObj &o, agl::Vec<float, 2> norm, std::function<flo
   (void)rp2;
 	agl::Vec<float, 2> startVel = (o.velocity + (rp1 * -o.angularVelocity));
 
-	agl::Vec<float, 2> outAcc;
-	float			   outRot;
+	agl::Vec<float, 2> outAcc = {0, 0};
+	float			   outRot = 0;
 
 	World::resolve(o.velocity, {0, 0}, o.angularVelocity, 0, o.invInertia, 1 / inertia, o.invMass, 1 / mass, norm, r1,
 				   norm * velMag / -2, outAcc, airAccLin, outRot, airAccRot, 1);
@@ -873,7 +873,7 @@ void Simulation::updateSimulation()
 		this->addFood(position);
 	}
 
-	env.view<PhysicsObj>([](PhysicsObj &o, auto it) {
+	env.newView<PhysicsObj, Creature, Food, Meat, TestObj, Egg>([](PhysicsObj &o, auto it) {
 		newAirRes(o);
 
 		o.updatePhysics();

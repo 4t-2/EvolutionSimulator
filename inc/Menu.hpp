@@ -627,8 +627,8 @@ template <typename T> class FieldElement : public MenuElement, public FocusableE
 
 			if (valid)
 			{
-				text->setColor(agl::Color::Black);
-				rect->setColor(agl::Color::Black);
+				text->setColor(agl::Color::White);
+				rect->setColor(agl::Color::White);
 			}
 			else
 			{
@@ -645,8 +645,8 @@ template <typename T> class FieldElement : public MenuElement, public FocusableE
 				window.drawShape(*rect);
 			}
 
-			text->setColor(agl::Color::Black);
-			rect->setColor(agl::Color::Black);
+			text->setColor(agl::Color::White);
+			rect->setColor(agl::Color::White);
 
 			text->clearText();
 		}
@@ -961,7 +961,7 @@ template <typename... ElementType> class Menu : public SimpleMenu
 
 			smallText->clearText();
 			smallText->setText(title);
-			smallText->setColor(agl::Color::Black);
+			smallText->setColor(agl::Color::White);
 			smallText->setPosition(position + agl::Vec<float, 2>{3.5, 0});
 			window.drawText(*smallText);
 		}

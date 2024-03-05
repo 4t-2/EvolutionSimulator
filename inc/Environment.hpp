@@ -13,8 +13,6 @@
 #include <tuple>
 #include <typeinfo>
 
-class Environment;
-
 class BaseEntity
 {
 	public:
@@ -135,8 +133,8 @@ class Environment
 		};
 
 		std::map<std::size_t, std::list<BaseEntity *>>			  entityList;
-		std::map<std::size_t, std::vector<std::size_t>>			  traits;
-		std::map<std::pair<std::size_t, std::size_t>, long long>  traitMap;
+		std::map<std::size_t, std::vector<std::size_t>>			  traits; // child hash to valid parent hash
+		std::map<std::pair<std::size_t, std::size_t>, long long>  traitMap; // mem offset between parent and child
 		agl::Vec<float, 2>										  size;
 		agl::Vec<int, 2>										  gridResolution;
 		std::vector<std::vector<std::map<std::size_t, GridCell>>> grid;
@@ -215,6 +213,28 @@ class Environment
 		template <typename T> std::list<BaseEntity *> &getList()
 		{
 			return entityList[typeid(T).hash_code()];
+		}
+
+		template <typename Search, typename T, typename... Ts>
+		void newView(std::function<void(Search &, std::list<BaseEntity *>::iterator &)> func)
+		{
+			if constexpr (std::is_base_of_v<Search, T> || std::is_same_v<T, Search>)
+			{
+				std::size_t hashT = typeid(T).hash_code();
+
+				for (auto it = entityList[hashT].begin(); it != entityList[hashT].end(); it++)
+				{
+					Search*add = (T*)(DoNotUse*)*it;
+
+					func(*add, it);
+				}
+			}
+
+			if constexpr (sizeof...(Ts) > 0)
+			{
+				newView<Search, Ts...>(func);
+			}
+
 		}
 
 		template <typename T> void view(std::function<void(T &, std::list<BaseEntity *>::iterator &)> func)
