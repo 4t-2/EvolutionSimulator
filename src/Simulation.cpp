@@ -165,7 +165,7 @@ void Simulation::removeFood(Food *food)
 {
 	std::list<BaseEntity *>::iterator iterator;
 
-	env.view<Food>([&](auto, auto it) {
+	env.view<Food, ENVTYPES>([&](auto, auto it) {
 		if (*it == (BaseEntity *)(DoNotUse *)food)
 		{
 			iterator = it;
@@ -207,7 +207,7 @@ void Simulation::removeMeat(Meat *meat)
 {
 	std::list<BaseEntity *>::iterator iterator;
 
-	env.view<Meat>([&](auto, auto it) {
+	env.view<Meat, ENVTYPES>([&](auto, auto it) {
 		if (*it == (BaseEntity *)(DoNotUse *)meat)
 		{
 			iterator = it;
@@ -340,8 +340,8 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 
 			if (choice == 0 && creatureData->sd.size() > 1) // remove
 			{
-				int segTot		   = CreatureData::totalSegJoints(creatureData->sd);
-        (void)segTot;
+				int segTot = CreatureData::totalSegJoints(creatureData->sd);
+				(void)segTot;
 				int segTotOneSided = segTotalOneSided(creatureData->sd);
 
 				int seg = generateRandomNumber(1, segTotOneSided);
@@ -422,10 +422,10 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 			}
 			else if (choice == 1) // extend
 			{
-				int segTot		   = CreatureData::totalSegJoints(creatureData->sd);
-        (void)segTot;
+				int segTot = CreatureData::totalSegJoints(creatureData->sd);
+				(void)segTot;
 				int segTotOneSided = segTotalOneSided(creatureData->sd);
-        (void)segTotOneSided;
+				(void)segTotOneSided;
 
 				int seg = generateRandomNumber(0, creatureData->sd.size() - 1);
 
@@ -554,7 +554,7 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 		{
 			max = 1;
 		}
-    (void) max;
+		(void)max;
 
 		int type = generateRandomNumber(0, 3);
 
@@ -568,8 +568,8 @@ void mutate(CreatureData *creatureData, int bodyMutation, int networkCycles)
 			int index = round((rand() / (float)RAND_MAX) * (creatureData->netStr->totalConnections - 1));
 			int start = connection[index].startNode;
 			int end	  = connection[index].endNode;
-      (void)start;
-      (void)end;
+			(void)start;
+			(void)end;
 			connection[index].weight = ((rand() / (float)RAND_MAX) * 4) - 2;
 		}
 		else if (type == 1)
@@ -805,9 +805,9 @@ void calcAirResForSide(PhysicsObj &o, agl::Vec<float, 2> norm, std::function<flo
 
 	agl::Vec<float, 2> r1 = norm * side2 / 2;
 
-	agl::Vec<float, 2> rp1		= perp(r1);
-	agl::Vec<float, 2> rp2		= perp(norm * velMag / -2);
-  (void)rp2;
+	agl::Vec<float, 2> rp1 = perp(r1);
+	agl::Vec<float, 2> rp2 = perp(norm * velMag / -2);
+	(void)rp2;
 	agl::Vec<float, 2> startVel = (o.velocity + (rp1 * -o.angularVelocity));
 
 	agl::Vec<float, 2> outAcc = {0, 0};
@@ -846,7 +846,7 @@ void newAirRes(PhysicsObj &o)
 
 	float			   velMag = o.velocity.length();
 	agl::Vec<float, 2> velNor = o.velocity.normalized();
-  (void) velNor;
+	(void)velNor;
 	float relAng = velAng - o.GetAngle();
 
 	for (int i = 0; i < 4; i++)
@@ -873,7 +873,7 @@ void Simulation::updateSimulation()
 		this->addFood(position);
 	}
 
-	env.newView<PhysicsObj, Creature, Food, Meat, TestObj, Egg>([](PhysicsObj &o, auto it) {
+	env.view<PhysicsObj, ENVTYPES>([](PhysicsObj &o, auto it) {
 		newAirRes(o);
 
 		o.updatePhysics();
@@ -969,7 +969,7 @@ void Simulation::updateSimulation()
 					JointConstraint::probe(b2, b1, cf);
 				}
 
-				for (ConstraintFailure &c: cf)
+				for (ConstraintFailure &c : cf)
 				{
 					World::resolve(c, cf.size());
 				}
@@ -987,7 +987,7 @@ void Simulation::updateSimulation()
 
 	env.selfUpdate<Food>([&](Food &food) {
 		PhysicsObj &circle = food;
-    (void) circle;
+		(void)circle;
 
 #ifdef ACTIVEFOOD
 		if ((food->nextPos - food->position).length() < 50)
@@ -1050,8 +1050,8 @@ void Simulation::updateSimulation()
 	{
 	}
 
-	env.update<PhysicsObj, PhysicsObj, true>(
-		[](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT, std::size_t hashU) {
+	env.update<PhysicsObj, PhysicsObj, true, false, ENVTYPES>(
+		[frame = frame](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT, std::size_t hashU) {
 			std::vector<ConstraintFailure> failure;
 
 			if (circle.rootConnect != &otherCircle && otherCircle.rootConnect != &circle)
@@ -1070,7 +1070,7 @@ void Simulation::updateSimulation()
 	{
 	}
 
-	env.view<PhysicsObj>([](PhysicsObj &o, auto) {
+	env.view<PhysicsObj, ENVTYPES>([](PhysicsObj &o, auto) {
 		if (o.collideCount)
 		{
 			o.acceleration /= o.collideCount;
@@ -1082,7 +1082,7 @@ void Simulation::updateSimulation()
 		}
 	});
 
-	env.update<Creature, Food>(
+	env.update<Creature, Food, false, false, ENVTYPES>(
 		[](Creature &creature, Food &food, auto, auto) {
 			for (auto &seg : creature.segments)
 			{
@@ -1094,113 +1094,6 @@ void Simulation::updateSimulation()
 			}
 		},
 		[](Creature &creature) { return ((creature.size.x + creature.size.y) / 2) * 4; });
-
-	// creature eating
-	// env.update<Creature, Food>(
-	// 	[&](Creature &creature, Food &food, auto, auto) {
-	// 		if (!creature.eating)
-	// 		{
-	// 			return;
-	// 		}
-	//
-	// 		agl::Vec<float, 2> offset = creature.position - food.position;
-	//
-	// 		float angleDiff = offset.angle() - creature.rotation;
-	//
-	// 		if (abs(angleDiff - PI) > (PI / 4))
-	// 		{
-	// 			return;
-	// 		}
-	//
-	// 		if (offset.length() < (creature.radius + food.radius +
-	// EATRADIUS))
-	// 		{
-	// 			float energy = foodEnergyDensity * creature.preference *
-	// creature.preference * creature.preference;
-	//
-	// 			creature.energyDensity =
-	// newEnergyDensity(creature.biomass, creature.energyDensity, foodVol,
-	// energy);
-	//
-	// 			creature.biomass += foodVol;
-	//
-	// 			food.exists = false;
-	// 			creature.reward += energy * foodVol;
-	// 		}
-	// 	},
-	// 	[](Creature &creature) { return creature.radius + EATRADIUS + 50; });
-	//
-	// env.update<Creature, Meat>(
-	// 	[&](Creature &creature, Meat &meat, auto, auto) {
-	// 		if (!creature.eating)
-	// 		{
-	// 			return;
-	// 		}
-	//
-	// 		agl::Vec<float, 2> offset = creature.position - meat.position;
-	//
-	// 		float angleDiff = offset.angle() - creature.rotation;
-	//
-	// 		if (abs(angleDiff - PI) > (PI / 4))
-	// 		{
-	// 			return;
-	// 		}
-	//
-	// 		if (offset.length() < (creature.radius + meat.radius +
-	// EATRADIUS))
-	// 		{
-	// 			float energy = (meatEnergyDensity * (1 -
-	// creature.preference));
-	//
-	// 			creature.energyDensity =
-	// 				newEnergyDensity(creature.biomass,
-	// creature.energyDensity, meat.energyVol, energy);
-	//
-	// 			creature.biomass += meat.energyVol;
-	//
-	// 			meat.exists = false;
-	// 			creature.reward += energy * meat.energyVol;
-	// 		}
-	// 	},
-	// 	[](Creature &creature) { return creature.radius + EATRADIUS + 50; });
-	//
-	// env.update<Creature, Creature>(
-	// 	[&](Creature &creature, Creature &eatenCreature, auto, auto) {
-	// 		if (eatenCreature.health < 0 || !creature.eating)
-	// 		{
-	// 			return;
-	// 		}
-	//
-	// 		agl::Vec<float, 2> offset = creature.position -
-	// eatenCreature.position;
-	//
-	// 		float angleDiff = offset.angle() - creature.rotation;
-	//
-	// 		if (abs(angleDiff - PI) > (PI / 4))
-	// 		{
-	// 			return;
-	// 		}
-	//
-	// 		if (offset.length() < (creature.radius + eatenCreature.radius +
-	// EATRADIUS))
-	// 		{
-	// 			// if (frame % BITEDELAY == 0)
-	// 			{
-	// 				float energy = (meatEnergyDensity * (1 -
-	// creature.preference));
-	//
-	// 				creature.energyDensity =
-	// 					newEnergyDensity(creature.biomass,
-	// creature.energyDensity, leachVol, energy);
-	//
-	// 				creature.biomass += leachVol;
-	//
-	// 				eatenCreature.health -= damage;
-	// 				creature.reward += energy * leachVol;
-	// 			}
-	// 		}
-	// 	},
-	// 	[](Creature &creature) { return creature.radius + EATRADIUS + 50; });
 
 	while (env.pool.active())
 	{

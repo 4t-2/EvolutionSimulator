@@ -24,11 +24,6 @@ class Simulation
 
         Simulation()
         {
-            env.setupTraits<Creature>();
-            env.setupTraits<Food>();
-            env.setupTraits<Meat>();
-            env.setupTraits<Egg>();
-            env.setupTraits<TestObj>();
         }
 
 		void create(SimulationRules simulationRules, int seed);

@@ -86,3 +86,4 @@
 
 #define ENERGYCOSTMULTIPLIER 0.0003f
 
+#define ENVTYPES Creature, Food, Meat, Egg, TestObj

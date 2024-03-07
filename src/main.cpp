@@ -195,7 +195,7 @@ int main()
 	// background.setPosition(simulationRules.size * .5);
 
 	Simulation simulation{};
-  simulation.active = 0;
+	simulation.active = 0;
 	// simulation.create(simulationRules, 0);
 
 	Creature *focusCreature = nullptr;
@@ -205,7 +205,7 @@ int main()
 
 	bool leftClick;
 	bool previousLeftClick;
-  (void) previousLeftClick;
+	(void)previousLeftClick;
 
 	Listener leftClickListener([&]() { leftClick = true; }, [&]() { leftClick = false; }, [&]() { leftClick = false; });
 
@@ -499,7 +499,7 @@ int main()
 
 		debugLogPointers.t8->str = str;
 	};
-  (void)sendDebugLog;
+	(void)sendDebugLog;
 	// menubar
 
 	MenuBar menuBar(&quitMenu,		  //
@@ -516,8 +516,8 @@ int main()
 	bool mHeld		= false;
 	bool b1Held		= false;
 	bool ReturnHeld = false;
-  (void) mHeld;
-  (void) ReturnHeld;
+	(void)mHeld;
+	(void)ReturnHeld;
 
 	bool skipRender = false;
 
@@ -526,7 +526,7 @@ int main()
 	printf("entering sim loop\n");
 
 	bool quiting = false;
-  (void) quiting;
+	(void)quiting;
 
 	while (!event.windowClose())
 	{
@@ -588,7 +588,7 @@ int main()
 		}
 
 		// Draw food
-		simulation.env.view<Food>(
+		simulation.env.view<Food, ENVTYPES>(
 			[&](auto &food, auto) {
 				agl::Vec<float, 2> position = food.position;
 				foodShape.setPosition(position);
@@ -599,7 +599,7 @@ int main()
 			},
 			topLeftGrid, bottomRightGrid);
 
-		simulation.env.view<Meat>(
+		simulation.env.view<Meat, ENVTYPES>(
 			[&](auto &meat, auto) {
 				meatShape.setPosition(meat.position);
 				meatShape.setSize(meat.size);
@@ -610,7 +610,7 @@ int main()
 			topLeftGrid, bottomRightGrid);
 
 		// draw eggs
-		simulation.env.view<Egg>(
+		simulation.env.view<Egg, ENVTYPES>(
 			[&](Egg &egg, auto) {
 				eggShape.setPosition(egg.position);
 				window.drawShape(eggShape);
@@ -623,7 +623,7 @@ int main()
 		window.updateMvp(camera);
 
 		// draw creature
-		simulation.env.view<Creature>(
+		simulation.env.view<Creature, ENVTYPES>(
 			[&](Creature &obj, auto) {
 				for (auto seg : obj.segments)
 				{
@@ -818,7 +818,7 @@ int main()
 			}
 			if (leftMenuPointers.select->state) // select creature
 			{
-				simulation.env.view<Creature>([&](auto &creature, auto it) {
+				simulation.env.view<Creature, ENVTYPES>([&](auto &creature, auto it) {
 					agl::Vec<float, 2> mouse;
 					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
 							  cameraPosition.x;
@@ -870,7 +870,7 @@ int main()
 
 				bottomRightGrid = simulation.env.toGridPosition(cursorRelPos + agl::Vec<float, 2>{1000, 1000});
 
-				simulation.env.view<Food>(
+				simulation.env.view<Food, ENVTYPES>(
 					[&](Food &food, auto) {
 						agl::Vec<float, 2> offset	= food.position - cursorRelPos;
 						float			   distance = offset.length();
@@ -889,7 +889,7 @@ int main()
 			{
 				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
 																	   sizeMultiplier, cameraPosition);
-        (void) cursorRelPos;
+				(void)cursorRelPos;
 
 				// simulation.env.getArea<Meat>(
 				// 	[&](Meat &meat) {
@@ -911,7 +911,7 @@ int main()
 			{
 				agl::Vec<int, 2> cursorRelPos = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
 																	   sizeMultiplier, cameraPosition);
-        (void) cursorRelPos;
+				(void)cursorRelPos;
 				// NOTE force is disabled
 				// simulation.env.getArea<Creature>(
 				// 	[&](Creature &creature) {
@@ -986,7 +986,7 @@ int main()
 		}
 
 		static float cameraSpeed = 4;
-    (void) cameraSpeed;
+		(void)cameraSpeed;
 
 		const float sizeDelta = .2;
 

@@ -60,69 +60,169 @@ template <typename... T> const Signature<T...> Entity<T...>::signature;
 class Environment
 {
 	private:
-		template <typename S> void registerTraits()
+		template <typename T, typename U, bool oneWay, bool mirror, typename O, typename E>
+		void execGridThing(agl::Vec<int, 2>										   &gridPosition,
+						   std::function<void(T &, U &, std::size_t, std::size_t)> &func,
+						   std::function<float(T &)>							   &distFunc)
 		{
+			auto  hashT = typeid(O).hash_code();
+			auto  hashU = typeid(E).hash_code();
+			auto &listT = grid[gridPosition.x][gridPosition.y][hashT].list;
+			for (auto it = listT.begin(); it != listT.end(); it++)
+			{
+				T *addressT = (O *)(DoNotUse *)*it;
+
+				float distance = distFunc(*addressT);
+
+				agl::Vec<int, 2> startGrid =
+					toGridPosition({(*it)->position.x - distance, (*it)->position.y - distance}) - gridPosition;
+				agl::Vec<int, 2> endGrid =
+					toGridPosition({(*it)->position.x + distance, (*it)->position.y + distance}) - gridPosition;
+
+				if constexpr (!oneWay)
+				{
+					for (int y = startGrid.y; y <= -1; y++)
+					{
+						for (int x = startGrid.x; x <= endGrid.x; x++)
+						{
+							grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
+							grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+							gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, y}, hashT, hashU,
+																		  addressT, it);
+							grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+							grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
+						}
+					}
+
+					for (int x = startGrid.x; x <= -1; x++)
+					{
+						grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
+						grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+						gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, 0}, hashT, hashU,
+																	  addressT, it);
+						grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+						grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.unlock();
+					}
+				}
+
+				if (hashT > hashU)
+				{
+					grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+					grid[gridPosition.x][gridPosition.y][hashU].mtx.lock();
+				}
+				else if (hashT < hashU)
+				{
+					grid[gridPosition.x][gridPosition.y][hashU].mtx.lock();
+					grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+				}
+				else
+				{
+					grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+				}
+				if (hashT == hashU && oneWay)
+				{
+					gridUpdate<T, U, oneWay, mirror, O, E, true>(func, gridPosition, {0, 0}, hashT, hashU, addressT,
+																 it);
+				}
+				else
+				{
+					gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {0, 0}, hashT, hashU, addressT,
+																  it);
+				}
+
+				if (hashT > hashU)
+				{
+					grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+					grid[gridPosition.x][gridPosition.y][hashU].mtx.unlock();
+				}
+				else if (hashT < hashU)
+				{
+					grid[gridPosition.x][gridPosition.y][hashU].mtx.unlock();
+					grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+				}
+				else
+				{
+					grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+				}
+
+				for (int x = 1; x <= endGrid.x; x++)
+				{
+					grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+					grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
+					gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, 0}, hashT, hashU, addressT,
+																  it);
+					grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.unlock();
+					grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+				}
+				for (int y = 1; y <= endGrid.y; y++)
+				{
+					for (int x = startGrid.x; x <= endGrid.x; x++)
+					{
+						grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
+						grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
+						gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, y}, hashT, hashU,
+																	  addressT, it);
+						grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
+						grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
+					}
+				}
+			}
 		}
 
-		template <typename S, typename T> void registerTraits()
+		// func distfunc, pos
+		template <bool skip, bool flip, typename T, typename U, bool oneWay, bool mirror, typename O, typename E,
+				  typename... Es>
+		void threadFunc2(agl::Vec<int, 2> &pos, std::function<void(T &, U &, std::size_t, std::size_t)> &func,
+						 std::function<float(T &)> &distFunc)
 		{
-			std::size_t eHash = typeid(S).hash_code();
-			std::size_t tHash = typeid(T).hash_code();
+			if constexpr (!skip)
+			{
+				if constexpr (flip)
+				{
+					if constexpr (std::is_base_of_v<T, E> || std::is_same_v<T, E>)
+					{
+						execGridThing<T, U, oneWay, mirror, E, O>(pos, func, distFunc);
+					}
+				}
+				else
+				{
+					if constexpr (std::is_base_of_v<U, E> || std::is_same_v<U, E>)
+					{
+						execGridThing<T, U, oneWay, mirror, O, E>(pos, func, distFunc);
+					}
+				}
+			}
 
-			traits[tHash].emplace_back(eHash);
+			if constexpr (sizeof...(Es) > 0)
+			{
+				threadFunc2<false, flip, T, U, oneWay, mirror, O, Es...>(pos, func, distFunc);
+			}
 		}
 
-		template <typename S, typename T, typename... Ts, typename std::enable_if<sizeof...(Ts) != 0>::type * = nullptr>
-		void registerTraits()
+		template <typename T, typename U, bool oneWay, bool mirror, typename E, typename... Es>
+		void threadFunc1(agl::Vec<int, 2> &pos, std::function<void(T &, U &, std::size_t, std::size_t)> func,
+						 std::function<float(T &)> distFunc)
 		{
-			std::size_t eHash = typeid(S).hash_code();
-			std::size_t tHash = typeid(T).hash_code();
+			if constexpr (std::is_base_of_v<T, E> || std::is_same_v<T, E>)
+			{
+				threadFunc2<false, false, T, U, oneWay, mirror, E, E, Es...>(pos, func, distFunc);
+			}
+			if constexpr (std::is_base_of_v<U, E> || std::is_same_v<U, E>)
+			{
+				if constexpr (std::is_base_of_v<T, E> || std::is_same_v<T, E>)
+				{
+					threadFunc2<true, true, T, U, oneWay, mirror, E, E, Es...>(pos, func, distFunc);
+				}
+				else
+				{
+					threadFunc2<false, true, T, U, oneWay, mirror, E, E, Es...>(pos, func, distFunc);
+				}
+			}
 
-			traits[tHash].emplace_back(eHash);
-
-			registerTraits<Ts...>();
-		}
-
-		template <typename S, typename... Ts> void registerTraits(Signature<Ts...> signature)
-		{
-			registerTraits<S, Ts...>();
-
-			std::size_t eHash = typeid(S).hash_code();
-			traits[eHash].emplace_back(eHash);
-		}
-
-		template <int i = 0, typename... Ts, typename std::enable_if<(i == sizeof...(Ts))>::type * = nullptr>
-		void getArgsFromIterators(std::tuple<Ts *...> &args, std::list<BaseEntity *>::iterator it[])
-		{
-		}
-
-		template <int i = 0, typename... Ts, typename std::enable_if<(i < sizeof...(Ts))>::type * = nullptr>
-		void getArgsFromIterators(std::tuple<Ts *...> &args, std::list<BaseEntity *>::iterator it[])
-		{
-			std::get<i>(args) = std::remove_pointer_t<decltype(std::get<i>(args))>(it[i]);
-
-			getArgsFromIterators<i + 1, Ts...>(args, it);
-		}
-
-		template <typename T> void addToTraitMap()
-		{
-		}
-		template <typename T, typename U> void addToTraitMap()
-		{
-			long long offset = (long long)(U *)(T *)(1) - (long long)(BaseEntity *)(DoNotUse *)(T *)1;
-			traitMap[std::pair(typeid(T).hash_code(), typeid(U).hash_code())] = offset;
-		}
-		template <typename T, typename U, typename... Us,
-				  typename std::enable_if<(sizeof...(Us) > 0)>::type * = nullptr>
-		void addToTraitMap()
-		{
-			long long offset = (long long)(U *)(T *)(1) - (long long)(BaseEntity *)(DoNotUse *)(T *)1;
-			traitMap[std::pair(typeid(T).hash_code(), typeid(U).hash_code())] = offset;
-		}
-
-		template <typename T, typename... Us> void addToTraitMap(Signature<Us...> sig)
-		{
-			addToTraitMap<T, Us...>();
+			if constexpr (sizeof...(Es) > 0)
+			{
+				threadFunc1<T, U, oneWay, mirror, Es...>(pos, func, distFunc);
+			}
 		}
 
 	public:
@@ -133,8 +233,6 @@ class Environment
 		};
 
 		std::map<std::size_t, std::list<BaseEntity *>>			  entityList;
-		std::map<std::size_t, std::vector<std::size_t>>			  traits; // child hash to valid parent hash
-		std::map<std::pair<std::size_t, std::size_t>, long long>  traitMap; // mem offset between parent and child
 		agl::Vec<float, 2>										  size;
 		agl::Vec<int, 2>										  gridResolution;
 		std::vector<std::vector<std::map<std::size_t, GridCell>>> grid;
@@ -192,12 +290,6 @@ class Environment
 			}
 		}
 
-		template <typename T> void setupTraits()
-		{
-			registerTraits<T>(T::signature);
-			addToTraitMap<T>(T::signature);
-		}
-
 		template <typename T> T &addEntity()
 		{
 			std::size_t hash = typeid(T).hash_code();
@@ -216,15 +308,17 @@ class Environment
 		}
 
 		template <typename Search, typename T, typename... Ts>
-		void newView(std::function<void(Search &, std::list<BaseEntity *>::iterator &)> func)
+		void view(std::function<void(Search &, std::list<BaseEntity *>::iterator &)> func)
 		{
 			if constexpr (std::is_base_of_v<Search, T> || std::is_same_v<T, Search>)
 			{
 				std::size_t hashT = typeid(T).hash_code();
 
-				for (auto it = entityList[hashT].begin(); it != entityList[hashT].end(); it++)
+				auto &list = entityList[hashT];
+
+				for (auto it = list.begin(); it != list.end(); it++)
 				{
-					Search*add = (T*)(DoNotUse*)*it;
+					Search *add = (T *)(DoNotUse *)*it;
 
 					func(*add, it);
 				}
@@ -232,78 +326,37 @@ class Environment
 
 			if constexpr (sizeof...(Ts) > 0)
 			{
-				newView<Search, Ts...>(func);
-			}
-
-		}
-
-		template <typename T> void view(std::function<void(T &, std::list<BaseEntity *>::iterator &)> func)
-		{
-			for (auto hashT : traits[typeid(T).hash_code()])
-			{
-
-				long long offsetT = 0;
-
-				if constexpr (!std::is_base_of_v<DoNotUse, T>)
-				{
-					offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
-				}
-
-				for (auto it = entityList[hashT].begin(); it != entityList[hashT].end(); it++)
-				{
-					T *addressT;
-
-					if constexpr (std::is_base_of_v<DoNotUse, T>)
-					{
-						addressT = (T *)(DoNotUse *)(*it);
-					}
-					else
-					{
-						addressT = (T *)((long long)*it + (long long)offsetT);
-					}
-
-					func(*addressT, it);
-				}
+				view<Search, Ts...>(func);
 			}
 		}
 
-		template <typename T>
-		void view(std::function<void(T &, std::list<BaseEntity *>::iterator &)> func, agl::Vec<int, 2> start,
+		template <typename Search, typename T, typename... Ts>
+		void view(std::function<void(Search &, std::list<BaseEntity *>::iterator &)> func, agl::Vec<int, 2> start,
 				  agl::Vec<int, 2> end)
 		{
-			for (auto hashT : traits[typeid(T).hash_code()])
+			if constexpr (std::is_base_of_v<Search, T> || std::is_same_v<T, Search>)
 			{
-
-				long long offsetT = 0;
-
-				if constexpr (!std::is_base_of_v<DoNotUse, T>)
-				{
-					offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
-				}
-
 				for (int x = start.x; x <= end.x; x++)
 				{
 					for (int y = start.y; y <= end.y; y++)
 					{
+						std::size_t hashT = typeid(T).hash_code();
+
 						auto &list = getListInGrid({x, y}, hashT);
 
 						for (auto it = list.begin(); it != list.end(); it++)
 						{
-							T *addressT;
+							Search *add = (T *)(DoNotUse *)*it;
 
-							if constexpr (std::is_base_of_v<DoNotUse, T>)
-							{
-								addressT = (T *)(DoNotUse *)(*it);
-							}
-							else
-							{
-								addressT = (T *)((long long)*it + (long long)offsetT);
-							}
-
-							func(*addressT, it);
+							func(*add, it);
 						}
 					}
 				}
+			}
+
+			if constexpr (sizeof...(Ts) > 0)
+			{
+				view<Search, Ts...>(func, start, end);
 			}
 		}
 
@@ -405,110 +458,20 @@ class Environment
 			return grid.at(pos.x).at(pos.y)[hash].list;
 		}
 
-		// template <typename T, typename U, bool oneWay = false, bool mirror =
-		// false> void gridUpdate(std::function<void(T &, U &, std::size_t,
-		// std::size_t)> func, agl::Vec<int, 2> gridPosition, agl::Vec<int, 2>
-		// gridOffset, std::size_t hashT, std::size_t hashU)
-		// {
-		// 	long long offsetT;
-		//
-		// 	if constexpr (!std::is_base_of_v<DoNotUse, T>)
-		// 	{
-		// 		offsetT = traitMap[std::pair(hashT,
-		// typeid(T).hash_code())];
-		// 	}
-		//
-		// 	long long offsetU;
-		//
-		// 	if constexpr (!std::is_base_of_v<DoNotUse, U>)
-		// 	{
-		// 		offsetT = traitMap[std::pair(hashU,
-		// typeid(T).hash_code())];
-		// 	}
-		//
-		// 	auto &list1 = getListInGrid(gridPosition, hashT);
-		// 	auto &list2 = getListInGrid({gridOffset.x + gridPosition.x,
-		// gridOffset.y
-		// + gridPosition.y}, hashU);
-		//
-		// 	auto it1		= list1.begin();
-		// 	auto list2Begin = list2.begin();
-		//
-		// 	std::list<BaseEntity *>::iterator &it2Start = &list1 == &list2 ?
-		// it1 : list2Begin;
-		//
-		// 	for (; it1 != list1.end(); it1++)
-		// 	{
-		// 		std::list<BaseEntity *>::iterator it2 = it2Start;
-		//
-		// 		if (&list1 == &list2)
-		// 		{
-		// 			it2++;
-		// 		}
-		//
-		// 		for (; it2 != list2.end(); it2++)
-		// 		{
-		// 			T *addressT;
-		// 			U *addressU;
-		//
-		// 			if constexpr (std::is_base_of_v<DoNotUse, T>)
-		// 			{
-		// 				addressT = (T *)(DoNotUse *)(*it1);
-		// 			}
-		// 			else
-		// 			{
-		// 				addressT = (T *)((long long)*it1 + (long
-		// long)offsetT);
-		// 			}
-		// 			if constexpr (std::is_base_of_v<DoNotUse, U>)
-		// 			{
-		// 				addressU = (U *)(DoNotUse *)(*it2);
-		// 			}
-		// 			else
-		// 			{
-		// 				addressU = (U *)((long long)*it2 + (long
-		// long)offsetT);
-		// 			}
-		//
-		// 			func(*addressT, *addressU, hashT, hashU);
-		//
-		// 			if constexpr (mirror)
-		// 			{
-		// 				func(*addressU, *addressT, hashU,
-		// hashT);
-		// 			}
-		// 		}
-		// 	}
-		// }
-
-		template <typename T, typename U, bool oneWay = false, bool mirror = false, bool sameGrid = false>
+		template <typename T, typename U, bool oneWay = false, bool mirror = false, typename O, typename E,
+				  bool sameGrid = false>
 		void gridUpdate(std::function<void(T &, U &, std::size_t, std::size_t)> func, agl::Vec<int, 2> gridPosition,
 						agl::Vec<int, 2> gridOffset, std::size_t hashT, std::size_t hashU, T *addressT,
 						std::list<BaseEntity *>::iterator &it1)
 		{
-			long long offsetU;
-
-			if constexpr (!std::is_base_of_v<DoNotUse, U>)
-			{
-				offsetU = traitMap[std::pair(hashU, typeid(T).hash_code())];
-			}
-
-			auto &list2 = getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y + gridPosition.y}, hashU);
+			auto &list2 =
+				getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y + gridPosition.y}, typeid(E).hash_code());
 
 			std::list<BaseEntity *>::iterator it2 = sameGrid ? std::next(it1, 1) : list2.begin();
 
 			for (; *it2 != *list2.end(); it2++)
 			{
-				U *addressU;
-
-				if constexpr (std::is_base_of_v<DoNotUse, U>)
-				{
-					addressU = (U *)(DoNotUse *)(*it2);
-				}
-				else
-				{
-					addressU = (U *)((long long)*it2 + (long long)offsetU);
-				}
+				U *addressU = (E *)(DoNotUse *)*it2;
 
 				if constexpr (!sameGrid && std::is_same<T, U>())
 				{
@@ -527,145 +490,14 @@ class Environment
 			}
 		}
 
-		template <typename T, typename U, bool oneWay = false, bool mirror = false>
+		template <typename T, typename U, bool oneWay = false, bool mirror = false, typename... Es>
 		void update(std::function<void(T &, U &, std::size_t, std::size_t)> func, std::function<float(T &)> distFunc)
 		{
 			auto threadedQueue = [&](int start, int end) {
 				pool.queue([&, func = func, start = start, end = end, distFunc = distFunc]() {
 					for (int i = start; i <= end; i++)
 					{
-						agl::Vec<int, 2> &gridPosition = randomPosition[i];
-						for (auto itT = traits[typeid(T).hash_code()].begin();
-							 itT != traits[typeid(T).hash_code()].end(); itT++)
-						{
-							auto hashT = *itT;
-
-							long long offsetT;
-
-							if constexpr (!std::is_base_of_v<DoNotUse, T>)
-							{
-								offsetT = traitMap[std::pair(hashT, typeid(T).hash_code())];
-							}
-
-							auto startPoint = std::is_same_v<T, U> ? itT : traits[typeid(U).hash_code()].begin();
-
-							for (auto itU = startPoint; itU != traits[typeid(U).hash_code()].end(); itU++)
-							{
-								auto hashU = *itU;
-								auto listT = grid[gridPosition.x][gridPosition.y][hashT].list;
-
-								for (auto it = listT.begin(); it != listT.end(); it++)
-								{
-									T *addressT;
-
-									if constexpr (std::is_base_of_v<DoNotUse, T>)
-									{
-										addressT = (T *)(DoNotUse *)(*it);
-									}
-									else
-									{
-										addressT = (T *)((long long)*it + (long long)offsetT);
-									}
-
-									float distance = distFunc(*addressT);
-
-									agl::Vec<int, 2> startGrid =
-										toGridPosition({(*it)->position.x - distance, (*it)->position.y - distance}) -
-										gridPosition;
-									agl::Vec<int, 2> endGrid =
-										toGridPosition({(*it)->position.x + distance, (*it)->position.y + distance}) -
-										gridPosition;
-
-									if constexpr (!oneWay)
-									{
-										for (int y = startGrid.y; y <= -1; y++)
-										{
-											for (int x = startGrid.x; x <= endGrid.x; x++)
-											{
-												grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
-												grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-												gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT,
-																				 hashU, addressT, it);
-												grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
-												grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
-											}
-										}
-
-										for (int x = startGrid.x; x <= -1; x++)
-										{
-											grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
-											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-											gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, 0}, hashT, hashU,
-																			 addressT, it);
-											grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
-											grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.unlock();
-										}
-									}
-
-									if (hashT > hashU)
-									{
-										grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-										grid[gridPosition.x][gridPosition.y][hashU].mtx.lock();
-									}
-									else if (hashT < hashU)
-									{
-										grid[gridPosition.x][gridPosition.y][hashU].mtx.lock();
-										grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-									}
-									else
-									{
-										grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-									}
-									if (hashT == hashU && oneWay)
-									{
-										gridUpdate<T, U, oneWay, mirror, true>(func, gridPosition, {0, 0}, hashT, hashU,
-																			   addressT, it);
-									}
-									else
-									{
-										gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {0, 0}, hashT, hashU,
-																		 addressT, it);
-									}
-
-									if (hashT > hashU)
-									{
-										grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
-										grid[gridPosition.x][gridPosition.y][hashU].mtx.unlock();
-									}
-									else if (hashT < hashU)
-									{
-										grid[gridPosition.x][gridPosition.y][hashU].mtx.unlock();
-										grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
-									}
-									else
-									{
-										grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
-									}
-
-									for (int x = 1; x <= endGrid.x; x++)
-									{
-										grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-										grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
-										gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, 0}, hashT, hashU,
-																		 addressT, it);
-										grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.unlock();
-										grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
-									}
-									for (int y = 1; y <= endGrid.y; y++)
-									{
-										for (int x = startGrid.x; x <= endGrid.x; x++)
-										{
-											grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-											grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
-											gridUpdate<T, U, oneWay, mirror>(func, gridPosition, {x, y}, hashT, hashU,
-																			 addressT, it);
-											grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
-											grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
-										}
-									}
-								}
-							}
-						}
+						threadFunc1<T, U, oneWay, mirror, Es...>(randomPosition[i], func, distFunc);
 					}
 				});
 			};
@@ -720,110 +552,6 @@ class Environment
 				}
 			}
 		}
-
-		// template <typename... Ts> void update(std::function<void(Ts *...)>
-		// updateFunc)
-		// {
-		// 	std::list<EntityPointer> *toUpdate[sizeof...(Ts)];
-		//
-		// 	getListFromTypes<Ts...>(toUpdate);
-		//
-		// 	std::list<EntityPointer>::iterator index[sizeof...(Ts)];
-		//
-		// 	for (int i = 0; i < sizeof...(Ts); i++)
-		// 	{
-		// 		index[i] = toUpdate[i]->begin();
-		// 	}
-		//
-		// 	int i = 0;
-		// 	while (i < sizeof...(Ts))
-		// 	{
-		// 		std::tuple<Ts *...> entities{};
-		//
-		// 		getArgsFromIterators(entities, index);
-		//
-		// 		std::apply(updateFunc, entities);
-		//
-		// 		for (i = 0; i < sizeof...(Ts); i++)
-		// 		{
-		// 			index[i]++;
-		//
-		// 			if (index[i] != toUpdate[i]->end())
-		// 			{
-		// 				break;
-		// 			}
-		// 			else
-		// 			{
-		// 				index[i] = toUpdate[i]->begin();
-		// 			}
-		// 		}
-		// 	}
-		// }
-
-		// template <typename T, typename U> void
-		// twinUpdate(std::function<void(T *interactor, U *interactee)> func)
-		// {
-		// 	std::list<EntityPointer> &interactor =
-		// entityTraits[typeid(T).hash_code()]; 	std::list<EntityPointer>
-		// &interactee = entityTraits[typeid(U).hash_code()];
-		//
-		// 	for (EntityPointer &interactor : interactor)
-		// 	{
-		// 		for (EntityPointer &interactee : interactee)
-		// 		{
-		// 			func((T *)interactor.data, (U
-		// *)interactee.data);
-		// 		}
-		// 	}
-		// }
-
-		// template <typename T> void selfUpdate(std::function<void(T
-		// *interactor, T *interactee)> func)
-		// {
-		// 	std::list<EntityPointer> &list =
-		// entityTraits[typeid(T).hash_code()];
-		//
-		// 	for (auto it1 = list.begin(); it1 != list.end(); it1++)
-		// 	{
-		// 		for (auto it2 = it1; it2 != list.end(); it2++)
-		// 		{
-		// 			func((T *)it1->data, (T *)it2->data);
-		// 		}
-		// 	}
-		// }
-
-		// void update()
-		// {
-		// 	// interupdate
-		//
-		// 	// update selves
-		//
-		// 	for (auto &pair : entityTraits)
-		// 	{
-		// 		for (EntityPointer &pointer : pair.second)
-		// 		{
-		// 			BaseEntity &entity = *pointer.data;
-		// 			entity.update();
-		// 		}
-		// 	}
-		//
-		// 	for (auto &pair : entityList)
-		// 	{
-		// 		for (auto it = pair.second.begin(); it !=
-		// pair.second.end(); it++)
-		// 		{
-		// 			BaseEntity &entity = *it->data;
-		// 			entity.update();
-		//
-		// 			if (!entity.exists)
-		// 			{
-		// 				auto next = std::next(it, -1);
-		//
-		// 				it = next;
-		// 			}
-		// 		}
-		// 	}
-		// }
 
 		void keepExisters()
 		{
