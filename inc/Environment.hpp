@@ -44,8 +44,6 @@ template <typename... T> class Entity : public DoNotUse, public T...
 {
 	private:
 	public:
-		const static Signature<T...> signature;
-
 		Entity(bool &exists, agl::Vec<float, 2> &position) : DoNotUse(exists, position), T(exists, position)...
 		{
 		}
@@ -55,15 +53,13 @@ template <typename... T> class Entity : public DoNotUse, public T...
 		}
 };
 
-template <typename... T> const Signature<T...> Entity<T...>::signature;
-
 class Environment
 {
 	private:
 		template <typename T, typename U, bool oneWay, bool mirror, typename O, typename E>
-		void execGridThing(agl::Vec<int, 2>										   &gridPosition,
-						   std::function<void(T &, U &, std::size_t, std::size_t)> &func,
-						   std::function<float(T &)>							   &distFunc)
+		inline void execGridThing(agl::Vec<int, 2>										  &gridPosition,
+								  std::function<void(T &, U &, std::size_t, std::size_t)> &func,
+								  std::function<float(T &)>								  &distFunc)
 		{
 			auto  hashT = typeid(O).hash_code();
 			auto  hashU = typeid(E).hash_code();
@@ -172,8 +168,8 @@ class Environment
 		// func distfunc, pos
 		template <bool skip, bool flip, typename T, typename U, bool oneWay, bool mirror, typename O, typename E,
 				  typename... Es>
-		void threadFunc2(agl::Vec<int, 2> &pos, std::function<void(T &, U &, std::size_t, std::size_t)> &func,
-						 std::function<float(T &)> &distFunc)
+		inline void threadFunc2(agl::Vec<int, 2> &pos, std::function<void(T &, U &, std::size_t, std::size_t)> &func,
+								std::function<float(T &)> &distFunc)
 		{
 			if constexpr (!skip)
 			{
@@ -200,8 +196,8 @@ class Environment
 		}
 
 		template <typename T, typename U, bool oneWay, bool mirror, typename E, typename... Es>
-		void threadFunc1(agl::Vec<int, 2> &pos, std::function<void(T &, U &, std::size_t, std::size_t)> func,
-						 std::function<float(T &)> distFunc)
+		inline void threadFunc1(agl::Vec<int, 2> &pos, std::function<void(T &, U &, std::size_t, std::size_t)> func,
+								std::function<float(T &)> distFunc)
 		{
 			if constexpr (std::is_base_of_v<T, E> || std::is_same_v<T, E>)
 			{
@@ -222,6 +218,58 @@ class Environment
 			if constexpr (sizeof...(Es) > 0)
 			{
 				threadFunc1<T, U, oneWay, mirror, Es...>(pos, func, distFunc);
+			}
+		}
+
+		template <typename T, typename U, bool oneWay = false, bool mirror = false, typename O, typename E,
+				  bool sameGrid = false>
+		inline void gridUpdate(std::function<void(T &, U &, std::size_t, std::size_t)> func,
+							   agl::Vec<int, 2> gridPosition, agl::Vec<int, 2> gridOffset, std::size_t hashT,
+							   std::size_t hashU, T *addressT, std::list<BaseEntity *>::iterator &it1)
+		{
+			auto &list2 =
+				getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y + gridPosition.y}, typeid(E).hash_code());
+
+			std::list<BaseEntity *>::iterator it2 = sameGrid ? std::next(it1, 1) : list2.begin();
+
+			for (; *it2 != *list2.end(); it2++)
+			{
+				U *addressU = (E *)(DoNotUse *)*it2;
+
+				if constexpr (!sameGrid && std::is_same<T, U>())
+				{
+					if ((void *)addressU == (void *)addressT)
+					{
+						continue;
+					}
+				}
+
+				func(*addressT, *addressU, hashT, hashU);
+
+				if constexpr (mirror)
+				{
+					func(*addressU, *addressT, hashU, hashT);
+				}
+			}
+		}
+
+		template <typename R, typename P> constexpr static P testFunc(std::function<R(P &)>)
+		{
+			return;
+		}
+
+		template <typename T, typename F, typename... Fs> static void loopThrougFuncs(T &entitiy, F func, Fs... funcs)
+		{
+			using functype = decltype(testFunc(std::function(func)));
+
+			if constexpr (std::is_base_of_v<functype, T> || std::is_same_v<functype, T>)
+			{
+				func(entitiy);
+			}
+
+			if constexpr (sizeof...(Fs) > 0)
+			{
+				loopThrougFuncs<T, Fs...>(entitiy, funcs...);
 			}
 		}
 
@@ -308,7 +356,7 @@ class Environment
 		}
 
 		template <typename Search, typename T, typename... Ts>
-		void view(std::function<void(Search &, std::list<BaseEntity *>::iterator &)> func)
+		inline void view(std::function<void(Search &, std::list<BaseEntity *>::iterator &)> func)
 		{
 			if constexpr (std::is_base_of_v<Search, T> || std::is_same_v<T, Search>)
 			{
@@ -331,8 +379,8 @@ class Environment
 		}
 
 		template <typename Search, typename T, typename... Ts>
-		void view(std::function<void(Search &, std::list<BaseEntity *>::iterator &)> func, agl::Vec<int, 2> start,
-				  agl::Vec<int, 2> end)
+		inline void view(std::function<void(Search &, std::list<BaseEntity *>::iterator &)> func,
+						 agl::Vec<int, 2> start, agl::Vec<int, 2> end)
 		{
 			if constexpr (std::is_base_of_v<Search, T> || std::is_same_v<T, Search>)
 			{
@@ -390,9 +438,11 @@ class Environment
 		template <typename T> void addToGrid(BaseEntity &entity)
 		{
 			agl::Vec<int, 2> gridPosition = toGridPosition(entity.position);
-			auto			&map		  = grid[gridPosition.x][gridPosition.y];
+			auto			&map		  = (grid[gridPosition.x][gridPosition.y])[typeid(T).hash_code()];
 
-			map[typeid(T).hash_code()].list.emplace_back(&entity);
+			map.mtx.lock();
+			map.list.emplace_back(&entity);
+			map.mtx.unlock();
 		}
 
 		template <typename T>
@@ -458,38 +508,6 @@ class Environment
 			return grid.at(pos.x).at(pos.y)[hash].list;
 		}
 
-		template <typename T, typename U, bool oneWay = false, bool mirror = false, typename O, typename E,
-				  bool sameGrid = false>
-		void gridUpdate(std::function<void(T &, U &, std::size_t, std::size_t)> func, agl::Vec<int, 2> gridPosition,
-						agl::Vec<int, 2> gridOffset, std::size_t hashT, std::size_t hashU, T *addressT,
-						std::list<BaseEntity *>::iterator &it1)
-		{
-			auto &list2 =
-				getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y + gridPosition.y}, typeid(E).hash_code());
-
-			std::list<BaseEntity *>::iterator it2 = sameGrid ? std::next(it1, 1) : list2.begin();
-
-			for (; *it2 != *list2.end(); it2++)
-			{
-				U *addressU = (E *)(DoNotUse *)*it2;
-
-				if constexpr (!sameGrid && std::is_same<T, U>())
-				{
-					if ((void *)addressU == (void *)addressT)
-					{
-						continue;
-					}
-				}
-
-				func(*addressT, *addressU, hashT, hashU);
-
-				if constexpr (mirror)
-				{
-					func(*addressU, *addressT, hashU, hashT);
-				}
-			}
-		}
-
 		template <typename T, typename U, bool oneWay = false, bool mirror = false, typename... Es>
 		void update(std::function<void(T &, U &, std::size_t, std::size_t)> func, std::function<float(T &)> distFunc)
 		{
@@ -517,28 +535,6 @@ class Environment
 			}
 		}
 
-		template <typename T> void selfUpdate(std::function<void(T &)> func)
-		{
-			auto &list = entityList[typeid(T).hash_code()];
-
-			for (auto it = list.begin(); it != list.end(); it++)
-			{
-				BaseEntity &entity = **it;
-
-				func(*(T *)(DoNotUse *)(*it));
-
-				if (!entity.exists || std::isnan(entity.position.x))
-				{
-					it--;
-					list.erase(std::next(it, 1));
-				}
-				else
-				{
-					addToGrid<T>(entity);
-				}
-			}
-		}
-
 		void clearGrid()
 		{
 			for (auto &x : grid)
@@ -553,37 +549,31 @@ class Environment
 			}
 		}
 
-		void keepExisters()
+		template <typename T, int i=0, typename... Funcs> void selfUpdate(Funcs... funcs)
 		{
-			for (auto &[key, list] : entityList)
+			typedef std::remove_reference_t<decltype(std::tuple_element_t<i, T>())> EnTy;
+			auto &list = entityList[typeid(EnTy).hash_code()];
+
+			for (auto it = list.begin(); it != list.end(); it++)
 			{
-				for (auto it = list.begin(); it != list.end(); it++)
+				EnTy *en = (EnTy *)(DoNotUse *)*it;
+
+				loopThrougFuncs<EnTy, Funcs...>(*en, funcs...);
+
+				if (!en->exists || std::isnan(en->position.x))
 				{
-					if (!(*it)->exists)
-					{
-						auto next = std::next(it, -1);
-
-						agl::Vec<int, 2> gridPosition = toGridPosition((*it)->position);
-
-						auto &list = grid.at(gridPosition.x).at(gridPosition.y)[key].list;
-
-						auto i = list.begin();
-
-						for (; i != list.end(); i++)
-						{
-							if (*i == *it)
-							{
-								break;
-							}
-						}
-
-						list.erase(i);
-
-						entityList[key].erase(it);
-
-						it = next;
-					}
+					it--;
+					list.erase(std::next(it, 1));
 				}
+				else
+				{
+					addToGrid<EnTy>(*(BaseEntity *)(DoNotUse *)en);
+				}
+			}
+
+			if constexpr (i < (std::tuple_size<T>::value - 1))
+			{
+				selfUpdate<T, i + 1, Funcs...>(funcs...);
 			}
 		}
 

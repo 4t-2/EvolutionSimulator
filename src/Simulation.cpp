@@ -873,183 +873,6 @@ void Simulation::updateSimulation()
 		this->addFood(position);
 	}
 
-	env.view<PhysicsObj, ENVTYPES>([](PhysicsObj &o, auto it) {
-		newAirRes(o);
-
-		o.updatePhysics();
-	});
-	env.clearGrid();
-
-	env.selfUpdate<Creature>([this](Creature &creature) {
-		creature.updateNetwork();
-		creature.updateActions();
-
-		// std::cout << creature.position << '\n';
-
-		// egg laying
-		if (creature.layingEgg)
-		{
-			if (creature.energy > creature.eggTotalCost)
-			{
-				creature.incubating = true;
-				// creature.reward += 50;
-			}
-		}
-
-		int iBio = (int)creature.biomass;
-		for (int i = 0; i < iBio; i++)
-		{
-			CreatureData creatureData = creature.creatureData;
-
-			mutate(&creatureData, simulationRules.bodyMutation, simulationRules.brainMutation);
-
-			creatureData.startEnergy = creature.eggEnergyCost;
-
-			agl::Vec<float, 2> pos;
-			pos.x = simulationRules.size.x * ((float)rand() / (float)RAND_MAX);
-			pos.y = simulationRules.size.y * ((float)rand() / (float)RAND_MAX);
-
-			this->addEgg(creatureData, pos);
-
-			creature.incubating	 = false;
-			creature.eggDesposit = 0;
-		}
-
-		creature.biomass = 0;
-
-		// tired creature damage
-		if (creature.energy <= 0)
-		{
-			// creature.health--;
-			creature.energy = 0;
-		}
-
-		// age damage
-		if (creature.life < 0)
-		{
-			creature.health--;
-		}
-
-		// killing creature
-		if (creature.health <= 0)
-		{
-			// this->addMeat(creature.position, creature.maxHealth / 4);
-			creature.exists = false;
-			return;
-		}
-
-		if (creature.velocity.length() > 10)
-		{
-			creature.exists = false;
-			return;
-		}
-
-		if (creature.energy > creature.maxEnergy)
-		{
-			creature.energy = creature.maxEnergy;
-		}
-
-		for (auto itx = creature.segments.begin(); itx != creature.segments.end(); itx++)
-		{
-			for (auto ity = std::next(itx, 1); ity != creature.segments.end(); ity++)
-			{
-				PhysicsObj &b1 = **itx;
-				PhysicsObj &b2 = **ity;
-
-				std::vector<ConstraintFailure> cf;
-
-				if (b1.rootConnect == &b2)
-				{
-					World::motor(b1);
-					JointConstraint::probe(b1, b2, cf);
-				}
-				else if (b2.rootConnect == &b1)
-				{
-					World::motor(b2);
-					JointConstraint::probe(b2, b1, cf);
-				}
-
-				for (ConstraintFailure &c : cf)
-				{
-					World::resolve(c, cf.size());
-				}
-			}
-		}
-	});
-
-	// env.view<PhysicsObj>([](auto &o, auto it)
-	// {
-	// 		o.velocity += o.acceleration;
-	// 		o.acceleration = {0, 0};
-	// 		circle.angularVelocity += circle.angularAcceleration;
-	// 		circle.angularAcceleration = 0;
-	// });
-
-	env.selfUpdate<Food>([&](Food &food) {
-		PhysicsObj &circle = food;
-		(void)circle;
-
-#ifdef ACTIVEFOOD
-		if ((food->nextPos - food->position).length() < 50)
-		{
-			food->nextRandPos(simulationRules.size);
-		}
-
-		food->force += (food->nextPos - food->position).normalized() / 100;
-#endif
-
-#ifdef FOODBORDER
-		if (food.position.x < 0)
-		{
-			food.force.x += 1;
-		}
-		if (food.position.x > simulationRules.size.x)
-		{
-			food.force.x -= 1;
-		}
-
-		if (food.position.y < 0)
-		{
-			food.force.y += 1;
-		}
-		if (food.position.y > simulationRules.size.y)
-		{
-			food.force.y -= 1;
-		}
-#endif
-	});
-
-	env.selfUpdate<Meat>([](Meat &meat) {
-		meat.lifetime--;
-
-		if (meat.lifetime < 0)
-		{
-			meat.exists = false;
-			return;
-		}
-	});
-
-	env.selfUpdate<Egg>([&](Egg &egg) {
-		egg.update();
-
-		if (egg.timeleft <= 0)
-		{
-			Egg *hatchedEgg = &egg;
-
-			CreatureData creatureData = hatchedEgg->creatureData;
-			this->addCreature(creatureData, hatchedEgg->position);
-
-			egg.exists = false;
-			return;
-		}
-	});
-
-	env.selfUpdate<TestObj>([](auto &o) {});
-
-	while (env.pool.active())
-	{
-	}
-
 	env.update<PhysicsObj, PhysicsObj, true, false, ENVTYPES>(
 		[frame = frame](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT, std::size_t hashU) {
 			std::vector<ConstraintFailure> failure;
@@ -1065,22 +888,6 @@ void Simulation::updateSimulation()
 			}
 		},
 		[](PhysicsObj &circle) { return 100; });
-
-	while (env.pool.active())
-	{
-	}
-
-	env.view<PhysicsObj, ENVTYPES>([](PhysicsObj &o, auto) {
-		if (o.collideCount)
-		{
-			o.acceleration /= o.collideCount;
-			o.angularAcceleration /= o.collideCount;
-			o.posOffset /= o.collideCount;
-			o.rotOffset /= o.collideCount;
-
-			o.collideCount = 0;
-		}
-	});
 
 	env.update<Creature, Food, false, false, ENVTYPES>(
 		[](Creature &creature, Food &food, auto, auto) {
@@ -1098,6 +905,177 @@ void Simulation::updateSimulation()
 	while (env.pool.active())
 	{
 	}
+
+	env.clearGrid();
+
+	env.selfUpdate<std::tuple<ENVTYPES>>(
+		[&](PhysicsObj &o) {
+			if (o.collideCount)
+			{
+				o.acceleration /= o.collideCount;
+				o.angularAcceleration /= o.collideCount;
+				o.posOffset /= o.collideCount;
+				o.rotOffset /= o.collideCount;
+
+				o.collideCount = 0;
+			}
+
+			newAirRes(o);
+
+			o.updatePhysics();
+		},
+		[&](Egg &egg) {
+			egg.update();
+
+			if (egg.timeleft <= 0)
+			{
+				Egg *hatchedEgg = &egg;
+
+				CreatureData creatureData = hatchedEgg->creatureData;
+				this->addCreature(creatureData, hatchedEgg->position);
+
+				egg.exists = false;
+				return;
+			}
+		},
+		[](Meat &meat) {
+			meat.lifetime--;
+
+			if (meat.lifetime < 0)
+			{
+				meat.exists = false;
+				return;
+			}
+		},
+		[&](Food &food) {
+			PhysicsObj &circle = food;
+			(void)circle;
+
+#ifdef ACTIVEFOOD
+			if ((food->nextPos - food->position).length() < 50)
+			{
+				food->nextRandPos(simulationRules.size);
+			}
+
+			food->force += (food->nextPos - food->position).normalized() / 100;
+#endif
+
+#ifdef FOODBORDER
+			if (food.position.x < 0)
+			{
+				food.force.x += 1;
+			}
+			if (food.position.x > simulationRules.size.x)
+			{
+				food.force.x -= 1;
+			}
+
+			if (food.position.y < 0)
+			{
+				food.force.y += 1;
+			}
+			if (food.position.y > simulationRules.size.y)
+			{
+				food.force.y -= 1;
+			}
+#endif
+		},
+		[this](Creature &creature) {
+			creature.updateNetwork();
+			creature.updateActions();
+
+			// std::cout << creature.position << '\n';
+
+			// egg laying
+			if (creature.layingEgg)
+			{
+				if (creature.energy > creature.eggTotalCost)
+				{
+					creature.incubating = true;
+					// creature.reward += 50;
+				}
+			}
+
+			int iBio = (int)creature.biomass;
+			for (int i = 0; i < iBio; i++)
+			{
+				CreatureData creatureData = creature.creatureData;
+
+				mutate(&creatureData, simulationRules.bodyMutation, simulationRules.brainMutation);
+
+				creatureData.startEnergy = creature.eggEnergyCost;
+
+				agl::Vec<float, 2> pos;
+				pos.x = simulationRules.size.x * ((float)rand() / (float)RAND_MAX);
+				pos.y = simulationRules.size.y * ((float)rand() / (float)RAND_MAX);
+
+				this->addEgg(creatureData, pos);
+
+				creature.incubating	 = false;
+				creature.eggDesposit = 0;
+			}
+
+			creature.biomass = 0;
+
+			// tired creature damage
+			if (creature.energy <= 0)
+			{
+				// creature.health--;
+				creature.energy = 0;
+			}
+
+			// age damage
+			if (creature.life < 0)
+			{
+				creature.health--;
+			}
+
+			// killing creature
+			if (creature.health <= 0)
+			{
+				// this->addMeat(creature.position, creature.maxHealth / 4);
+				creature.exists = false;
+				return;
+			}
+
+			if (creature.velocity.length() > 10)
+			{
+				creature.exists = false;
+				return;
+			}
+
+			if (creature.energy > creature.maxEnergy)
+			{
+				creature.energy = creature.maxEnergy;
+			}
+
+			for (auto itx = creature.segments.begin(); itx != creature.segments.end(); itx++)
+			{
+				for (auto ity = std::next(itx, 1); ity != creature.segments.end(); ity++)
+				{
+					PhysicsObj &b1 = **itx;
+					PhysicsObj &b2 = **ity;
+
+					std::vector<ConstraintFailure> cf;
+
+					if (b1.rootConnect == &b2)
+					{
+						World::motor(b1);
+						JointConstraint::probe(b1, b2, cf);
+					}
+					else if (b2.rootConnect == &b1)
+					{
+						World::motor(b2);
+						JointConstraint::probe(b2, b1, cf);
+					}
+
+					for (ConstraintFailure &c : cf)
+					{
+						World::resolve(c, cf.size());
+					}
+				}
+			}
+		});
 }
 
 void Simulation::update()
