@@ -873,8 +873,8 @@ void Simulation::updateSimulation()
 		this->addFood(position);
 	}
 
-	env.update<PhysicsObj, PhysicsObj, true, false, ENVTYPES>(
-		[frame = frame](PhysicsObj &circle, PhysicsObj &otherCircle, std::size_t hashT, std::size_t hashU) {
+	env.update<std::tuple<ENVTYPES>, true, false>(
+		std::function([](PhysicsObj &circle, PhysicsObj &otherCircle) -> void {
 			std::vector<ConstraintFailure> failure;
 
 			if (circle.rootConnect != &otherCircle && otherCircle.rootConnect != &circle)
@@ -886,11 +886,8 @@ void Simulation::updateSimulation()
 			{
 				World::resolve(f, failure.size());
 			}
-		},
-		[](PhysicsObj &circle) { return 100; });
-
-	env.update<Creature, Food, false, false, ENVTYPES>(
-		[](Creature &creature, Food &food, auto, auto) {
+		}),
+		std::function([](PhysicsObj &circle)->float{ return 100; }), std::function([](Creature &creature, Food &food) {
 			for (auto &seg : creature.segments)
 			{
 				if ((seg->position - food.position).length() < 20)
@@ -899,8 +896,8 @@ void Simulation::updateSimulation()
 					food.exists = false;
 				}
 			}
-		},
-		[](Creature &creature) { return ((creature.size.x + creature.size.y) / 2) * 4; });
+		}),
+		std::function([](Creature &creature) { return ((creature.size.x + creature.size.y) / 2) * 4; }));
 
 	while (env.pool.active())
 	{

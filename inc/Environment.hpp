@@ -57,9 +57,8 @@ class Environment
 {
 	private:
 		template <typename T, typename U, bool oneWay, bool mirror, typename O, typename E>
-		inline void execGridThing(agl::Vec<int, 2>										  &gridPosition,
-								  std::function<void(T &, U &, std::size_t, std::size_t)> &func,
-								  std::function<float(T &)>								  &distFunc)
+		inline void execGridThing(agl::Vec<int, 2> &gridPosition, std::function<void(T &, U &)> &func,
+								  std::function<float(T &)> &distFunc)
 		{
 			auto  hashT = typeid(O).hash_code();
 			auto  hashU = typeid(E).hash_code();
@@ -83,8 +82,7 @@ class Environment
 						{
 							grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
 							grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-							gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, y}, hashT, hashU,
-																		  addressT, it);
+							gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, y}, addressT, it);
 							grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
 							grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
 						}
@@ -94,8 +92,7 @@ class Environment
 					{
 						grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
 						grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
-						gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, 0}, hashT, hashU,
-																	  addressT, it);
+						gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, 0}, addressT, it);
 						grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
 						grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.unlock();
 					}
@@ -117,13 +114,11 @@ class Environment
 				}
 				if (hashT == hashU && oneWay)
 				{
-					gridUpdate<T, U, oneWay, mirror, O, E, true>(func, gridPosition, {0, 0}, hashT, hashU, addressT,
-																 it);
+					gridUpdate<T, U, oneWay, mirror, O, E, true>(func, gridPosition, {0, 0}, addressT, it);
 				}
 				else
 				{
-					gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {0, 0}, hashT, hashU, addressT,
-																  it);
+					gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {0, 0}, addressT, it);
 				}
 
 				if (hashT > hashU)
@@ -145,8 +140,7 @@ class Environment
 				{
 					grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 					grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.lock();
-					gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, 0}, hashT, hashU, addressT,
-																  it);
+					gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, 0}, addressT, it);
 					grid[gridPosition.x + x][gridPosition.y + 0][hashU].mtx.unlock();
 					grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
 				}
@@ -156,8 +150,7 @@ class Environment
 					{
 						grid[gridPosition.x][gridPosition.y][hashT].mtx.lock();
 						grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.lock();
-						gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, y}, hashT, hashU,
-																	  addressT, it);
+						gridUpdate<T, U, oneWay, mirror, O, E, false>(func, gridPosition, {x, y}, addressT, it);
 						grid[gridPosition.x + x][gridPosition.y + y][hashU].mtx.unlock();
 						grid[gridPosition.x][gridPosition.y][hashT].mtx.unlock();
 					}
@@ -165,10 +158,10 @@ class Environment
 			}
 		}
 
-		// func distfunc, pos
+		// loops through entity 2
 		template <bool skip, bool flip, typename T, typename U, bool oneWay, bool mirror, typename O, typename E,
 				  typename... Es>
-		inline void threadFunc2(agl::Vec<int, 2> &pos, std::function<void(T &, U &, std::size_t, std::size_t)> &func,
+		inline void threadFunc2(agl::Vec<int, 2> &pos, std::function<void(T &, U &)> &func,
 								std::function<float(T &)> &distFunc)
 		{
 			if constexpr (!skip)
@@ -195,8 +188,9 @@ class Environment
 			}
 		}
 
+		// loops through entity 1
 		template <typename T, typename U, bool oneWay, bool mirror, typename E, typename... Es>
-		inline void threadFunc1(agl::Vec<int, 2> &pos, std::function<void(T &, U &, std::size_t, std::size_t)> func,
+		inline void threadFunc1(agl::Vec<int, 2> &pos, std::function<void(T &, U &)> func,
 								std::function<float(T &)> distFunc)
 		{
 			if constexpr (std::is_base_of_v<T, E> || std::is_same_v<T, E>)
@@ -221,11 +215,28 @@ class Environment
 			}
 		}
 
+		template <bool oneWay, bool mirror, typename Param1, typename Param2, typename R, typename... E>
+		void digestTupleThreadFunc(std::tuple<E...> *e, std::function<R(Param1 &, Param2 &)> func,
+								   std::function<float(Param1 &)> dist, agl::Vec<int, 2> &pos)
+		{
+			threadFunc1<Param1, Param2, oneWay, mirror, E...>(pos, func, dist);
+		}
+
+		template <typename Funcs, int i, bool oneWay, bool mirror, typename Entis>
+		inline void threadFunc0(agl::Vec<int, 2> pos, Funcs funcs)
+		{
+			digestTupleThreadFunc<oneWay, mirror>((Entis *)nullptr, std::get<i>(funcs), std::get<i + 1>(funcs), pos);
+
+			if constexpr (i < (std::tuple_size<Funcs>::value - 2))
+			{
+				threadFunc0<Funcs, i + 2, oneWay, mirror, Entis>(pos, funcs);
+			}
+		}
+
 		template <typename T, typename U, bool oneWay = false, bool mirror = false, typename O, typename E,
 				  bool sameGrid = false>
-		inline void gridUpdate(std::function<void(T &, U &, std::size_t, std::size_t)> func,
-							   agl::Vec<int, 2> gridPosition, agl::Vec<int, 2> gridOffset, std::size_t hashT,
-							   std::size_t hashU, T *addressT, std::list<BaseEntity *>::iterator &it1)
+		inline void gridUpdate(std::function<void(T &, U &)> func, agl::Vec<int, 2> gridPosition,
+							   agl::Vec<int, 2> gridOffset, T *addressT, std::list<BaseEntity *>::iterator &it1)
 		{
 			auto &list2 =
 				getListInGrid({gridOffset.x + gridPosition.x, gridOffset.y + gridPosition.y}, typeid(E).hash_code());
@@ -244,11 +255,11 @@ class Environment
 					}
 				}
 
-				func(*addressT, *addressU, hashT, hashU);
+				func(*addressT, *addressU);
 
 				if constexpr (mirror)
 				{
-					func(*addressU, *addressT, hashU, hashT);
+					func(*addressU, *addressT);
 				}
 			}
 		}
@@ -508,14 +519,14 @@ class Environment
 			return grid.at(pos.x).at(pos.y)[hash].list;
 		}
 
-		template <typename T, typename U, bool oneWay = false, bool mirror = false, typename... Es>
-		void update(std::function<void(T &, U &, std::size_t, std::size_t)> func, std::function<float(T &)> distFunc)
+		template <typename Entis, bool oneWay = false, bool mirror = false, typename... Funcs>
+		void update(Funcs... funcs)
 		{
 			auto threadedQueue = [&](int start, int end) {
-				pool.queue([&, func = func, start = start, end = end, distFunc = distFunc]() {
+				pool.queue([&, start = start, end = end, funcs = std::tuple(funcs...)]() {
 					for (int i = start; i <= end; i++)
 					{
-						threadFunc1<T, U, oneWay, mirror, Es...>(randomPosition[i], func, distFunc);
+						threadFunc0<std::tuple<Funcs...>, 0, oneWay, mirror, Entis>(randomPosition[i], funcs);
 					}
 				});
 			};
@@ -549,7 +560,7 @@ class Environment
 			}
 		}
 
-		template <typename T, int i=0, typename... Funcs> void selfUpdate(Funcs... funcs)
+		template <typename T, int i = 0, typename... Funcs> void selfUpdate(Funcs... funcs)
 		{
 			typedef std::remove_reference_t<decltype(std::tuple_element_t<i, T>())> EnTy;
 			auto &list = entityList[typeid(EnTy).hash_code()];

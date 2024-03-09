@@ -4,6 +4,8 @@
 #include <AGL/agl.hpp>
 #include <IN/intnet.hpp>
 
+#undef e//;
+
 #include <type_traits>
 
 inline bool pointInArea(agl::Vec<float, 2> point, agl::Vec<float, 2> position, agl::Vec<float, 2> size)

@@ -4,6 +4,8 @@
 #include <AGL/agl.hpp>
 #include <IN/intnet.hpp>
 
+#undef e//;
+
 class SegmentData
 {
 	public:
