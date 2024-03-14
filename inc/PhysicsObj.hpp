@@ -180,6 +180,46 @@ class PhysicsObj : public BaseEntity
 		{
 			return loop((float)-PI, (float)PI, (rotation - rootConnect->rotation) - refRot);
 		}
+
+		static float sec(float x)
+		{
+			return 1. / cos(x);
+		}
+		static float csc(float x)
+		{
+			return 1. / sin(x);
+		}
+
+		static float sq(float x)
+		{
+			return x * x;
+		}
+
+		// depth, norm
+		inline std::pair<float, agl::Vec<float, 2>> getDistIfCol(agl::Vec<float, 2> pos)
+		{
+			agl::Vec<float, 2> offset = position - pos;
+
+			float rot = offset.angle();
+
+			float regDist = offset.dot(offset);
+
+			float sqDist = fmin(sq(size.x / 2 * sec(rot - rotation)), sq(size.y / 2 * csc(rot - rotation)));
+
+			if (regDist > sqDist)
+			{
+				return std::pair(0, agl::Vec<float, 2>{0, 0});
+			}
+			else
+			{
+				float depth	 = sqrt(sqDist) - sqrt(regDist);
+				float fixRot = ((rot + PI / 4) > 2 * PI ? rot + PI / 4 - (2 * PI) : rot + PI / 4);
+				std::cout << fixRot << '\n';
+				float normRot = int(fixRot / (PI / 2)) * (PI / 2) + rotation;
+
+				return std::pair(depth, agl::Vec<float, 2>{-sin(normRot), cos(normRot)});
+			}
+		}
 };
 
 struct ConstraintFailure
@@ -190,9 +230,8 @@ struct ConstraintFailure
 		agl::Vec<float, 2> inter2 = {0, 0};
 		agl::Vec<float, 2> r1;
 		agl::Vec<float, 2> r2;
-		agl::Vec<float, 2> normal  = {0, 0};
-		float			   depth   = 0;
-		bool			   occured = false;
+		agl::Vec<float, 2> normal = {0, 0};
+		float			   depth  = 0;
 };
 
 class World
@@ -264,7 +303,7 @@ class World
 			b1.angularAcceleration -= impulse * b1.invInertia;
 			b1.rootConnect->angularAcceleration += impulse * b1.rootConnect->invInertia;
 
-            // std::cout << impulse << '\n';
+			// std::cout << impulse << '\n';
 
 			// float torque = 100000000;
 			//
@@ -284,10 +323,9 @@ class World
 		}
 
 		template <bool useBare = true>
-		static bool pointInBox(PolyShape &shape, agl::Vec<float, 2> point,
-							   ConstraintFailure &bare)
+		static bool pointInBox(PolyShape &shape, agl::Vec<float, 2> point, ConstraintFailure &bare)
 		{
-			float			   depth = INFINITY ;
+			float			   depth = INFINITY;
 			int				   index = 0;
 			agl::Vec<float, 2> online;
 
@@ -459,6 +497,26 @@ class CollisionConstraint
 						failure.back().b1->collideCount++;
 						failure.back().b2->collideCount++;
 					}
+
+					/*
+										auto res = a.getDistIfCol(point);
+
+										if (res.first > 0)
+										{
+												failure.push_back({});
+												failure.back().b1	  = &a;
+												failure.back().b2	  = &b;
+												failure.back().inter1 = point + (res.second
+					   * res.first); failure.back().inter2 = point; failure.back().normal =
+					   res.second; failure.back().depth  = res.first; failure.back().r1
+					   = failure.back().b1->position - failure.back().inter1;
+												failure.back().r2	  =
+					   failure.back().b2->position - failure.back().inter2;
+
+												failure.back().b1->collideCount++;
+												failure.back().b2->collideCount++;
+										}
+					 */
 				}
 			};
 

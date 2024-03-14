@@ -860,6 +860,13 @@ void newAirRes(PhysicsObj &o)
 	}
 }
 
+class CollisionSystem
+{
+		template <typename T, typename U> void func(T &circle, U &otherCircle)
+		{
+		}
+};
+
 void Simulation::updateSimulation()
 {
 	// adding more food
@@ -887,7 +894,24 @@ void Simulation::updateSimulation()
 				World::resolve(f, failure.size());
 			}
 		}),
-		std::function([](PhysicsObj &circle)->float{ return 100; }), std::function([](Creature &creature, Food &food) {
+		std::function([](PhysicsObj &circle) -> float { return 100; }),
+		std::function([](Food &circle, Food &otherCircle) -> void {
+			std::vector<ConstraintFailure> failure;
+
+			agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
+
+			float circleDistance = circleOffset.length();
+			if (circleDistance < 700)
+			{
+				float forceScalar = FOODPRESSURE / (circleDistance * circleDistance);
+
+				agl::Vec<float, 2> force = circleOffset.normalized() * forceScalar;
+
+				circle.acceleration -= force * circle.invMass;
+				otherCircle.acceleration += force * circle.invMass;
+			}
+		}),
+		std::function([](Food &circle) -> float { return 100; }), std::function([](Creature &creature, Food &food) {
 			for (auto &seg : creature.segments)
 			{
 				if ((seg->position - food.position).length() < 20)
@@ -960,20 +984,20 @@ void Simulation::updateSimulation()
 #ifdef FOODBORDER
 			if (food.position.x < 0)
 			{
-				food.force.x += 1;
+                food.ApplyForceToCenter({1, 0});
 			}
 			if (food.position.x > simulationRules.size.x)
 			{
-				food.force.x -= 1;
+                food.ApplyForceToCenter({-1, 0});
 			}
 
 			if (food.position.y < 0)
 			{
-				food.force.y += 1;
+                food.ApplyForceToCenter({0, 1});
 			}
 			if (food.position.y > simulationRules.size.y)
 			{
-				food.force.y -= 1;
+                food.ApplyForceToCenter({0, -1});
 			}
 #endif
 		},
@@ -1073,6 +1097,10 @@ void Simulation::updateSimulation()
 				}
 			}
 		});
+
+	while (env.pool.active())
+	{
+	}
 }
 
 void Simulation::update()

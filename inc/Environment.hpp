@@ -518,7 +518,7 @@ class Environment
 		{
 			return grid.at(pos.x).at(pos.y)[hash].list;
 		}
-
+// std::is_invocable
 		template <typename Entis, bool oneWay = false, bool mirror = false, typename... Funcs>
 		void update(Funcs... funcs)
 		{

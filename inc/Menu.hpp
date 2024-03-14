@@ -657,7 +657,7 @@ template <typename T> class FieldElement : public MenuElement, public FocusableE
 class NetworkGraph : public MenuElement
 {
 	public:
-		int selectedID;
+		int selectedID = 0;
 
 		in::NeuralNetwork **network;
 
