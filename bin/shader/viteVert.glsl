@@ -10,6 +10,9 @@ uniform mat4 textureTransform;
 uniform float scaleX;
 uniform float scaleY;
 
+uniform mat4 top;
+uniform mat4 bottom;
+
 out vec2 UVcoord;
 out vec4 fragColor;
 out vec4 fragPos;
@@ -27,7 +30,10 @@ void main()
 	
 	fragColor = vec4(shapeColor, 1);
 
-	gl_Position = mvp * transform * vec4(position, 1);
+	vec4 pos = vec4(position, 1);
+	pos = ((top * pos) * (1 - position.y) + (bottom * pos) * (position.y));
+
+	gl_Position = mvp * transform * pos;
 }
 
 

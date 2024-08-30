@@ -36,5 +36,12 @@ void main()
 		color = vec4(val, val, val, 1);
 	}
 
-	color *= fragColor;
+	// float test = 1;
+
+	// if(UVcoord.y < (UVcoord.x * UVcoord.x * UVcoord.x))
+	// {
+	// 	test = 0;
+	// }
+
+	color = fragColor;
 }

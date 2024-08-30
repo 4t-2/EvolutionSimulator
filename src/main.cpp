@@ -2,6 +2,7 @@
 
 #include "../inc/MenuBar.hpp"
 #include "../inc/Simulation.hpp"
+#include "AGL/include/external.hpp"
 
 #include <cctype>
 #include <chrono>
@@ -74,6 +75,42 @@ template <typename T> bool contains(std::list<BaseEntity *> &list, T *p)
 		   list.end();
 }
 
+GLuint lowResFBO, lowResTexture;
+int	   LOW_RES_WIDTH  = 0;
+int	   LOW_RES_HEIGHT = 0;
+
+// Initialize the low-resolution framebuffer
+void initLowResFramebuffer()
+{
+	// Generate and bind the framebuffer
+	glGenFramebuffers(1, &lowResFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, lowResFBO);
+
+	// Create a texture for the framebuffer
+	glGenTextures(1, &lowResTexture);
+	glBindTexture(GL_TEXTURE_2D, lowResTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, LOW_RES_WIDTH, LOW_RES_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	// Attach the texture to the framebuffer
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lowResTexture, 0);
+
+	// Check if framebuffer is complete
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "Framebuffer is not complete!" << std::endl;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void deleteFrameBuffer()
+{
+	glDeleteFramebuffers(1, &lowResFBO);
+	glDeleteTextures(1, &lowResTexture);
+}
+
 int main()
 {
 	printf("Starting AGL\n");
@@ -136,9 +173,11 @@ int main()
 
 	agl::Font font;
 	font.setup("./font/font.ttf", 16);
+	/*font.setup("/usr/share/fonts/TTF/Arial.TTF", 16);*/
 
 	agl::Font smallFont;
 	smallFont.setup("./font/font.ttf", 12);
+	/*smallFont.setup("/usr/share/fonts/TTF/Arial.TTF", 12);*/
 
 	agl::Rectangle background;
 	background.setTexture(&blank);
@@ -577,7 +616,20 @@ int main()
 			goto skipSimRender;
 		}
 
-		window.updateMvp(camera);
+		// First pass: Render to low-resolution framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, lowResFBO);
+		glViewport(0, 0, LOW_RES_WIDTH, LOW_RES_HEIGHT);
+
+		// Clear the framebuffer
+		glClearColor(0, 0, 0, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		{
+			agl::Camera worldCam;
+			worldCam.setOrthographicProjection(0, simulationRules.size.x, simulationRules.size.y, 0, 0.1, 100);
+			worldCam.setView({0, 0, 50}, {0, 0, 0}, {0, 1, 0});
+			window.updateMvp(worldCam);
+		}
 
 		{
 			agl::Vec<float, 2> tlPos = getCursorScenePosition({0, 0}, windowSize, sizeMultiplier, cameraPosition);
@@ -620,15 +672,31 @@ int main()
 		window.getShaderUniforms(viteShader);
 		viteShader.use();
 
-		window.updateMvp(camera);
+		{
+			agl::Camera worldCam;
+			worldCam.setOrthographicProjection(0, simulationRules.size.x, simulationRules.size.y, 0, 0.1, 100);
+			worldCam.setView({0, 0, 50}, {0, 0, 0}, {0, 1, 0});
+			window.updateMvp(worldCam);
+		}
 
 		// draw creature
 		simulation.env.view<Creature, ENVTYPES>(
 			[&](Creature &obj, auto) {
+				agl::Mat4f ident;
+				agl::Mat4f trans;
+				agl::Mat4f off;
+				agl::Mat4f rotat;
+				agl::Mat4f scale;
+
+				ident.identity();
+
 				for (auto seg : obj.segments)
 				{
 					glUniform1f(viteShader.getUniformLocation("scaleX"), seg->size.x);
 					glUniform1f(viteShader.getUniformLocation("scaleY"), seg->size.y);
+
+					viteShader.setUniform(viteShader.getUniformLocation("top"), ident);
+					viteShader.setUniform(viteShader.getUniformLocation("bottom"), ident);
 
 					blankRect.setPosition(seg->position);
 					blankRect.setOffset(seg->size * -.5);
@@ -641,9 +709,73 @@ int main()
 					blankRect.setColor(c);
 
 					window.drawShape(blankRect);
+
+					if (seg->rootConnect != nullptr)
+					{
+						auto &root = *seg->rootConnect;
+
+						trans.translate(root.position);
+						off.translate(seg->local2 - agl::Vec<float, 3>{root.size.x / 2, 0, 0});
+						rotat.rotate({0, 0, -root.radToDeg()});
+						scale.scale({root.size.x, 0, 1});
+						viteShader.setUniform(viteShader.getUniformLocation("top"), trans * rotat * off * scale);
+
+						trans.translate(seg->position);
+						off.translate(seg->local1 - agl::Vec<float, 3>{seg->size.x / 2, 0, 0});
+						rotat.rotate({0, 0, -seg->radToDeg()});
+						scale.scale({seg->size.x, 0, 1});
+						viteShader.setUniform(viteShader.getUniformLocation("bottom"), trans * rotat * off * scale);
+
+						blankRect.setPosition({0, 0});
+						blankRect.setOffset({0, 0});
+						blankRect.setRotation({0, 0, 0});
+						blankRect.setSize({1, 1});
+						blankRect.setColor(&obj == focusCreature ? hueToRGB(obj.creatureData.hue + 20)
+																 : hueToRGB(obj.creatureData.hue));
+
+						window.drawShape(blankRect);
+					}
 				}
 			},
 			topLeftGrid, bottomRightGrid);
+
+		window.getShaderUniforms(simpleShader);
+		simpleShader.use();
+		window.updateMvp(camera);
+
+		// Second pass: Render the low-res texture to the screen
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, windowSize.x, windowSize.y);
+		window.setClearColor(CLEARCOLOR);
+
+		// Clear the default framebuffer
+
+		// Use a shader program that simply samples from the texture
+
+		{
+			blankRect.setColor(agl::Color::White);
+			blankRect.setSize({(float)simulationRules.size.x, (float)-simulationRules.size.y});
+			blankRect.setOffset({0, 0, 0});
+
+			agl::Texture texture;
+
+			*((GLuint *)&texture) = lowResTexture;
+
+			blankRect.setTexture(&texture);
+
+			blankRect.setPosition({0, (float)simulationRules.size.y, 0});
+			blankRect.setRotation({
+				0,
+				0,
+				0,
+			});
+			blankRect.setTextureScaling({1, 1, 1});
+			blankRect.setTextureTranslation({0, 0, 0});
+
+			window.drawShape(blankRect);
+		}
+
+		blankRect.setTexture(&blank);
 
 	skipSimRender:;
 
@@ -755,6 +887,8 @@ int main()
 		{
 			simulation.destroy();
 			focusCreature = nullptr;
+
+			deleteFrameBuffer();
 		}
 		else if (simMenuPointers.start->state && !simulation.active)
 		{
@@ -769,6 +903,10 @@ int main()
 			simulation.create(simulationRules, simMenuPointers.seed->value);
 
 			background.setSize(simulationRules.size);
+
+			LOW_RES_WIDTH  = simulationRules.size.x / 1;
+			LOW_RES_HEIGHT = simulationRules.size.y / 1;
+			initLowResFramebuffer();
 		}
 
 		if (event.keybuffer.find('h') != std::string::npos && FocusableElement::focusedField == nullptr)
