@@ -672,6 +672,8 @@ int main()
 		window.getShaderUniforms(viteShader);
 		viteShader.use();
 
+		glUniform1f(viteShader.getUniformLocation("time"), simulation.frame);
+
 		{
 			agl::Camera worldCam;
 			worldCam.setOrthographicProjection(0, simulationRules.size.x, simulationRules.size.y, 0, 0.1, 100);
@@ -697,6 +699,7 @@ int main()
 
 					viteShader.setUniform(viteShader.getUniformLocation("top"), ident);
 					viteShader.setUniform(viteShader.getUniformLocation("bottom"), ident);
+					glUniform1f(viteShader.getUniformLocation("isJoint"), 0);
 
 					blankRect.setPosition(seg->position);
 					blankRect.setOffset(seg->size * -.5);
@@ -712,6 +715,7 @@ int main()
 
 					if (seg->rootConnect != nullptr)
 					{
+						glUniform1f(viteShader.getUniformLocation("isJoint"), 1);
 						auto &root = *seg->rootConnect;
 
 						trans.translate(root.position);

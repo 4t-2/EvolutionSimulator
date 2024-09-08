@@ -9,39 +9,31 @@ in vec4 fragColor;
 out vec4 color;
 
 uniform sampler2D textureSampler;
+uniform float isJoint;
+uniform float time;
 
 void main()
 {
 	vec2 pixSize = scale / 2;
-
-	if(fragPos.x <= 1 || fragPos.x >= (scale.x - 1) || fragPos.y <= 1 || fragPos.y >= (scale.y-1))
+	if(isJoint < .5)
 	{
-		if((fragPos.x <= 1 && fragPos.y <= 1) || (fragPos.x <= 1 && fragPos.y >= (scale.y-1)) || (fragPos.x >= (scale.x-1) && fragPos.y <= 1) || (fragPos.x >= (scale.x-1) && fragPos.y >= (scale.y-1)))
+		if(fragPos.x <= 1 || fragPos.x >= (scale.x - 1) || fragPos.y <= 1 || fragPos.y >= (scale.y-1))
 		{
-			color = vec4(0, 0, 0, 0);
+			color = vec4(192./255, 192./255, 192./255, 1) * fragColor;
 		} else
 		{
-			color = vec4(92./255, 92./255, 92./255, 1);
+			float start = 130;
+			float end = (100 * (sin(time / 30) / 2 + .5)) + 155;
+
+			vec2 sin = sin((floor(UVcoord * pixSize) * pixSize/(pixSize-1)) / pixSize * PI);
+			float val = sin.x < sin.y ? sin.x : sin.y;
+
+			val = (val * (end - start) + start) / 255;
+
+			color = vec4(fragColor.xyz * val, fragColor.w);
 		}
 	} else
 	{
-		float start = 130;
-		float end = 200;
-
-		vec2 sin = sin((floor(UVcoord * pixSize) * pixSize/(pixSize-1)) / pixSize * PI);
-		float val = sin.x < sin.y ? sin.x : sin.y;
-
-		val = (val * (end - start) + start) / 255;
-
-		color = vec4(val, val, val, 1);
+		color = vec4(192./255, 192./255, 192./255, 1) * fragColor;
 	}
-
-	// float test = 1;
-
-	// if(UVcoord.y < (UVcoord.x * UVcoord.x * UVcoord.x))
-	// {
-	// 	test = 0;
-	// }
-
-	color = fragColor;
 }
