@@ -4,6 +4,8 @@
 #include "../inc/Simulation.hpp"
 #include "AGL/include/external.hpp"
 
+#include "../inc/EnDex.hpp"
+
 #include <cctype>
 #include <chrono>
 #include <cstdio>
@@ -111,8 +113,28 @@ void deleteFrameBuffer()
 	glDeleteTextures(1, &lowResTexture);
 }
 
+class Animal
+{};
+
+class Man : Animal
+{};
+
+class Dog : Animal
+{
+};
+
 int main()
 {
+	{
+		EnDex<Man, Dog> ed;
+		ed.addEntity<Man>();
+		ed.addEntity<Man>();
+		ed.addEntity<Man>();
+		ed.addEntity<Dog>();
+		ed.view<Animal>([](auto &e){std::cout << "man" << '\n';});
+	}
+
+	return 0;
 	printf("Starting AGL\n");
 
 	agl::RenderWindow window;
