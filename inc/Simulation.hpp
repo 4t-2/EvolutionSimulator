@@ -8,12 +8,13 @@
 #include "SimulationRules.hpp"
 #include "macro.hpp"
 #include <list>
+#include "EnDex.hpp"
 
 class Simulation
 {
 	public:
 		SimulationRules simulationRules;
-		Environment		env;
+		EnDex<ENVTYPES>*		env;
 
 		bool active;
 
@@ -37,19 +38,15 @@ class Simulation
 		static CreatureData bufferToCreatureData(Buffer buffer);
 
 		void addCreature(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void removeCreature(std::list<BaseEntity *>::iterator creature);
+		void removeCreature(std::list<Creature>::iterator creature);
 
 		void addEgg(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void removeEgg(std::list<BaseEntity *>::iterator egg);
+		void removeEgg(std::list<Egg>::iterator egg);
 
 		void addFood(agl::Vec<float, 2> position);
-		void removeFood(std::list<BaseEntity *>::iterator food);
-		// depricated - WILL REMOVE
-		void removeFood(Food *food);
+		void removeFood(std::list<Food>::iterator food);
 
 		void addMeat(agl::Vec<float, 2> position);
 		void addMeat(agl::Vec<float, 2> position, float energy);
-		void removeMeat(std::list<BaseEntity *>::iterator meat);
-		// depricated - WILL REMOVE
-		void removeMeat(Meat *meat);
+		void removeMeat(std::list<Meat>::iterator meat);
 };

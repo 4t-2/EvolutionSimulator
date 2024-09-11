@@ -2,7 +2,7 @@
 
 #include "Creature.hpp"
 
-class Egg : public Entity<>
+class Egg
 {
 	public:
 		agl::Vec<float, 2> position;
@@ -10,7 +10,7 @@ class Egg : public Entity<>
 		CreatureData	   creatureData;
 		int				   timeleft = 0;
 
-		Egg() : Entity<>(exists, position)
+		Egg()
 		{
 		}
 

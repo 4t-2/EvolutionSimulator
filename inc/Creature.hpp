@@ -25,7 +25,7 @@ struct RelPos
 	float distance = 0;
 };
 
-class Creature : public Entity<PhysicsObj>
+class Creature : public PhysicsObj
 {
 	public:
         bool exists;
@@ -62,7 +62,6 @@ class Creature : public Entity<PhysicsObj>
 		Creature();
 		~Creature();
 
-		void setup(CreatureData &creatureData, SimulationRules *simulationRules, Environment &env, agl::Vec<float, 2> pos);
 		void clear();
 
 		void learnBrain(SimulationRules &simRules);

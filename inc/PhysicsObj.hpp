@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AGL/include/ShaderBuilder.hpp"
-#include "Environment.hpp"
 #include "other.hpp"
 #include <AGL/agl.hpp>
 #include <algorithm>
@@ -12,9 +11,11 @@ struct PolyShape
 		std::vector<agl::Vec<float, 2>> normals;
 };
 
-class PhysicsObj : public BaseEntity
+class PhysicsObj
 {
 	public:
+		bool			   exists;
+		agl::Vec<float, 2> position;
 		int				   collideCount		   = 0;
 		int				   id				   = 0;
 		bool			   forcable			   = false;
@@ -44,7 +45,7 @@ class PhysicsObj : public BaseEntity
 
 		PolyShape *shape;
 
-		PhysicsObj(bool &exists, agl::Vec<float, 2> &position) : BaseEntity(exists, position)
+		PhysicsObj()
 		{
 		}
 
@@ -459,13 +460,13 @@ class World
 		}
 };
 
-class TestObj : public Entity<PhysicsObj>
+class TestObj : public PhysicsObj
 {
 	public:
 		bool			   exists = true;
 		agl::Vec<float, 2> position;
 
-		TestObj() : Entity<PhysicsObj>(exists, position)
+		TestObj() : PhysicsObj()
 		{
 			return;
 		}

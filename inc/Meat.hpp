@@ -3,13 +3,13 @@
 #include "Food.hpp"
 #include <AGL/agl.hpp>
 
-class Meat : public Entity<PhysicsObj>
+class Meat : public PhysicsObj
 {
 	public:
         bool exists;
         agl::Vec<float, 2> position;
 
-		Meat() : Entity<PhysicsObj>(exists, position)
+		Meat()
 		{
 			setup({0, 0}, {10, 10}, 0);
 		}

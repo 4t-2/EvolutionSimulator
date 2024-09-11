@@ -1,5 +1,5 @@
 #pragma once
-
+/*
 #include "ThreadPool.hpp"
 #include "macro.hpp"
 #include <AGL/agl.hpp>
@@ -16,10 +16,8 @@
 class BaseEntity
 {
 	public:
-		bool			   &exists;
-		agl::Vec<float, 2> &position;
 
-		BaseEntity(bool &exists, agl::Vec<float, 2> &position) : exists(exists), position(position)
+		BaseEntity(bool &exists, agl::Vec<float, 2> &position)
 		{
 		}
 
@@ -606,3 +604,4 @@ class Environment
 			}
 		}
 };
+*/
