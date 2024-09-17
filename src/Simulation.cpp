@@ -192,11 +192,6 @@ void Simulation::addCreature(CreatureData &creatureData, agl::Vec<float, 2> pos)
 		}
 	}
 
-	newCreature.network = new in::NeuralNetwork(*creatureData.netStr);
-	;
-
-	newCreature.network->setActivation(in::tanh);
-	newCreature.network->learningRate = .1f;
 	// // newCreature.rotation = ((float)rand() / (float)RAND_MAX) * PI * 2;
 	//
 	// newCreature.segments.emplace_back(&newCreature);
@@ -966,6 +961,7 @@ void Simulation::updateSimulation()
 		this->addFood(position);
 	}
 
+    std::cout << "start" << "\n\n";
 	env->interact<PhysicsObj, PhysicsObj>([](PhysicsObj &circle, PhysicsObj &otherCircle) -> void {
 		std::vector<ConstraintFailure> failure;
 
@@ -979,25 +975,26 @@ void Simulation::updateSimulation()
 			World::resolve(f, failure.size());
 		}
 	});
+    std::cout << "\nend" << "\n";
 
 	/*std::function([](PhysicsObj &circle) -> float { return 100; }),*/
 
-	env->interact(std::function([](Food &circle, Food &otherCircle) -> void {
-		std::vector<ConstraintFailure> failure;
-
-		agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;
-
-		float circleDistance = circleOffset.length();
-		if (circleDistance < 700)
-		{
-			float forceScalar = FOODPRESSURE / (circleDistance * circleDistance);
-
-			agl::Vec<float, 2> force = circleOffset.normalized() * forceScalar;
-
-			circle.acceleration -= force * circle.invMass;
-			otherCircle.acceleration += force * circle.invMass;
-		}
-	}));
+	/*env->interact(std::function([](Food &circle, Food &otherCircle) -> void {*/
+	/*	std::vector<ConstraintFailure> failure;*/
+	/**/
+	/*	agl::Vec<float, 2> circleOffset = otherCircle.position - circle.position;*/
+	/**/
+	/*	float circleDistance = circleOffset.length();*/
+	/*	if (circleDistance < 700)*/
+	/*	{*/
+	/*		float forceScalar = FOODPRESSURE / (circleDistance * circleDistance);*/
+	/**/
+	/*		agl::Vec<float, 2> force = circleOffset.normalized() * forceScalar;*/
+	/**/
+	/*		circle.acceleration -= force * circle.invMass;*/
+	/*		otherCircle.acceleration += force * circle.invMass;*/
+	/*	}*/
+	/*}));*/
 	/*std::function([](Food &circle) -> float { return 100; })*/
 	env->interact(std::function([](Creature &creature, Food &food) {
 		for (auto &seg : creature.segments)

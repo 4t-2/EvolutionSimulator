@@ -9,9 +9,6 @@
 class Food : public PhysicsObj
 {
 	public:
-		agl::Vec<float, 2> position;
-		bool			   exists;
-
 		Food()
 		{
             setup({0, 0}, {10, 10}, 1);

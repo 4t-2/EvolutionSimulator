@@ -463,9 +463,6 @@ class World
 class TestObj : public PhysicsObj
 {
 	public:
-		bool			   exists = true;
-		agl::Vec<float, 2> position;
-
 		TestObj() : PhysicsObj()
 		{
 			return;

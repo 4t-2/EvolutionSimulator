@@ -336,7 +336,7 @@ int main()
 	} creatureNetworkPointers;
 
 	Menu creatureNetwork("CreatureNetwork", 325,										//
-						 NetworkGraph{[&]() { return &focusCreature->network; }},		//
+						 NetworkGraph{[&]() { return (in::NeuralNetwork**)0; }},		//
 						 ValueElement<std::string>{"Node", [&]() { return &nodeName; }} //
 	);
 
@@ -813,62 +813,62 @@ int main()
 
 		window.updateMvp(guiCamera);
 
-		if (focusCreature != nullptr)
-		{
-			if (contains(simulation.env->getList<Creature>(), focusCreature))
-			{
-				int node = creatureNetworkPointers.network->selectedID;
-
-				nodeName = "";
-
-				if (node < focusCreature->network->structure.totalInputNodes)
-				{
-					switch (node)
-					{
-						case 0:
-							nodeName = "Constant";
-							break;
-						case 1:
-							nodeName = "Sin";
-							break;
-						default:
-							if (node % 2 == 0)
-							{
-								nodeName = "Angle " + std::to_string(node - 1);
-							}
-							else
-							{
-								nodeName = "Motor " + std::to_string(node - 2);
-							}
-							break;
-					}
-				}
-				else
-				{
-					if (node < focusCreature->network->structure.totalNodes -
-								   focusCreature->network->structure.totalOutputNodes)
-					{
-						nodeName =
-							"Hidden " + std::to_string(node - focusCreature->network->structure.totalInputNodes + 1);
-					}
-					else
-					{
-						nodeName =
-							"Move " + std::to_string(((node - focusCreature->network->structure.totalInputNodes) -
-													  focusCreature->network->structure.totalHiddenNodes) +
-													 1);
-					}
-				}
-
-				nodeName +=
-					": " +
-					std::to_string(focusCreature->network->getNode(creatureNetworkPointers.network->selectedID).value);
-			}
-			else
-			{
-				focusCreature = nullptr;
-			}
-		}
+		/*if (focusCreature != nullptr)*/
+		/*{*/
+		/*	if (contains(simulation.env->getList<Creature>(), focusCreature))*/
+		/*	{*/
+		/*		int node = creatureNetworkPointers.network->selectedID;*/
+		/**/
+		/*		nodeName = "";*/
+		/**/
+		/*		if (node < focusCreature->network->structure.totalInputNodes)*/
+		/*		{*/
+		/*			switch (node)*/
+		/*			{*/
+		/*				case 0:*/
+		/*					nodeName = "Constant";*/
+		/*					break;*/
+		/*				case 1:*/
+		/*					nodeName = "Sin";*/
+		/*					break;*/
+		/*				default:*/
+		/*					if (node % 2 == 0)*/
+		/*					{*/
+		/*						nodeName = "Angle " + std::to_string(node - 1);*/
+		/*					}*/
+		/*					else*/
+		/*					{*/
+		/*						nodeName = "Motor " + std::to_string(node - 2);*/
+		/*					}*/
+		/*					break;*/
+		/*			}*/
+		/*		}*/
+		/*		else*/
+		/*		{*/
+		/*			if (node < focusCreature->network->structure.totalNodes -*/
+		/*						   focusCreature->network->structure.totalOutputNodes)*/
+		/*			{*/
+		/*				nodeName =*/
+		/*					"Hidden " + std::to_string(node - focusCreature->network->structure.totalInputNodes + 1);*/
+		/*			}*/
+		/*			else*/
+		/*			{*/
+		/*				nodeName =*/
+		/*					"Move " + std::to_string(((node - focusCreature->network->structure.totalInputNodes) -*/
+		/*											  focusCreature->network->structure.totalHiddenNodes) +*/
+		/*											 1);*/
+		/*			}*/
+		/*		}*/
+		/**/
+		/*		nodeName +=*/
+		/*			": " +*/
+		/*			std::to_string(focusCreature->network->getNode(creatureNetworkPointers.network->selectedID).value);*/
+		/*	}*/
+		/*	else*/
+		/*	{*/
+		/*		focusCreature = nullptr;*/
+		/*	}*/
+		/*}*/
 
 		for (std::string &msgLog : Debug::log)
 		{

@@ -6,12 +6,9 @@
 class Meat : public PhysicsObj
 {
 	public:
-        bool exists;
-        agl::Vec<float, 2> position;
-
 		Meat()
 		{
-			setup({0, 0}, {10, 10}, 0);
+			setup({0, 0}, {10, 10}, 1);
 		}
 
 		float lifetime	= 0;

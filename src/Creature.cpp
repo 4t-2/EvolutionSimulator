@@ -10,15 +10,11 @@ Creature::Creature()
 
 void Creature::clear()
 {
-	network->destroy();
-	delete network;
-
 	position = {0, 0};
 	velocity = {0, 0};
 	force	 = {0, 0};
 	rotation = 0;
 	// radius	  = 0;
-	network	  = nullptr;
 	eating	  = false;
 	layingEgg = false;
 	energy	  = 0;
@@ -130,23 +126,23 @@ void Creature::updateNetwork()
 	// 	network->applyGradients(gradients, loss, simulationRules->memory);
 	// }
 
-	int node = 2;
-
-	network->setInputNode(0, 1);
-	network->setInputNode(1, sinf((maxLife - life) / 20.f));
-
-	for (int i = 0; i < segments.size(); i++)
-	{
-		if (segments[i]->rootConnect != nullptr)
-		{
-			network->setInputNode(node, segments[i]->getJointAngle() / (float)(PI / 2));
-			node++;
-			network->setInputNode(node, segments[i]->motor / (float)(PI / 2));
-			node++;
-		}
-	}
-
-	network->update();
+	/*int node = 2;*/
+	/**/
+	/*network->setInputNode(0, 1);*/
+	/*network->setInputNode(1, sinf((maxLife - life) / 20.f));*/
+	/**/
+	/*for (int i = 0; i < segments.size(); i++)*/
+	/*{*/
+	/*	if (segments[i]->rootConnect != nullptr)*/
+	/*	{*/
+	/*		network->setInputNode(node, segments[i]->getJointAngle() / (float)(PI / 2));*/
+	/*		node++;*/
+	/*		network->setInputNode(node, segments[i]->motor / (float)(PI / 2));*/
+	/*		node++;*/
+	/*	}*/
+	/*}*/
+	/**/
+	/*network->update();*/
 
 	// for (int i = 0; i < network->structure.totalOutputNodes; i++)
 	// {
@@ -164,19 +160,19 @@ void Creature::updateActions()
 	{
 		if (seg->rootConnect != nullptr)
 		{
-			float ang = seg->getJointAngle();
-			float net = network->outputNode[node].value * (float)(PI / 2);
-
-			// float net = sin(frame / 20.);
-			// std::cout << ang << '\n';
-
-			float diff = ang - net;
-			// std::cout << diff << '\n';
-
-			seg->motor = (1 / 6.f * diff) * seg->maxMotor;
-			// std::cout << agl::radianToDegree(joint[i].getAngle()) << '\n';
-
-			node++;
+			/*float ang = seg->getJointAngle();*/
+			/*float net = network->outputNode[node].value * (float)(PI / 2);*/
+			/**/
+			/*// float net = sin(frame / 20.);*/
+			/*// std::cout << ang << '\n';*/
+			/**/
+			/*float diff = ang - net;*/
+			/*// std::cout << diff << '\n';*/
+			/**/
+			/*seg->motor = (1 / 6.f * diff) * seg->maxMotor;*/
+			/*// std::cout << agl::radianToDegree(joint[i].getAngle()) << '\n';*/
+			/**/
+			/*node++;*/
 		}
 	}
 

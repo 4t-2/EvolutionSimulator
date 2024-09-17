@@ -28,11 +28,6 @@ struct RelPos
 class Creature : public PhysicsObj
 {
 	public:
-        bool exists;
-        agl::Vec<float, 2> position;
-
-		in::NeuralNetwork *network = nullptr;
-
 		bool eating	   = false;
 		bool layingEgg = false;
 
