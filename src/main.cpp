@@ -260,8 +260,6 @@ int main()
 	simulation.active = 0;
 	// simulation.create(simulationRules, 0);
 
-	Creature *focusCreature = nullptr;
-
 	float		fps = 0;
 	std::string nodeName;
 
@@ -277,148 +275,6 @@ int main()
 	MenuShare::menuShader = &menuShader;
 	MenuShare::baseShader = &simpleShader;
 	MenuShare::camera	  = &guiCamera;
-
-	// simulation info
-
-	struct
-	{
-			ValueElement<int>	*creatures;
-			ValueElement<int>	*eggs;
-			ValueElement<int>	*food;
-			ValueElement<int>	*meat;
-			ValueElement<int>	*frame;
-			ValueElement<float> *fps;
-	} simulationInfoPointers;
-
-	struct
-	{
-			int creatures;
-			int eggs;
-			int food;
-			int meat;
-	} statsForSimInfo;
-
-	Menu simulationInfo("SimInfo", 125, //
-						ValueElement<int>{"Creatures",
-										  [&]() {
-											  statsForSimInfo.creatures = simulation.env->getList<Creature>().size();
-											  return &statsForSimInfo.creatures;
-										  }}, //
-						ValueElement<int>{"Eggs",
-										  [&]() {
-											  statsForSimInfo.eggs = simulation.env->getList<Egg>().size();
-											  return &statsForSimInfo.eggs;
-										  }}, //
-						ValueElement<int>{"Food",
-										  [&]() {
-											  statsForSimInfo.food = simulation.env->getList<Food>().size();
-											  return &statsForSimInfo.food;
-										  }}, //
-						ValueElement<int>{"Meat",
-										  [&]() {
-											  statsForSimInfo.meat = simulation.env->getList<Meat>().size();
-											  return &statsForSimInfo.meat;
-										  }},											 //
-						ValueElement<int>{"Frame", [&]() { return &simulation.frame; }}, //
-						ValueElement<float>{"FPS", [&]() { return &fps; }}				 //
-	);
-
-	simulationInfo.bindPointers(&simulationInfoPointers);
-
-	simulationInfo.requirement = [&]() { return simulation.active; };
-
-	// creatureNetwork
-
-	struct
-	{
-			NetworkGraph			  *network;
-			ValueElement<std::string> *node;
-	} creatureNetworkPointers;
-
-	Menu creatureNetwork("CreatureNetwork", 325,										//
-						 NetworkGraph{[&]() { return (in::NeuralNetwork**)0; }},		//
-						 ValueElement<std::string>{"Node", [&]() { return &nodeName; }} //
-	);
-
-	creatureNetwork.bindPointers(&creatureNetworkPointers);
-
-	creatureNetwork.requirement = [&]() {
-		if (focusCreature != nullptr)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	};
-
-	// creatureVectors
-
-	struct
-	{
-			TextElement			*posText;
-			ValueElement<float> *posX;
-			ValueElement<float> *posY;
-			TextElement			*velText;
-			ValueElement<float> *velX;
-			ValueElement<float> *velY;
-			TextElement			*forText;
-			ValueElement<float> *forX;
-			ValueElement<float> *fooY;
-
-	} creatureVectorsPointers;
-
-	Menu creatureVectors("CreatureVectors", 200,												 //
-						 TextElement{"- Position -"},											 //
-						 ValueElement<float>{"X", [&]() { return &focusCreature->position.x; }}, //
-						 ValueElement<float>{"Y", [&]() { return &focusCreature->position.y; }}, //
-						 TextElement{"- Velocity -"},											 //
-						 ValueElement<float>{"X", [&]() { return &focusCreature->velocity.x; }}, //
-						 ValueElement<float>{"Y", [&]() { return &focusCreature->velocity.y; }}, //
-						 TextElement{"- Force -"},												 //
-						 ValueElement<float>{"X", [&]() { return &focusCreature->force.x; }},	 //
-						 ValueElement<float>{"Y", [&]() { return &focusCreature->force.y; }}	 //
-	);
-
-	creatureVectors.bindPointers(&creatureVectorsPointers);
-
-	creatureVectors.requirement = creatureNetwork.requirement;
-
-	// creatureMisc
-
-	struct
-	{
-			ValueElement<bool>	*eating;
-			ValueElement<bool>	*layingEgg;
-			SpacerElement		*sp1;
-			ValueElement<float> *health;
-			ValueElement<float> *energy;
-			ValueElement<float> *lifeLeft;
-			SpacerElement		*sp2;
-			ValueElement<int>	*hue;
-			SpacerElement		*sp3;
-			ValueElement<float> *biomass;
-			ValueElement<float> *energyDensity;
-	} creatureMiscPointers;
-
-	Menu creatureMisc("CreatureMisc", 200,																	 //
-					  ValueElement<bool>{"Eating", [&]() { return &focusCreature->eating; }},				 //
-					  ValueElement<bool>{"Laying Egg", [&]() { return &focusCreature->layingEgg; }},		 //
-					  SpacerElement{},																		 //
-					  ValueElement<float>{"Health", [&]() { return &focusCreature->health; }},				 //
-					  ValueElement<float>{"Energy", [&]() { return &focusCreature->energy; }},				 //
-					  ValueElement<int>{"Life Left", [&]() { return &focusCreature->life; }},				 //
-					  SpacerElement{},																		 //
-					  ValueElement<int>{"Hue", [&]() { return &focusCreature->creatureData.hue; }},			 //
-					  SpacerElement{},																		 //
-					  ValueElement<float>{"Biomass", [&]() { return &focusCreature->biomass; }},			 //
-					  ValueElement<float>{"Energy Density", [&]() { return &focusCreature->energyDensity; }} //
-	);
-
-	creatureMisc.bindPointers(&creatureMiscPointers);
-
-	creatureMisc.requirement = creatureVectors.requirement;
 
 	// leftMenu
 
@@ -565,13 +421,9 @@ int main()
 	// menubar
 
 	MenuBar menuBar(&quitMenu,		  //
-					&simulationInfo,  //
 					&simMenu,		  //
 					&leftMenu,		  //
 					&simRules,		  //
-					&creatureNetwork, //
-					&creatureVectors, //
-					&creatureMisc,	  //
 					&debugLog		  //
 	);
 
@@ -686,12 +538,6 @@ int main()
 			window.drawShape(meatShape);
 		});
 
-		// draw eggs
-		simulation.env->view<Egg>([&](Egg &egg) {
-			eggShape.setPosition(egg.position);
-			window.drawShape(eggShape);
-		});
-
 		window.getShaderUniforms(viteShader);
 		viteShader.use();
 
@@ -705,7 +551,7 @@ int main()
 		}
 
 		// draw creature
-		simulation.env->view<Creature>([&](Creature &obj) {
+		simulation.env->view<ViteSeg>([&](ViteSeg &seg) {
 			agl::Mat4f ident;
 			agl::Mat4f trans;
 			agl::Mat4f off;
@@ -714,53 +560,48 @@ int main()
 
 			ident.identity();
 
-			for (auto seg : obj.segments)
+			glUniform1f(viteShader.getUniformLocation("scaleX"), seg.size.x);
+			glUniform1f(viteShader.getUniformLocation("scaleY"), seg.size.y);
+
+			viteShader.setUniform(viteShader.getUniformLocation("top"), ident);
+			viteShader.setUniform(viteShader.getUniformLocation("bottom"), ident);
+			glUniform1f(viteShader.getUniformLocation("isJoint"), 0);
+
+			blankRect.setPosition(seg.position);
+			blankRect.setOffset(seg.size * -.5);
+			blankRect.setRotation({0, 0, -seg.radToDeg()});
+			blankRect.setSize(seg.size);
+
+			agl::Color c = hueToRGB(seg.genome[seg.geneIndex].hue);
+
+			blankRect.setColor(c);
+
+			window.drawShape(blankRect);
+
+			if (seg.rootConnect != nullptr)
 			{
-				glUniform1f(viteShader.getUniformLocation("scaleX"), seg->size.x);
-				glUniform1f(viteShader.getUniformLocation("scaleY"), seg->size.y);
+				glUniform1f(viteShader.getUniformLocation("isJoint"), 1);
+				auto &root = *seg.rootConnect;
 
-				viteShader.setUniform(viteShader.getUniformLocation("top"), ident);
-				viteShader.setUniform(viteShader.getUniformLocation("bottom"), ident);
-				glUniform1f(viteShader.getUniformLocation("isJoint"), 0);
+				trans.translate(root.position);
+				off.translate(seg.local2 - agl::Vec<float, 3>{root.size.x / 2, 0, 0});
+				rotat.rotate({0, 0, -root.radToDeg()});
+				scale.scale({root.size.x, 0, 1});
+				viteShader.setUniform(viteShader.getUniformLocation("top"), trans * rotat * off * scale);
 
-				blankRect.setPosition(seg->position);
-				blankRect.setOffset(seg->size * -.5);
-				blankRect.setRotation({0, 0, -seg->radToDeg()});
-				blankRect.setSize(seg->size);
+				trans.translate(seg.position);
+				off.translate(seg.local1 - agl::Vec<float, 3>{seg.size.x / 2, 0, 0});
+				rotat.rotate({0, 0, -seg.radToDeg()});
+				scale.scale({seg.size.x, 0, 1});
+				viteShader.setUniform(viteShader.getUniformLocation("bottom"), trans * rotat * off * scale);
 
-				agl::Color c =
-					&obj == focusCreature ? hueToRGB(obj.creatureData.hue + 20) : hueToRGB(obj.creatureData.hue);
-
-				blankRect.setColor(c);
+				blankRect.setPosition({0, 0});
+				blankRect.setOffset({0, 0});
+				blankRect.setRotation({0, 0, 0});
+				blankRect.setSize({1, 1});
+				blankRect.setColor(hueToRGB(seg.genome[seg.geneIndex].hue));
 
 				window.drawShape(blankRect);
-
-				if (seg->rootConnect != nullptr)
-				{
-					glUniform1f(viteShader.getUniformLocation("isJoint"), 1);
-					auto &root = *seg->rootConnect;
-
-					trans.translate(root.position);
-					off.translate(seg->local2 - agl::Vec<float, 3>{root.size.x / 2, 0, 0});
-					rotat.rotate({0, 0, -root.radToDeg()});
-					scale.scale({root.size.x, 0, 1});
-					viteShader.setUniform(viteShader.getUniformLocation("top"), trans * rotat * off * scale);
-
-					trans.translate(seg->position);
-					off.translate(seg->local1 - agl::Vec<float, 3>{seg->size.x / 2, 0, 0});
-					rotat.rotate({0, 0, -seg->radToDeg()});
-					scale.scale({seg->size.x, 0, 1});
-					viteShader.setUniform(viteShader.getUniformLocation("bottom"), trans * rotat * off * scale);
-
-					blankRect.setPosition({0, 0});
-					blankRect.setOffset({0, 0});
-					blankRect.setRotation({0, 0, 0});
-					blankRect.setSize({1, 1});
-					blankRect.setColor(&obj == focusCreature ? hueToRGB(obj.creatureData.hue + 20)
-															 : hueToRGB(obj.creatureData.hue));
-
-					window.drawShape(blankRect);
-				}
 			}
 		});
 
@@ -834,28 +675,34 @@ int main()
 		/*				default:*/
 		/*					if (node % 2 == 0)*/
 		/*					{*/
-		/*						nodeName = "Angle " + std::to_string(node - 1);*/
+		/*						nodeName = "Angle " +
+		 * std::to_string(node - 1);*/
 		/*					}*/
 		/*					else*/
 		/*					{*/
-		/*						nodeName = "Motor " + std::to_string(node - 2);*/
+		/*						nodeName = "Motor " +
+		 * std::to_string(node - 2);*/
 		/*					}*/
 		/*					break;*/
 		/*			}*/
 		/*		}*/
 		/*		else*/
 		/*		{*/
-		/*			if (node < focusCreature->network->structure.totalNodes -*/
+		/*			if (node < focusCreature->network->structure.totalNodes
+		 * -*/
 		/*						   focusCreature->network->structure.totalOutputNodes)*/
 		/*			{*/
 		/*				nodeName =*/
-		/*					"Hidden " + std::to_string(node - focusCreature->network->structure.totalInputNodes + 1);*/
+		/*					"Hidden " + std::to_string(node -
+		 * focusCreature->network->structure.totalInputNodes + 1);*/
 		/*			}*/
 		/*			else*/
 		/*			{*/
 		/*				nodeName =*/
-		/*					"Move " + std::to_string(((node - focusCreature->network->structure.totalInputNodes) -*/
-		/*											  focusCreature->network->structure.totalHiddenNodes) +*/
+		/*					"Move " + std::to_string(((node -
+		 * focusCreature->network->structure.totalInputNodes) -*/
+		/*											  focusCreature->network->structure.totalHiddenNodes)
+		 * +*/
 		/*											 1);*/
 		/*			}*/
 		/*		}*/
@@ -911,7 +758,6 @@ int main()
 		if (simMenuPointers.kill->state && simulation.active)
 		{
 			simulation.destroy();
-			focusCreature = nullptr;
 
 			deleteFrameBuffer();
 		}
@@ -948,7 +794,6 @@ int main()
 
 		if (event.isKeyPressed(agl::Key::R))
 		{
-			focusCreature = nullptr;
 		}
 
 		{
@@ -981,23 +826,6 @@ int main()
 			}
 			if (leftMenuPointers.select->state) // select creature
 			{
-				simulation.env->view<Creature>([&](auto &creature) {
-					agl::Vec<float, 2> mouse;
-					mouse.x = ((event.getPointerWindowPosition().x - (windowSize.x * .5)) * sizeMultiplier) +
-							  cameraPosition.x;
-					mouse.y = ((event.getPointerWindowPosition().y - (windowSize.y * .5)) * sizeMultiplier) +
-							  cameraPosition.y;
-
-					float distance = (mouse - creature.position).length();
-
-					if (distance < creature.size.x)
-					{
-						focusCreature			= &creature;
-						selected = focusCreature;
-
-						return;
-					}
-				});
 			}
 			if (leftMenuPointers.kill->state) // kill creature
 			{
@@ -1096,11 +924,6 @@ int main()
 			}
 			if (leftMenuPointers.sendTo->state)
 			{
-				if (focusCreature != nullptr)
-				{
-					focusCreature->position = getCursorScenePosition(event.getPointerWindowPosition(), windowSize,
-																	 sizeMultiplier, cameraPosition);
-				}
 			}
 
 		endif:;

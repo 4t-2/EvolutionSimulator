@@ -1,20 +1,19 @@
 #pragma once
 
 #include "Buffer.hpp"
-#include "Creature.hpp"
-#include "Egg.hpp"
+#include "EnDex.hpp"
 #include "Food.hpp"
 #include "Meat.hpp"
 #include "SimulationRules.hpp"
+#include "ViteSeg.hpp"
 #include "macro.hpp"
 #include <list>
-#include "EnDex.hpp"
 
 class Simulation
 {
 	public:
-		SimulationRules simulationRules;
-		EnDex<ENVTYPES>*		env;
+		SimulationRules	 simulationRules;
+		EnDex<ENVTYPES> *env;
 
 		bool active;
 
@@ -23,9 +22,12 @@ class Simulation
 		int	  &foodCap				= simulationRules.foodCap;
 		float &energyCostMultiplier = simulationRules.energyCostMultiplier;
 
-        Simulation()
-        {
-        }
+		std::vector<ViteGenome> startingGenome = {
+			ViteGenome{{24, 24}, 0, 0, 0, 100}, ViteGenome{{10, 18}, 0, 0, 0, 100}, ViteGenome{{4, 18}, 0, 0, 0, 100}};
+
+		Simulation()
+		{
+		}
 
 		void create(SimulationRules simulationRules, int seed);
 		void destroy();
@@ -37,11 +39,8 @@ class Simulation
 		static Buffer		creatureDataToBuffer(CreatureData &creatureData);
 		static CreatureData bufferToCreatureData(Buffer buffer);
 
-		void addCreature(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void removeCreature(std::list<Creature>::iterator creature);
-
-		void addEgg(CreatureData &creatureData, agl::Vec<float, 2> position);
-		void removeEgg(std::list<Egg>::iterator egg);
+		void addCreature(std::vector<ViteGenome> genome, agl::Vec<float, 2> position);
+		void removeCreature(std::list<ViteSeg>::iterator viteSeg);
 
 		void addFood(agl::Vec<float, 2> position);
 		void removeFood(std::list<Food>::iterator food);

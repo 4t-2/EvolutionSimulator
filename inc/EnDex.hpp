@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <iostream>
 #include <list>
 #include <tuple>
 #include <type_traits>
@@ -44,7 +43,6 @@ template <typename... EntityTypes> class EnDex
 		{
 			if constexpr (std::is_base_of_v<U, V> || std::is_same_v<U, V>)
 			{
-                std::cout << "\t" << typeid(V).name() << "\n";
 				if constexpr (!std::is_same_v<V, Related>)
 				{
 					std::list<V>	   &listV = entityList.template getList<V>();
@@ -83,7 +81,6 @@ template <typename... EntityTypes> class EnDex
 		{
 			if constexpr (std::is_base_of_v<T, V> || std::is_same_v<T, V>)
 			{
-				std::cout << typeid(V).name() << "\n";
 				loopThroughU<T, U, V, V, Vs...>(func);
 			}
 
